@@ -1,22 +1,5 @@
 [
   {
-    "path": "posts/2021-08-25-hello-world/",
-    "title": "Hello World",
-    "description": "A short description of the post.",
-    "author": [
-      {
-        "name": "Nora Jones",
-        "url": "https://example.com/norajones"
-      }
-    ],
-    "date": "2021-08-25",
-    "categories": [],
-    "contents": "\nDistill is a publication format for scientific and technical writing, native to the web.\nLearn more about using Distill at https://rstudio.github.io/distill.\n\n\n\n",
-    "preview": {},
-    "last_modified": "2021-08-25T16:25:36-03:00",
-    "input_file": {}
-  },
-  {
     "path": "posts/welcome/",
     "title": "Welcome to Codex",
     "description": "Welcome to our new blog, Codex. We hope you enjoy \nreading what we have to say!",

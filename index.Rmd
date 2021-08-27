@@ -3,6 +3,5 @@ title: "Codex"
 site: distill::distill_website
 listing: 
   posts:
-    - 2021-08-25-hello-world
     - welcome
 ---
