@@ -3,7 +3,11 @@ title: "Codex"
 description: |
   Um espaço para manter o registro de estudos sobre análise de dados e aprendizado de máquina
 output_dir: "docs"
+google_analytics: "G-SKP9PWEBP2"
 base_url: https://nacmarino.github.io/codex/
+repository_url: https://github.com/nacmarino/codex/
+creative_commons: CC BY
+favicon: images/books.png
 navbar:
   logo: 'images/books.png'
   right:
