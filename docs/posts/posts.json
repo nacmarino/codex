@@ -6,14 +6,14 @@
     "author": [
       {
         "name": "Nicholas Marino",
-        "url": "https://example.com/norajones"
+        "url": "https://github.com/nacmarino"
       }
     ],
     "date": "2021-08-27",
     "categories": [],
     "contents": "\nDistill is a publication format for scientific and technical writing, native to the web.\nLearn more about using Distill at https://rstudio.github.io/distill.\n\n\n\n",
     "preview": {},
-    "last_modified": "2021-08-27T14:09:15-03:00",
+    "last_modified": "2021-08-27T14:22:14-03:00",
     "input_file": "hello-world.knit.md"
   }
 ]

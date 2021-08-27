@@ -3,8 +3,9 @@ title: "Hello World"
 description: |
   A short description of the post.
 author:
-  - name: Nicholas Marino
-    url: https://example.com/norajones
+  - first_name: Nicholas 
+    last_name: Marino
+    url: https://github.com/nacmarino
 date: 08-27-2021
 output:
   distill::distill_article:
