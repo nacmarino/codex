@@ -1,9 +1,11 @@
 name: "codex"
 title: "Codex"
 description: |
-  Codex
+  Um espaço para manter o registro de estudos sobre análise de dados e aprendizado de máquina
 output_dir: "docs"
+base_url: https://nacmarino.github.io/codex/
 navbar:
+  logo: 'images/books.png'
   right:
     - text: "Home"
       href: index.html
@@ -11,4 +13,7 @@ navbar:
       href: about.html
     - text: "Autor"
       href: author.html
+collections:
+  posts:
+    share: [twitter, linkedin]
 output: distill::distill_article

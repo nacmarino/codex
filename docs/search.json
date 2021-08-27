@@ -17,10 +17,10 @@
     },
     {
       "path": "index.html",
-      "title": "Codex",
+      "title": "Postagens",
       "author": [],
       "contents": "\n\n\n\n",
-      "last_modified": "2021-08-27T10:30:30-03:00"
+      "last_modified": "2021-08-27T13:47:41-03:00"
     }
   ],
   "collections": ["posts/posts.json"]
