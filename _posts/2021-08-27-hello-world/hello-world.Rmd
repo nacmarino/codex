@@ -2,6 +2,9 @@
 title: "Hello World"
 description: |
   A short description of the post.
+categories:
+  - starter
+  - hello
 author:
   - first_name: Nicholas 
     last_name: Marino

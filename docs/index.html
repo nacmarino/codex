@@ -2216,11 +2216,11 @@ function init_posts_list() {
 
 
 
-<div class="posts-container posts-apply-limit l-page">
+<div class="posts-container posts-with-sidebar posts-apply-limit l-screen-inset">
 <div class="posts-list">
 <h1 class="posts-list-caption" data-caption="Postagens">Postagens</h1>
 <a href="posts/2021-08-27-hello-world/" class="post-preview">
-<script class="post-metadata" type="text/json">{"categories":[]}</script>
+<script class="post-metadata" type="text/json">{"categories":["starter","hello"]}</script>
 <div class="metadata">
 <div class="publishedDate">Aug. 27, 2021</div>
 <div class="dt-authors">
@@ -2232,10 +2232,32 @@ function init_posts_list() {
 </div>
 <div class="description">
 <h2>Hello World</h2>
-<div class="dt-tags"></div>
+<div class="dt-tags">
+<div class="dt-tag">starter</div>
+<div class="dt-tag">hello</div>
+</div>
 <p>A short description of the post.</p>
 </div>
 </a>
+</div>
+<div class="posts-sidebar">
+<div class="sidebar-section categories">
+<h3>Categories</h3>
+<ul>
+<li>
+<a href="#category:articles">articles</a>
+<span class="category-count">(1)</span>
+</li>
+<li>
+<a href="#category:hello">hello</a>
+<span class="category-count">(1)</span>
+</li>
+<li>
+<a href="#category:starter">starter</a>
+<span class="category-count">(1)</span>
+</li>
+</ul>
+</div>
 </div>
 <div class="posts-more">
 <a href="#">More articles &raquo;</a>
