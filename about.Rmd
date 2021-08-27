@@ -1,9 +1,10 @@
 ---
-title: "About this blog"
+title: "Sobre este blog"
 description: |
-  Some additional details about the blog
+  Mas afinal, por que é que eu fui criar este espaço?
+theme: theme.css
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
-```
+Uma das coisas que me divertem muito é uma boa análise de dados...não precisa ser nada de _rocket science_, mas a simples oportunidade de poder aprender alguma coisa sobre um conjunto de dados já é algo que me deixa muito feliz. Além disso, eu gosto de tentar aplicar as coisas que estudo nos cursos e leio em outros blogs, uma vez que acredito que essa parte prática é o que realmente consolida no nosso aprendizado. 
+
+Desta forma, este blog é uma tentativa de juntar todos os códigos que eu gero durante os meus estudos sobre Machine Learning, R e estatística, bem como outras análises que eu acabo gerando quando tenho alguma curiosidade em mente. Ele não é orientado a ser uma referência técnica nem nada do gênero, tampouco pretendo discutir sobre o que é certo ou errado na área, chegar a um modelo com o menor erro possível ou desenvolver alguma aplicação do zero. Minha ideia aqui é apenas reunir uma coleção de artigos e pedaços de código que de alguma forma me foram úteis, que podem vir a ser úteis para outras pessoas. Mais importante, é ter a oportunidade de por em prática o que tenho estudado, lido e visto por aí.

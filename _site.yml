@@ -8,6 +8,7 @@ base_url: https://nacmarino.github.io/codex/
 repository_url: https://github.com/nacmarino/codex/
 creative_commons: CC BY
 favicon: images/books.png
+theme: theme.css
 navbar:
   logo: 'images/books.png'
   right:

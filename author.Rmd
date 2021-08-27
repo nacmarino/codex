@@ -10,6 +10,7 @@ links:
     url: 'http://lattes.cnpq.br/8609169672498445'
   - label: Email
     url: 'mailto:nac.marino@gmail.com'
+theme: theme.css
 output:
   postcards::trestles
 ---
