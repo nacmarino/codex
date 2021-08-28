@@ -22,16 +22,33 @@ draft: true
 ---
 
 ```{r setup, include=FALSE}
+# setando as opções gerais dos code chunks
 knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, fig.align = 'center')
+
+# setando o tema geral do ggplot2
+ggplot2::theme_set(new = ggplot2::theme_minimal())
 ```
 
-# Introdução
+# Motivação
 
-Introdução.
+Há um tempo atrás eu comecei a pensar em trocar o apartamento em que moro por um maior, dado toda a questão da pandemia, _home office_ e o aumento no tamanho da família. Logo, comecei a buscar as opções disponíveis aqui em Niterói, mas me deparei com algumas dúvidas:  
 
-```{r carrega_dados}
+- **Quanto vale o apartamento em que morava?** Dado que eu faria uma troca, eu precisava saber o quanto ele deve valer para saber até onde eu poderia buscar.  
+- **Como saber se um apartamento está anunciado a um preço razoável?** Isto é, como eu poderia saber se o valor que estavam pedindo por uma apartamento está dentro do valor de mercado, acima ou abaixo dele? Ter acesso à essa informação é importante também para avaliar quão boa uma oportunidade de fato é.  
+
+Com isso em mente, tive a ideia de pegar todas informações que podia obter de anúncios sobre o preço do apartamento, suas características, localização geográfica e tudo mais e utilizar algum algoritmo de Machine Learning para me ajudar (1) à prever o valor de um apartamento baseado nestas informações e (2) definir se o valor anunciado era um valor razoável ou não. Quanto a este último ponto, eu poderia até ir além: caso o valor anunciado estivesse abaixo daquele previsto pelo modelo utilizado, então possivelmente o apartamento estava sendo vendido abaixo do valor de mercado; caso contrário, o apartamento esta sendo anunciado a um valor muito maior do que aquele que ele deveria valer.  
+
+Seguindo esta ideia, raspei o site do ZapImóveis atrás de todos os anúncios de apartamentos à venda aqui no município de Niterói/RJ no início de mês de agosto. Eu organizei os dados coletados, selecionei algumas informações primárias para me ajudar nesta tarefa e, aqui neste post, eu busco entender estes dados e fazer uso deles para me ajudar a obter as respostas que estava buscando para as perguntas feitas originalmente.
+
+# Descrição dos Dados
+
+Vamos começar carregando os dados obtidos através do ZapImóveis, e já passados por um processo prévio de faxina (que eu não apresento aqui).
+
+```{r carrega_dados, code_folding = TRUE}
 # carregando os pacotes necessários
 library(tidyverse) # manipulação de dados
+library(skimr) # diagnostico rapido da base
+library(reactable) # facilita a visualização de tabelas
 library(sf) # mapas
 
 # carregando os dados dos anuncios já tratados e limpos
@@ -39,42 +56,84 @@ dados <- read_rds(file = 'data/base_analitica.rds')
 
 # carregando o shapefile de niteroi
 niteroi <- read_sf('data/bairros_niteroi.shp')
+
+# visao geral dos dados
+skim_without_charts(data = dados) %>% 
+  as_tibble() %>% 
+  select(skim_type:complete_rate, character.n_unique, contains('numeric')) %>% 
+  reactable(striped = TRUE, highlight = TRUE, compact = TRUE, showSortable = TRUE,
+            defaultColDef = colDef(align = 'center'),
+            columns = list(
+              skim_type           = colDef(name = 'Tipo'),
+              skim_variable       = colDef(name = 'Variável'),
+              n_missing           = colDef(name = 'Qtd. Faltantes'),
+              complete_rate       = colDef(name = 'Prop. Completa', format = colFormat(digits = 2)),
+              character.n_unique  = colDef(name = 'Níveis Únicos'),
+              numeric.mean        = colDef(name = 'Média', format = colFormat(digits = 0)),
+              numeric.sd          = colDef(name = 'Desvio Padrão', format = colFormat(digits = 0)),
+              numeric.p0          = colDef(name = 'Mínimo', format = colFormat(digits = 0)),
+              numeric.p25         = colDef(name = 'Q25', format = colFormat(digits = 0)),
+              numeric.p50         = colDef(name = 'Mediana', format = colFormat(digits = 0)),
+              numeric.p75         = colDef(name = 'Q75', format = colFormat(digits = 0)),
+              numeric.p100        = colDef(name = 'Máximo', format = colFormat(digits = 0)))
+  )
+```
+
+A base carregada contém um total de `r format(x = nrow(dados), big.mark = '.', decimal.mark = ',')` anúncios de apartamentos (apenas apartamentos, não busquei casas e outros tipos de imóveis) situados no município de Niterói/RJ. Apesar da base completa possui cerca de 300 colunas com informações extremamente detalhadas de cada imóvel, escolhi aqui trabalhar com um subconjunto muito menor de informações, no intuito de começar simples. Ainda assim, muitas das informações presentes nesta base já têm o potencial de fornecer _insights_ importantes para a finalidade desta análise, tais como a quantidade de suítes, banheiros, quartos, vagas de garagem e área de cada apartamento. Além disso, possuímos informações de alto nível sobre a localização de cada imóvel, sendo importante notar que^[https://pt.wikipedia.org/wiki/Niter%C3%B3i]:
+  
+- Niterói é composto por 52 bairros: `r glue::glue_collapse(x = sort(unique(niteroi$Bairro)), sep = ', ', last = ' e ')`. 
+- Estes bairros estão organizados entre 19 sub-regiões administrativas (_i.e._, coluna Zona na base carregada), que tendem a agregar bairros adjacentes e, de certa forma, mais similares entre si: `r glue::glue_collapse(x = sort(unique(niteroi$Zona)), sep = ', ', last = ' e ')`. 
+- Por sua vez, estas sub-regiões estão organizadas entre de 5 regiões administrativas, sendo elas: `r glue::glue_collapse(x = sort(unique(niteroi$Regiao)), sep = ', ', last = ' e ')`.
+
+Todas estas informações sobre a organização político-administrativa de Niterói podem ser melhor visualizadas através do mapa abaixo^[Shapefile obtido a partir de https://geo.niteroi.rj.gov.br/civitasgeoportal/].
+
+```{r mapa_niteroi, code_folding = TRUE, fig.align='center'}
+# carregando o leaflet
+library(leaflet) # mapas interativos
+
+# plotando o preco medio por Zona Administrativa
+leaflet(niteroi) %>% 
+  addPolygons(
+    popup = paste0(
+      '<b>Região Administrativa:</b> ', niteroi$Regiao, '<br>',
+      '<b>Sub-Região Administrativa:</b> ', niteroi$Zona, '<br>',
+      '<b>Bairro:</b> ', niteroi$Bairro, '<br>'
+    ), 
+    fillOpacity = 0.3, smoothFactor = 0.5, weight = 0.8, color = 'black') %>% 
+  addTiles()
 ```
 
 # Análise Exploratória
 
 Análise Exploratória.
 
-```{r mapa_preco_medio, code_folding = TRUE}
+```{r mapa_preco_medio, code_folding = TRUE, fig.align='center'}
 # calculando preco medio por zona
-preco_por_zona <- dados %>% 
-  group_by(Zona) %>% 
+preco_por_bairro <- dados %>% 
+  group_by(neighborhood) %>% 
   summarise(preco_medio = mean(price)) %>% 
-  left_join(x = niteroi, y = ., by = 'Zona') 
-
-# carregando o leaflet
-library(leaflet)
+  left_join(x = niteroi, y = ., by = c('Bairro' = 'neighborhood')) 
 
 # criando a paleta de cores
-paleta_1 <- colorNumeric(palette = 'viridis', domain = NULL)
+paleta_1 <- colorNumeric(palette = 'viridis', domain = NULL, na.color = '#FFFFFF')
 
-# plotando o preco medio por Zona Administrativa
-leaflet(preco_por_zona) %>% 
+# plotando o preco medio por Bairro
+leaflet(preco_por_bairro) %>% 
   addPolygons(
     popup = paste0(
-      '<b>Zona Administrativa:</b> ', preco_por_zona$Zona, '<br>',
-      '<b>Bairro:</b> ', preco_por_zona$Bairro, '<br>',
-      '<b>Preço Médio:</b> ', scales::dollar(x = preco_por_zona$preco_medio, 
+      '<b>Zona Administrativa:</b> ', preco_por_bairro$Zona, '<br>',
+      '<b>Bairro:</b> ', preco_por_bairro$Bairro, '<br>',
+      '<b>Preço Médio:</b> ', scales::dollar(x = preco_por_bairro$preco_medio, 
                                              prefix = 'R$ ', 
                                              big.mark = '.', 
                                              decimal.mark = ',')
     ), 
-    fillColor = ~ paleta_1(preco_por_zona$preco_medio),
-    fillOpacity = 0.8, smoothFactor = 0.5, weight = 1) %>% 
+    fillColor = ~ paleta_1(preco_por_bairro$preco_medio),
+    fillOpacity = 0.8, smoothFactor = 0.5, weight = 0.8, color = 'black') %>% 
   addTiles() %>% 
   addLegend(
     title = 'Preço Médio do<br>Apartamento', position = 'bottomright', pal = paleta_1, 
-    values = ~ preco_por_zona$preco_medio, bins = 4, opacity = 0.8, 
+    values = ~ preco_por_bairro$preco_medio, bins = 4, opacity = 0.8, 
     labFormat = labelFormat(prefix = 'R$ ', big.mark = '.')
   )
 ```
