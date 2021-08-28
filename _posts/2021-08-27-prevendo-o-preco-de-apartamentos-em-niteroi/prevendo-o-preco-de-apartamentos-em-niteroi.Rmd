@@ -1,0 +1,90 @@
+---
+title: "Prevendo o Preço de Apartamentos em Niterói"
+description: |
+  A previsão de preços de imóveis é uma tarefa muito comum em ciência de dados, de forma que existe até um conjunto de dados _Hello World_ para esta prática - o Ames Housing, com informações sobre o preço e outros metadados de imóveis na cidade de Ames em Iowa. Neste post, eu sigo esta ideia e utilizo um conjunto de dados reais sobre os apartamentos disponíveis para a venda no município de Niterói/RJ, e busco entender e prever a variação no preço destes imóveis de acordo com as informações contidas nos anúncios com a ajuda de um modelo de Machine Learning.
+author:
+  - first_name: Nicholas 
+    last_name: Marino
+    url: https://github.com/nacmarino
+date: 08-27-2021
+categories:
+  - preditiva
+  - classicos
+  - tidymodels
+preview: images/niteroi.jpeg
+output:
+  distill::distill_article:
+    self_contained: false
+    toc: true
+    code_folding: true
+    highlight: rstudio
+draft: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, fig.align = 'center')
+```
+
+# Introdução
+
+Introdução.
+
+```{r carrega_dados}
+# carregando os pacotes necessários
+library(tidyverse) # manipulação de dados
+library(sf) # mapas
+
+# carregando os dados dos anuncios já tratados e limpos
+dados <- read_rds(file = 'data/base_analitica.rds')
+
+# carregando o shapefile de niteroi
+niteroi <- read_sf('data/bairros_niteroi.shp')
+```
+
+# Análise Exploratória
+
+Análise Exploratória.
+
+```{r mapa_preco_medio, code_folding = TRUE}
+# calculando preco medio por zona
+preco_por_zona <- dados %>% 
+  group_by(Zona) %>% 
+  summarise(preco_medio = mean(price)) %>% 
+  left_join(x = niteroi, y = ., by = 'Zona') 
+
+# carregando o leaflet
+library(leaflet)
+
+# criando a paleta de cores
+paleta_1 <- colorNumeric(palette = 'viridis', domain = NULL)
+
+# plotando o preco medio por Zona Administrativa
+leaflet(preco_por_zona) %>% 
+  addPolygons(
+    popup = paste0(
+      '<b>Zona Administrativa:</b> ', preco_por_zona$Zona, '<br>',
+      '<b>Bairro:</b> ', preco_por_zona$Bairro, '<br>',
+      '<b>Preço Médio:</b> ', scales::dollar(x = preco_por_zona$preco_medio, 
+                                             prefix = 'R$ ', 
+                                             big.mark = '.', 
+                                             decimal.mark = ',')
+    ), 
+    fillColor = ~ paleta_1(preco_por_zona$preco_medio),
+    fillOpacity = 0.8, smoothFactor = 0.5, weight = 1) %>% 
+  addTiles() %>% 
+  addLegend(
+    title = 'Preço Médio do<br>Apartamento', position = 'bottomright', pal = paleta_1, 
+    values = ~ preco_por_zona$preco_medio, bins = 4, opacity = 0.8, 
+    labFormat = labelFormat(prefix = 'R$ ', big.mark = '.')
+  )
+```
+
+# Modelagem
+
+Modelagem.
+
+# Entendimento do Modelo
+
+Interpretação dos Resultados.
+
+# Possíveis Extensões
