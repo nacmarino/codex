@@ -1,7 +1,7 @@
 ---
-title: "Prevendo o Preço de Apartamentos em Niterói"
+title: "Prevendo o Preço de Apartamentos em Niterói/RJ"
 description: |
-  A previsão de preços de imóveis é uma tarefa muito comum em ciência de dados, existingo até _Hello World_ para esta prática - o Ames Housing, com informações sobre o preço e outros metadados de imóveis na cidade de Ames em Iowa. Neste post, sigo esta ideia e utilizo um conjunto de dados reais sobre os apartamentos disponíveis para a venda no município de Niterói/RJ. Buscarei entender e prever a variação no preço destes imóveis de acordo com as informações contidas nos anúncios com a ajuda de um modelo de Machine Learning.
+  A previsão de preços de imóveis é uma tarefa muito comum em ciência de dados, existingo até Hello World para esta prática - o Ames Housing, com informações sobre o preço e outros metadados de imóveis na cidade de Ames em Iowa. Neste post, sigo esta ideia e utilizo um conjunto de dados reais sobre os apartamentos disponíveis para a venda no município de Niterói/RJ. Buscarei entender e prever a variação no preço destes imóveis de acordo com as informações contidas nos anúncios com a ajuda de um modelo de Machine Learning.
 author:
   - first_name: Nicholas 
     last_name: Marino
@@ -11,7 +11,7 @@ categories:
   - classicos
   - xgboost
   - tidymodels
-preview: images/niteroi.jpeg
+preview: data/niteroi.jpeg
 bibliography: bibliografia.bib
 output:
   distill::distill_article:
