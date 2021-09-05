@@ -78,6 +78,7 @@ Aprendi a viver e a fazer ciência ao longo da minha trajetória profissional, a
     + Deep Learning | 2020  
 </br>
 - **COURSERA**
+    + Data Science | Johns Hopkins University | Em andamento
     + Introduction to Mathematical Thinking | Em andamento
     + Mathematics for Machine Learning: Linear Algebra | 2021  
   

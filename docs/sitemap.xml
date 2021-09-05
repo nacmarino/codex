@@ -2,22 +2,18 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" version="1.0">
   <url>
     <loc>https://nacmarino.github.io/codex/about.html</loc>
-    <lastmod>2021-08-27T15:44:03-03:00</lastmod>
+    <lastmod>2021-09-05T17:11:09-03:00</lastmod>
   </url>
   <url>
     <loc>https://nacmarino.github.io/codex/author.html</loc>
-    <lastmod>2021-08-27T15:33:34-03:00</lastmod>
+    <lastmod>2021-09-05T17:12:05-03:00</lastmod>
   </url>
   <url>
     <loc>https://nacmarino.github.io/codex/</loc>
-    <lastmod>2021-08-27T14:24:05-03:00</lastmod>
-  </url>
-  <url>
-    <loc>https://nacmarino.github.io/codex/posts/2021-08-27-hello-world/</loc>
-    <lastmod>2021-08-27T14:32:03-03:00</lastmod>
+    <lastmod>2021-09-05T17:10:08-03:00</lastmod>
   </url>
   <url>
     <loc>https://nacmarino.github.io/codex/posts/2021-08-27-prevendo-o-preco-de-apartamentos-em-niteroi/</loc>
-    <lastmod>2021-09-05T16:57:31-03:00</lastmod>
+    <lastmod>2021-09-05T16:57:34-03:00</lastmod>
   </url>
 </urlset>
