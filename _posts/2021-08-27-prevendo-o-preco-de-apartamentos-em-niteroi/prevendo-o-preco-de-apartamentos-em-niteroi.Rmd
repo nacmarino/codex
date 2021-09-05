@@ -1,7 +1,7 @@
 ---
 title: "Prevendo o Preço de Apartamentos em Niterói"
 description: |
-  A previsão de preços de imóveis é uma tarefa muito comum em ciência de dados, existingo até _Hello World_ para esta prática - o Ames Housing, com informações sobre o preço e outros metadados de imóveis na cidade de Ames em Iowa. Neste post, eu sigo esta ideia e utilizo um conjunto de dados reais sobre os apartamentos disponíveis para a venda no município de Niterói/RJ. Buscarei entender e prever a variação no preço destes imóveis de acordo com as informações contidas nos anúncios com a ajuda de um modelo de Machine Learning.
+  A previsão de preços de imóveis é uma tarefa muito comum em ciência de dados, existingo até _Hello World_ para esta prática - o Ames Housing, com informações sobre o preço e outros metadados de imóveis na cidade de Ames em Iowa. Neste post, sigo esta ideia e utilizo um conjunto de dados reais sobre os apartamentos disponíveis para a venda no município de Niterói/RJ. Buscarei entender e prever a variação no preço destes imóveis de acordo com as informações contidas nos anúncios com a ajuda de um modelo de Machine Learning.
 author:
   - first_name: Nicholas 
     last_name: Marino
@@ -12,13 +12,14 @@ categories:
   - xgboost
   - tidymodels
 preview: images/niteroi.jpeg
+bibliography: bibliografia.bib
 output:
   distill::distill_article:
     self_contained: false
     toc: true
     code_folding: true
     highlight: rstudio
-draft: true
+draft: false
 ---
 
 ```{r setup, include=FALSE}
@@ -123,7 +124,7 @@ leaflet(niteroi) %>%
 
 # Análise Exploratória
 
-Conforme pôde ser visto na tabela de descrição da base, as únicas informações faltantes existentes estão nas colunas de latitude e longitude. Neste contexto, podemos começar olhando a distribuição espacial da nossa variável resposta, o preço do apartamento, através do bairro ao qual pertence o apartamento do anúncio. 
+Conforme pôde ser visto na tabela de descrição da base, as únicas informações faltantes existentes estão nas colunas de latitude e longitude. Neste contexto, vamos começar olhando a distribuição espacial da nossa variável resposta, o preço do apartamento, através do bairro ao qual pertence o apartamento do anúncio. 
 
 O mapa abaixo mostra que o preço médio dos apartamentos parece ser maior nos bairros na porção sul e sudoeste do município (Charitas, São Francisco, Icaraí e Camboinhas, por exemplo). Além disso, podemos ver que não existem apartamentos à venda em alguns bairros (polígonos brancos no mapa abaixo). Todos esses padrões são bastante consistentes com o desenvolvimento do município, onde a construção civil tem avançado bastante rápido em alguns daqueles primeiros bairros. Uma informação importante, implícita no mapa, é que o preço médio dos apartamentos parece ser muito similar entre as regiões administrativas Norte, Pendotiba e Leste, e menores do que aquele observado nas regiões Oceânica e Praias da Baia. Além disso, note que a variância nos preços entre os bairros de uma região administrativa também parece ser menor para àquelas três primeiras regiões, e maior nas duas últimas. Isto será bastante importante quando formos preparar os dados para a modelagem.
 
@@ -355,7 +356,7 @@ df_train <- training(x = splits)
 df_test <- testing(x = splits)
 ```
 
-O treinamento de um algoritmo através do `tidymodels` pede que tenhamos os dados que serão utilizados para o treino, uma receita que descreva as etapas de pré-processamento que serão aplicadas aos dados em tempo de treino e uma instância do algoritmo. Todos estes três componentes são reunidos dentro de um _workflow_ que cuidará então do ajuste do modelo. Assim, vou seguir essa lógica, e utilizar uma validação cruzada com 5 _folds_ para treinar o algoritmo.
+O treinamento de um algoritmo através do `tidymodels` (@R-tidymodels) pede que tenhamos os dados que serão utilizados para o treino, uma receita que descreva as etapas de pré-processamento que serão aplicadas aos dados em tempo de treino e uma instância do algoritmo. Todos estes três componentes são reunidos dentro de um _workflow_ que cuidará então do ajuste do modelo. Assim, vou seguir essa lógica, e utilizar uma validação cruzada com 5 _folds_ para treinar o algoritmo.
 
 ```{r cria_folds}
 set.seed(42) # reprodutibilidade
@@ -388,7 +389,7 @@ pre_processamento <- recipe(price ~ ., data = df_train) %>%
   step_log(price)
 ```
 
-O próximo passo será criar uma instância do algoritmo que será usado. No caso, vou utilizar o algoritmo `xgboost`, dada a boa performance que este tipo de algoritmo normalmente entrega nos problemas de dados. Vou utlizar o _early stopping_, a fim de reduzir a chance de que haja algum tipo de problema de sobre-ajuste do algoritmo aos dados. Finalmente, deixarei os valores de alguns hiperparâmetros do algoritmo serem definidos através de uma otimização bayesiana.
+O próximo passo será criar uma instância do algoritmo que será usado. No caso, vou utilizar o algoritmo `xgboost` (@ChenG16), dada a boa performance que este tipo de algoritmo normalmente entrega nos problemas de dados. Vou utlizar o _early stopping_, a fim de reduzir a chance de que haja algum tipo de problema de sobre-ajuste do algoritmo aos dados. Finalmente, deixarei os valores de alguns hiperparâmetros do algoritmo serem definidos através de uma otimização bayesiana.
 
 ```{r instancia_xgboost}
 library(xgboost) # carregando o xgboost
@@ -414,7 +415,7 @@ xgb_wf <- workflow() %>%
   add_model(xgb_instance)
 ```
 
-Hora de ajustar o modelo! Para isso, vamos utilizar uma otimização bayesiana para determinar os valores dos hiperparâmetros que nos fornece o menor erro de previsão. A ideia geral da otimização bayesiana é que ela usa as informações dos valores dos hiperparâmetros e a respectiva performance obtida em cada iteração para treinar um meta-modelo que indicará qual a combinação de hiperparâmetros têm a expectativa de melhorar a sua performance e que, portanto, deverá ser utilizada na iteração seguinte. De uma forma geral, podemos pensar nesta otimização como uma busca mais inteligente pela melhor combinação de hiperparâmetros. Finalmente, um ponto importante aqui é que queremos que o modelo gerado nos entregue uma previsão com baixo erro; portanto, utilizaremos a raíz quadrada dos erros quadráticos médios (RMSE, _Root Mean Squared Error_) como a métrica de avaliação da performance do modelo. 
+Hora de ajustar o modelo! Para isso, vou utilizar uma otimização bayesiana para determinar os valores dos hiperparâmetros que fornecem o menor erro de previsão. A ideia geral da otimização bayesiana é que ela usa as informações dos valores dos hiperparâmetros e a respectiva performance obtida em cada iteração para treinar um meta-modelo que indicará qual a combinação de hiperparâmetros têm a expectativa de melhorar a sua performance e que, portanto, deverá ser utilizada na iteração seguinte. De uma forma geral, podemos pensar nesta otimização como uma busca mais inteligente pela melhor combinação de hiperparâmetros. Finalmente, um ponto importante aqui é que quero que o modelo gerado nos entregue uma previsão com baixo erro; portanto, utilizarei a raíz quadrada dos erros quadráticos médios (RMSE, _Root Mean Squared Error_) como a métrica de avaliação da performance do modelo. 
 
 ```{r tuna_xgboost}
 # finalizando a seleção dos hipeparametros que serão testados
@@ -436,7 +437,7 @@ xgb_bayes <- xgb_wf %>%
     # de otimização bayesiana começar a gerar as combinações que serão de fato testadas
     initial = 10, 
     # quantidade de interações da otimização bayesiana
-    iter = 5,
+    iter = 100,
     # conjunto de metricas que serão avalidadas
     metrics = metrica,
     objective = exp_improve(),
@@ -448,21 +449,29 @@ xgb_bayes <- xgb_wf %>%
 
 Yay! Modelo ajustado! Agora, vamos avaliá-lo e tentar entendê-lo!
 
-# Avaliação do Modelo
+# Validação do Modelo
 
-blablabla
+Vou começar olhando como ficaram os resultados da busca pela melhor combinação de hiperparâmetros através da otimização bayesiana. A figura abaixo demonstra de que forma a performance do modelo (avaliada através do RMSE) variou em função dos valores de cada hiperparâmetro utilizado durante o processo. Fica muito claro que muito da variação na performance do modelo depende do valor da taxa de aprendizado utilizada, enquanto os demais hiperparâmetros parecem ter um impacto bem menos claro.
 
 ```{r plota_hiperparametros, layout = 'l-body-outset'}
-autoplot(object = xgb_bayes)
+autoplot(object = xgb_bayes) +
+  labs(
+    y        = 'RMSE',
+    x        = 'Valor do Hiperparâmetro',
+    title    = 'Impacto dos hiperparâmetros sobre a performance do modelo',
+    subtitle = 'A variação na taxa de aprendizado parece ter o maior impacto sobre a variação na performance do modelo'
+  )
 ```
 
-blablabla
+A tabela abaixo ilustra bastante este ponto: os cinco modelos com melhor performance têm taxas de aprendizado bastante próximos e valores de RMSE quase que idênticos, ainda que os valores dos outros hiperparâmetros tenham variado bem mais.
 
 ```{r melhores_tunings}
 show_best(x = xgb_bayes)
 ```
 
-blablabla
+Mas beleza...temos um modelo treinado e otimizado...mas será que ele é bom mesmo? Em outras palavras, será que a taxa de erro que obtivemos é aceitável? Um ponto importante que nos ajuda a responder àquela pergunta, e que acabei pulando no início do processo, é a definição dos _baselines_ para o problema que estamos buscando resolver. Isto é importante pois ela ajuda a estabelecer um nível de controle a partir do qual podemos dizer se aquilo que estamos implementando está de fato trazendo algum ganho para a resolução do problema. Na prática, podemos pensar que a definição deste nível nos ajuda a responder questões como _'Eu preciso usar machine learning para resolver este problema?'_ e _'A otimização de hiperparâmetros foi eficaz para melhorar a performance do modelo?'_.
+
+Tomando como ponto de partida a pergunta de se precisávamos mesmo de um modelo de _machine learning_, vou definir como um _baseline_ para a previsão seria uma regra de negócio através da qual preveríamos que o valor do apartamento corresponde ao valor da média de preço. Nesse contexto, esperamos que um modelo de _machine learning_ útil (ou com boa performance) seria aquele que supera esta simples regra de negócio - caso o modelo tivesse uma taxa de erro maior do que a regra de negócio, então não precisaríamos de um modelo, certo? Para implementar este modelo _naive_, calcularei o valor da média do preço do apartamento dentro de cada fold de treino e utilizar este valor para calcular o RMSE dentro de cada fold de validação; por fim, calcularei o valor médio e do erro padrão do RMSE calculado desta forma, a fim de garantir que estaremos comparando as duas estratégias de modelagem em cima dos mesmos dados, variando apenas a forma como a previsão é gerada (_i.e._, modelo _vs_ 'não' modelo). 
 
 ``` {r modelo_naive}
 # calculando o RMSE que seria obtido entre todos os folds utilizando como modelo apenas o
@@ -492,7 +501,7 @@ modelo_naive <- df_folds %>%
   summarise(mean = mean(rmse), std_err = sd(rmse))
 ```
 
-blablabla
+O segundo _baseline_ que quero definir é um que nos diga se a otimização de hiperparâmetros está trazendo algum ganho para o nosso problema de negócio. Para tal, vou ajustar um XGBoost utilizando a configuração _default_ de hiperparâmetros aos mesmos folds de treino e validação. Com isso, temos também um resultado que nos permita comparar o impacto da otimização de hiperparâmetros frente a um cenário em que tudo menos isto foi feito.
 
 ```{r modelo_default}
 # ajustando o xgboost sem fazer nenhum tipo de melhoria ao modelo
@@ -502,6 +511,7 @@ xgb_default <- boost_tree() %>%
   set_mode(mode = 'regression')
 
 ## ajustando o xgboost com configuracao default de hiperparametros aos dados dos folds
+set.seed(99) # reprodutibilidade
 xgb_baseline <- workflow() %>%
   # adicionando o mesmo pre-processamento
   add_recipe(pre_processamento) %>% 
@@ -515,28 +525,29 @@ xgb_baseline <- workflow() %>%
   )
 ```
 
-blablabla
+Pronto, agora finalmente podemos definir se o erro obtido com o modelo otimizado é aceitável ou não. Os resultados deste teste são apresentados na figura abaixo, que demonstra que (1) o erro obtido com o modelo supera e muito aquele do modelo _naive_ (_i.e._, faz sentido usar um modelo de machine para endereçar este problema de negócio) e (2) o erro obtido com a otimização de hiperparâmetros é menor do que aquele observado com a sua configuração _default_ (_i.e._, a otimização de hiperparâmetros traz um ganho real de performance). Ou seja, a performance obtida com o modelo otimizado parece ser boa sim.
 
 ```{r compara_modelos, code_folding = TRUE}
 # juntando os resultados das três estratégias em uma tibble
-bind_rows('Modelo Otimizado' = select(.data = show_best(x = xgb_bayes, n = 1), mean, std_err),
-          'Modelo Default'   = select(.data = collect_metrics(x = xgb_baseline), mean, std_err),
-          'Abordagem Naive'  = modelo_naive, 
+bind_rows('XGBoost Otimizado' = select(.data = show_best(x = xgb_bayes, n = 1), mean, std_err),
+          'XGBoost Default'   = select(.data = collect_metrics(x = xgb_baseline), mean, std_err),
+          'Modelo Naive'  = modelo_naive, 
           .id = 'estrategia') %>% 
   # reordenando os niveis das estrategias
-  mutate(estrategia = fct_relevel(.f = estrategia, 'Abordagem Naive', 'Modelo Default')) %>% 
+  mutate(estrategia = fct_relevel(.f = estrategia, 'Modelo Naive', 'XGBoost Default')) %>% 
   # plotando o valor medio e do intervalo de confiança de 95% do RMSE para cada estrategia
   ggplot(mapping = aes(x = estrategia, y = mean, fill = estrategia)) +
   geom_errorbar(mapping = aes(ymin = mean - 1.96 * std_err, ymax = mean + 1.96 * std_err), width = 0.1) +
   geom_point(size = 3, shape = 21, show.legend = FALSE) +
   geom_text(mapping = aes(label = paste0(round(x = mean, digits = 3), ' ± ', round(x = 1.96 * std_err, digits = 3))), 
-            nudge_y = 0.03) +
+            nudge_y = 0.03, fontface = 'bold') +
   scale_fill_manual(values = c('white', 'dodgerblue3', 'indianred3')) +
   labs(
     title    = 'Comparação entre estratégias de previsão',
     subtitle = 'Um modelo de Machine Learning e a otimização de hiperparâmetros ajudam a resolver este problema de dados',
     x        = 'Estratégia de Previsão',
-    y        = 'RMSE'
+    y        = 'RMSE',
+    caption  = 'Os círculos representam o valor médio do RMSE, enquanto que as barras representam o intervalo de confiança de 95%.'
   ) +
   theme(
     plot.title    = element_text(face = 'bold', size = 12),
@@ -547,7 +558,7 @@ bind_rows('Modelo Otimizado' = select(.data = show_best(x = xgb_bayes, n = 1), m
   )
 ```
 
-blablabla
+Uma vez que sabemos que o modelo gerado tem algum valor, faz sentido então olhar de que forma ele performou na base de teste. Vou finalizar o _workflow_ com a melhor combinação de hiperparâmetros encontrados durante a otimização bayesiana, ajustar o algoritmo uma última vez a todos os dados da base de treino e avaliá-lo na base de teste. Como podemos ver abaixo, a performance do modelo na base de teste foi bastante parecida com aquela obtida durante a validação cruzada, indicando que o nosso modelo está bem ajustado aos dados.
 
 ```{r modelo_final}
 # concluindo o workflow do xgboost
@@ -556,6 +567,7 @@ wf_final <- xgb_wf %>%
   finalize_workflow(parameters = select_best(x = xgb_bayes)) 
 
 # treinando o xgboost uma ultima vez para avaliar a performance na base de teste
+set.seed(42) # reprodutibilidade
 xgb_final <- wf_final %>% 
   # usando o last fit para ajustar o algoritmo na base de treino e escorar na base de teste
   last_fit(split = splits, metrics = metrica)
@@ -565,22 +577,17 @@ xgb_final %>%
   collect_metrics() 
 ```
 
-blablabla
+Finalmente, é importante examinarmos também se os valores previstos estão reproduzindo bem aqueles observados ou se existe algum tipo de viés de previsão no modelo. Para isso, extrairei as previsões feitas pelo modelo tanto na base de treino quanto na base de teste, e calcular os seus resíduos (_i.e._, a diferença entre o valor previsto e o observado). Vou buscar três coisas com isto:
+
+- Se observarmos a relação entre os valores previstos e os valores observados, eles devem seguir uma relação quase de 1:1. Desvios desta linha podem indicar, por exemplo, que o modelo não está conseguindo reproduzir bem os valores observados para um recorte específico dos dados e, portanto, põem em dúvida a validade do modelo;  
+- Também é legal avaliarmos se a distribuição dos resíduos está próxima daquela esperada para uma distribuição normal padrão. Apesar do modelo utilizado não assumir nada com relação à distribuição de normalidade dos resíduos, acho interessante dar uma olhada nisso, a fim de também definirmos se existe algum tipo de viés nas previsões geradas;  
+- Por fim, também vou verificar se existe uma diferença nestes padrões entre a base de treino e a de teste. Caso isto ocorra, pode ser um sinal de que existe algum tipo de sobre-ajuste do modelo aos dados, por exemplo.
 
 ```{r avalia_residuo, layout = 'l-body-outset', fig.height=6, code_folding = TRUE}
-# treinando o xgboost para termos um objeto capaz de usarmos o predict
-xgb_to_predict <- fit(
-  # o objeto do last_fit não pode ser usado para o predict, portanto precisamos usar a função fit com
-  # este workflow finalizado a fim de que tenhamos um modelo apto a gerar predições sobre novos dados
-  object = wf_final, 
-  data = df_train, 
-  control = control_workflow(control_parsnip = control_parsnip(verbosity = 2))
-)
-
 # pre-processando os dados de treino utilizando a receita treinada
 train_baked <- bake(
   # vamos extrair a receita treinada do modelo que ajustamos e usá-la para gerar os dados pre-processados
-  object = extract_recipe(x = xgb_to_predict), 
+  object = extract_recipe(x = xgb_final), 
   new_data = df_train
 ) %>% 
   # removendo as variaveis que nao precisamos
@@ -591,7 +598,7 @@ train_baked <- bake(
 # gerando previsoes na base de treino
 previsoes_treino <- predict(
   # para fazer a previsão precisamos extrair o atributo fit do modelo parsnip
-  object = extract_fit_parsnip(x = xgb_to_predict),
+  object = extract_fit_parsnip(x = xgb_final),
   # como new_data precisamos passar os dados já preprocessdos
   new_data = train_baked 
 )
@@ -647,9 +654,11 @@ p2 <- ggplot(data = previsoes, mapping = aes(x = residuo)) +
 p1 / p2
 ```
 
+O diagnóstico visual das previsões e do resíduo do modelo parecem OK! Hora de entender e usar o modelo então!
+
 # Entendimento do Modelo
 
-blablabla
+Vou utilizar o pacote `fastshap` (@R-fastshap) para nos ajudar a ter alguma ideia de que tipo de padrões o modelo aprendeu e de que forma isto está relacionado às previsões feitas. Começamos calculando os valores de SHAP (@Lundberg2017) para cada linha na nossa base de dados - isto é, definimos a contribuição do valor de cada variável preditora para a previsão feita em cada uma das instâncias.
 
 ```{r calcula_shap}
 library(fastshap) # para extrair os valores de shap do modelo
@@ -661,22 +670,26 @@ gera_previsao <- function(object, newdata) {
 
 # gerando valores de shap para cada instancia
 shap <- explain(
-  object = extract_fit_parsnip(xgb_to_predict), 
+  object = extract_fit_parsnip(x = xgb_final), 
   X = train_baked, pred_wrapper = gera_previsao
 )
 ```
 
-blablabla
+O primeiro insight que vamos buscar é a importância global das variáveis utilizadas para o modelo, o que é obtido através da média dos valores absolutos de SHAP para cada uma das variáveis no modelo. Sem muita surpresa, a figura a seguir mostra que o valor do condomínio e a área do apartamento têm uma contribuição bastante grande para determinar o preço do imóvel. Outras variáveis como a quantidade de suítes, quartos e vagas na garagem também tiveram uma importância considerável, enquanto as _dummies_ utilizadas para alguns bairros parecem não ter tido tanta importância assim.
 
 ```{r importancia_variaveis, layout = 'l-body-outset', fig.height=6, code_folding = TRUE}
 autoplot(object = shap, type = 'importance') +
   labs(
     y     = 'SHAP Value (Média dos valores absolutos)',
-    title = 'Importância absoluta das variáveis para o modelo'
+    title = 'Importância global das variáveis para o modelo'
   )
 ```
 
-blablabla
+A próxima figura traz um outro olhar sobre a importância das variáveis para o modelo e a forma pela qual elas contribuem para chegarmos na previsão do preço do apartamento^[Não existe uma função no `fastshap` para criar essa figura, então tentei emular uma figura similar que existente dentro do pacote `shap`.]. Assim como na figura anterior, as variáveis estão ordenadas de cima para baixo em termos de importância para a previsão. No entanto, temos agora mais algumas informações:
+
+- Os círculos agora representam a variação nos valores de SHAP para cada instância dentro de cada variável - _e.g._ os valores de SHAP para a variável _usableAreas_ entre todas as instâncias na base de treino vai de algo como -1 à 1;  
+- A variação nos valores de SHAP do lado negativo para o lado positivo está associado à variação no preço de imóvel: quando o valor de SHAP é negativo, isto quer dizer que o valor daquela variável para àquela instância contribui para uma queda no preço do apartamento; por outro lado, quando o valor de SHAP é positivo, então o valor da variável para àquela instância contribui para que o preço do apartamento aumente;  
+- A escala de cor ilustra de que forma a variação nos valores da variável, de seu valor mínimo ao seu valor máximo, estão associadas à variação nos valores de SHAP e, consequentemente, ao preço do apartamento. Ou seja, a escala de cor nos dá uma ideia gera da direção da relação entre cada variável e o preço do apartamento. Por exemplo, a variável _bedrooms_ vai do azul ao vermelho conforme os valores de SHAP vão do lado negativo para o lado positivo. Isto indica que quanto maior a quantidade de quartos no apartamento maior o valor de SHAP e, consequente, maior o valor do apartamento - logo, existe uma relação positiva entre a quantidade de quartos e o valor do apartamento. Quando pensamos em uma _dummy_ - uma variável que assume o valor 0 (_i.e._, não) ou 1 (_i.e._, sim) o tipo de interpretação é bastante parecido: quando o valor da variável *Regiao_Praias.da.Baia* é 0 (_i.e._, o seu valor mínimo) os valores de SHAP são negativo, enquanto quando ela é 1 (_i.e._, o seu valor máximo) os valores de SHAP são positivos. Ou seja, o preço do apartamento é maior quando um apartamento está situado na região administrativa Praias da Baia (_i.e._, valor da _dummy_ é 1), e cai quando o imóvel não está situado ali (_i.e._, valor da _dummy_ é 0).
 
 ```{r impacto_variaveis, layout = 'l-body-outset', fig.height=6, code_folding = TRUE}
 # valores de cada uma das variaveis
@@ -717,7 +730,7 @@ shap %>%
   ggplot(mapping = aes(x = shap_value, y = variavel, color = color_map)) +
   geom_vline(xintercept = 0, linetype = 2, color = 'black') +
   geom_point(position = position_jitter(height = 0.1), alpha = 0.5, size = 1) +
-  scale_color_gradient(low = 'dodgerblue1', high = 'firebrick1', 
+  scale_color_gradient(low = 'dodgerblue1', high = 'indianred1', 
                        breaks = c(0, 1), labels = c('Min', 'Max')) +
   labs(
     x        = 'SHAP Value',
@@ -733,15 +746,49 @@ shap %>%
   )
 ```
 
+Os padrões que são observados aqui são bastante consistentes com o que se espera da relação dessas variáveis com o valor de um apartamento, assim como com o que conheço sobre o município de Niterói. Logo, acredito que este seja um modelo bastante válido para fazermos previsões e endereçar as perguntas originais que motivaram este post.
+
 # Conclusões
 
-blablabla
+Desenvolvi aqui um modelo de _machine learning_ com o intuito de me ajudar com duas perguntas: (1) **'quanto vale o apartamento em que moro?'** e **'como saber se um apartamento está anunciado a um preço razoável?'**. Depois de todo os desenvolvimento, validação e entendimento do modelo, acho que cheguei à uma ferramenta que pode me dar um caminho razoável. Então vamos lá.
+
+Vou considerar aqui o tipo de apartamento em que moro...por quanto ele deveria ser anunciado de acordo com o modelo desenvolvido?
+
+```{r meu_apto_teorico}
+# criando um apartamento teorico - usando as mesmas colunas que tínhamos na base original
+apto_teorico <- tibble(id = 'teorico', price = NA, monthlyCondoFee = 800, 
+                       tempo_anunciado = 1, usableAreas = 60, parkingSpaces = 1, 
+                       suites = 1, bathrooms = 2, bedrooms = 2, neighborhood = 'Inga', 
+                       Regiao = 'Praias da Baia')
+
+# extraindo a previsao do valor do meu apto teorico
+predict(
+  # utilizando o fit do modelo ajustado
+  object = extract_fit_parsnip(x = xgb_final), 
+  # preprocessando os dados do apartamento teorico com a receita treinada
+  new_data = bake(
+    object = extract_recipe(x = xgb_final), 
+    new_data = apto_teorico) %>% 
+    select(-price, -id) %>% 
+    as.matrix()
+) %>% 
+  # extraindo apenas a previsão
+  pull(.pred) %>% 
+  # colocando ela de volta na escala real
+  exp %>% 
+  # estilizando o output
+  scales::dollar(x = ., prefix = 'R$ ', big.mark = '.', decimal.mark = ',', accuracy = 0.01)
+```
+
+Acho que essa estimativa é bem OK. Na realidade, uma pessoa corretora acabou avaliando o apartamento no meio do caminho, e chegou a um valor bem parecido com esse. Então acho que tá bem consistente mesmo.
+
+Beleza...e se eu quisesse usar esse mesmo modelo para me ajudar a buscar o apartamento ideal? Para isso, vou gerar a previsão do preço do apartamento para todos os anúncios na base de dados e vou calcular os resíduos (_i.e._, a diferença entre o preço previsto e o preço observado). Os apartamentos que seriam os ideais seriam aqueles nos quais o modelo está prevendo um preço maior do que o observado ou, em outras palavras, aqueles nos quais os resíduos são os maiores possíveis. Portanto, vou aplicar um filtro aqui para identificar alguns apartamentos que têm aquilo que estou buscando e, a partir deles, vou extrair os 10 apartamentos que estão mais subvalorizados de acordo com o modelo.
 
 ```{r aptos_interessantes, layout = 'l-page', code_folding = TRUE}
 # pre-processando todos os dados disponíveis
 all_baked <- bake(
   # vamos extrair a receita treinada do modelo que ajustamos e usá-la para gerar os dados pre-processados
-  object = extract_recipe(x = xgb_to_predict), 
+  object = extract_recipe(x = xgb_final), 
   new_data = df
 ) %>% 
   # removendo as variaveis que nao precisamos
@@ -751,7 +798,7 @@ all_baked <- bake(
 
 # gerando previsoes para todos os dados disponiveis
 previsoes_gerais <- predict(
-  object = extract_fit_parsnip(xgb_to_predict), 
+  object = extract_fit_parsnip(x = xgb_final), 
   new_data = all_baked
 )
 
@@ -794,43 +841,12 @@ df %>%
   )
 ```
 
-blablabla
-
-```{r meu_apto_teorico}
-# criando um apartamento teorico - usando as mesmas colunas que tínhamos na base original
-apto_teorico <- tibble(id = 'teorico', price = NA, monthlyCondoFee = 800, 
-                       tempo_anunciado = 1, usableAreas = 60, parkingSpaces = 1, 
-                       suites = 1, bathrooms = 2, bedrooms = 2, neighborhood = 'Inga', 
-                       Regiao = 'Praias da Baia')
-
-apto_teorico <- tibble(id = 'teorico', price = NA, monthlyCondoFee = 976, 
-                       tempo_anunciado = 1, usableAreas = 86, parkingSpaces = 2, 
-                       suites = 2, bathrooms = 3, bedrooms = 2, neighborhood = 'Charitas', 
-                       Regiao = 'Praias da Baia')
-
-# extraindo a previsao do valor do meu apto teorico
-predict(
-  # utilizando o fit do modelo ajustado
-  object = extract_fit_parsnip(xgb_to_predict), 
-  # preprocessando os dados do apartamento teorico com a receita treinada
-  new_data = bake(
-    object = extract_recipe(x = xgb_to_predict), 
-    new_data = apto_teorico) %>% 
-    select(-price, -id) %>% 
-    as.matrix()
-) %>% 
-  # extraindo apenas a previsão
-  pull(.pred) %>% 
-  # colocando ela de volta na escala real
-  exp %>% 
-  # estilizando o output
-  scales::dollar(x = ., prefix = 'R$ ', big.mark = '.', decimal.mark = ',', accuracy = 0.01)
-```
-
-blablabla
-
+Sucesso, não? Se quiser ver que apartamentos são esses dos anúncios, basta juntar o número na coluna _id_ com um dos dois links, `www.zapimoveis.com.br/imovel/id-<numero_do_id>/` (funciona na maior parte dos casos) ou `www.zapimoveis.com.br/lancamento/id-<numero_do_id>` (quanto é um apartamento na planta ou em construção), e explorar o anúncio. Todos os apartamentos que apareceram nesse Top 10 aqui são interessantes...só falta mesmo é o dinheiro para poder comprar! 
 # Possíveis Extensões
 
-- blablabla  
-- blablabla  
-- blablabla  
+- Utilizamos os intervalos padrão de cada hiperparâmetros para executar a otimização bayesiana. Neste caso, poderíamos utilizar os resultados obtidos aqui para focar em uma região do espaço de hiperparâmetros específico, a fim de tentar obter um modelo ainda melhor;  
+- Como falei no início do post, decidi começar simples e não usei a variável de texto de descrição do anúncio. Eu encontrei esse post [aqui](https://juliasilge.com/blog/austin-housing/), onde a Julia Silge trabalha o mesmo tipo de problema usando texto, e achei bastante legal para tentar depois;  
+- Outro ponto importante é que a base de dados possui muitas outras variáveis que não apresentei aqui, tais como pontos de interesse próximos a cada apartamento e informação do CEP de cada apartamento. Também seria interessante utilizar esse tipo de informação aqui;  
+- Eu foquei em anúncios de apartamento aqui, mas nada impede de expandir esta solução para qualquer outro tipo de imóvel neste ou em outro município - basta raspar os dados do site;  
+- Enquanto expandir o escopo da solução é uma possibilidade, o contrário também se faz válido (especialmente pela enorme quantidade de anúncios para alguns bairros em específico). A vantagem de se ter modelos específicos para cada bairro está no potencial de chegarmos a um modelo mais preciso para àquela realidade específica;  
+- É possível utilizar estes mesmos dados para tentar endereçar outros tipos de problema. Poderíamos utilizar, por exemplo, os dados da descrição do apartamento para tentar prever em que bairro ele fica. Acho essa possibilidade bem interessante, e de repente acabarei abordando ela de alguma forma no futuro.
