@@ -1,0 +1,40 @@
+---
+title: "Backlog"
+description: |
+  Ter idéia do que postar é fácil, difícil mesmo é desenvolver tudo isso na mesma velocidade! Nesta seção eu reuno tudo aquilo que eu já tive de ideia de escrever sobre, mas que faltou tempo para tornar realidade. Pretendo manter visibilidade disso aqui para me ajudar a não me esquecer e, quem sabe, receber algum feedback para priorizar um deles!
+theme: theme.css
+---
+
+# Web Scrapping
+- Como raspar os anúncios do ZapImóveis;
+- Interagindo com a API REST da Ludopedia;
+- Interagindo com a API XML da BoardGameGeek;
+- Raspando a página do ranking dos jogos de tabuleiro da BoardGameGeek.
+
+# TidyTuesday
+### Y2021W36 - BirdBaths 
+O dataset da semana contém uma lista de espécies de pássaros que foram avistados em _bird baths_ na Austrália por cidadões-cientistas entre os anos 2014 e 2015, em áreas urbanas e rurais e algumas bioregiões da Austrália. Gostaria de:  
+  
+- De que forma variam os padrões de biodiversidade da assembléia de pássaros entre áreas urbanas e rurais dentro e entre bioregiões?   
+- Podemos prever em que bioregião estamos a partir da lista de espécies de pássaros?  
+
+### Y2021W37 - Fórmula 1
+Estes dados trazem todo o histórico das corridas de Fórmula 1 desde muito antigo! Têm uma infinidade de perguntas que daria para fazer, mas gostaria de focar em três delas:  
+  
+- As provas da Fórmula 1 estão ficando mais curtas a cada temporada?
+- Que fatores contribuem para que um piloto não conclua uma prova?
+- O que explica a variação na quantidade de acidentes ao longo das temporadas?
+
+# Análises
+
+- A descrição do apartamento está associada ao seu preço?  
+- Como tem evoluído a publicação de jogos de tabuleiro no Brasil?  
+- Quantos tipos diferentes de jogos de tabuleiro existem?  
+- Que fatores estão associados ao sucesso de um jogo de tabuleiro?  
+- Podemos prever se um jogo de tabuleiro lançado no Brasil será um big hit?  
+- Como gerar recomendações de um jogo a partir de suas características?  
+
+# Testcode
+
+- Testando o pacote `modeltime` para modelar séries temporais;  
+- Testando o ecossistema do pacote `fpp3` para modelar séries temporais.  
