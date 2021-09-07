@@ -1,0 +1,71 @@
+---
+title: "TidyTuesday_BirdBarths"
+description: |
+  A short description of the post.
+author:
+  - first_name: Nicholas 
+    last_name: Marino
+    url: https://github.com/nacmarino
+date: 09-06-2021
+categories:
+  - tidytuesday
+  - ecologia
+  - biodiversidade
+bibliography: bibliografia.bib
+output:
+  distill::distill_article:
+    self_contained: false
+    toc: true
+    code_folding: true
+    highlight: rstudio
+draft: true
+---
+
+```{r setup, include=FALSE}
+# setando as opções gerais dos code chunks
+knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, fig.align = 'center')
+
+# presetando o ggplot2
+library(ggplot2)
+
+# setando o tema geral do ggplot2
+theme_set(new = theme_minimal(base_family = 'Roboto'))
+
+# atualizando o tema
+theme_update(
+  plot.title    = element_text(face = 'bold', size = 8),
+  plot.subtitle = element_text(size = 6),
+  plot.caption  = element_text(size = 6),
+  axis.title    = element_text(face = 'bold', size = 6),
+  axis.text     = element_text(color = 'black', size = 6),
+  strip.text    = element_text(face = 'bold', size = 6)
+)
+```
+
+# Motivação
+
+Distill is a publication format for scientific and technical writing, native to the web.
+
+Learn more about using Distill at <https://rstudio.github.io/distill>.
+
+```{r carrega_dados, code_folding = TRUE}
+# carregando os pacotes necessários
+library(tidyverse) # core
+library(readxl) # ler arquivos excel
+
+# carregando os dados
+df <- read_excel(path = 'data/S1File.xlsx', na = 'NA')
+
+# adicionando uma coluna de id para cada linha
+df <- df %>% 
+  rownames_to_column(var = 'id') %>% 
+  mutate(id = paste0('obs_', id))
+```
+
+# Preparação dos Dados
+
+# Análise dos Dados
+
+# Conclusão
+
+# Possíveis Extensões
