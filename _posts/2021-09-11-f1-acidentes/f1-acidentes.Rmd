@@ -19,13 +19,225 @@ output:
 draft: true
 ---
 
-
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+# setando as opções gerais dos code chunks
+knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, fig.align = 'center')
+
+# presetando o ggplot2
+library(ggplot2)
+
+# setando o tema geral do ggplot2
+theme_set(new = theme_minimal(base_family = 'Roboto'))
+
+# atualizando o tema
+theme_update(
+  plot.title    = element_text(face = 'bold', size = 10),
+  plot.subtitle = element_text(size = 8),
+  plot.caption  = element_text(size = 8),
+  axis.title    = element_text(face = 'bold', size = 8),
+  axis.text     = element_text(color = 'black', size = 8),
+  strip.text    = element_text(face = 'bold', size = 8)
+)
 ```
 
-Distill is a publication format for scientific and technical writing, native to the web.
+# Motivação
 
-Learn more about using Distill at <https://rstudio.github.io/distill>.
+# Preparação dos Dados
 
+## Carregando os Dados
 
+blablabla
+
+```{r carrega_dados}
+# carregando os pacotes necessários
+library(tidyverse) # core
+# library(tidytuesdayR) # ler os arquivos do tidytuesday
+library(fs) # manipular paths
+library(lubridate) # trablhar com datas
+library(readxl) # carregar dados de excel
+
+# carregando todos os dados a partir do github do tidytuesday
+# tt_dataset <- tt_load(x = 2021, week = 37) # se você quiser baixar os dados direto da fonte
+
+# carregando a copia local dos dados
+## extraindo os paths das copias locais
+paths_copias_locais <- dir_ls(path = 'data/', regexp = '.rds')
+# paths_copias_locais <- dir_ls(path = '_posts/2021-09-11-f1-acidentes/data/', regexp = '.rds')
+
+## criando vetor de nomes dos arquivos
+nomes_arquivos <- paths_copias_locais %>% 
+  path_file() %>% 
+  path_ext_remove()
+
+## carregando os arquivos em uma lista
+tt_dataset <- map(.x = paths_copias_locais, .f = read_rds)
+
+## renomeando os elementos da lista
+names(tt_dataset) <- nomes_arquivos
+
+# carregando os dados de dispositivos de segurança na F1
+safety <- read_excel(path = 'data/f1_safety.xlsx', skip = 1)
+# safety <- read_excel(path = '_posts/2021-09-11-f1-acidentes/data/f1_safety.xlsx', skip = 1)
+```
+
+## Variável Resposta
+
+blablabla
+
+```{r de_para_status}
+## adicionando o dicionario de resultados
+resultados <- left_join(x = tt_dataset$results,
+                        y = tt_dataset$status,
+                        by = 'statusId')
+resultados
+```
+
+blablabla
+
+```{r base_variavel_resposta}
+## vetor com as categorias que vou usar como acidente
+categorias_acidente <- c('Accident', 'Collision', 'Spun off', 'Injured', 'Injury', 
+                         'Fatal accident', 'Eye injury', 'Collision damage', 'Damage')
+
+## juntando padrao de regex para os acidentes
+regex_acidentes <- paste0(categorias_acidente, collapse = '|')
+
+## mapeando os acidentes por prova
+acidentes_por_prova <- resultados %>% 
+  # selecionando as colunas de interesse
+  select(raceId, driverId, constructorId, status) %>% 
+  # agrupando pela prova, piloto e construtor
+  group_by(raceId, driverId, constructorId) %>% 
+  # juntando o status do piloto em cada prova em uma só string
+  summarise(status = paste(status, collapse = ', '), .groups = 'drop') %>% 
+  # codificando a ocorrencia de um acidente
+  mutate(
+    acidente = str_detect(string = status, pattern = regex_acidentes)
+  ) %>% 
+  # agrupando por prova
+  group_by(raceId) %>% 
+  # sumarizando a base
+  summarise(
+    # calculando a quantidade de acidentes por prova
+    n_acidentes = sum(acidente),
+    # criando flag para a ocorrencia de acidentes na prova
+    tem_acidente = n_acidentes > 0
+  )
+acidentes_por_prova
+```
+
+## Feature Engineering
+
+blablabla
+
+```{r fe_dispositivos_de_seguranca}
+## dispositivos de seguranca disponiveis ano a ano e total
+dispositivos_seguranca <- safety %>%
+  # expandindo a coluna de ano para conter todos os anos do inicio ao atual
+  mutate(
+    Year = map(.x = Year, .f = seq, to = year(Sys.Date()), by = 1)
+  ) %>% 
+  # desaninhando a list column
+  unnest(cols = Year) %>% 
+  # removendo o nome original da intevenção
+  select(-Intervention) %>% 
+  # passando a tabela para o formato largo
+  pivot_wider(id_cols = Year, names_from = ID, values_from = ID, values_fn = length, values_fill = 0) %>% 
+  group_by(Year) %>% 
+  rowwise() %>% 
+  mutate(
+    n_safety = sum(c_across(I001:I025))
+  )
+dispositivos_seguranca
+```
+
+blablabla
+
+```{r outras_features, code_folding = TRUE}
+## quantidade de pilotos e construtores por prova
+participantes_por_prova <- resultados %>% 
+  # pegando os valores unicos das chaves primarias por prova
+  distinct(raceId, driverId, constructorId) %>% 
+  # agrupando por prova
+  group_by(raceId) %>% 
+  # quantidade de pilotos e construtores por prova
+  summarise(
+    n_pilotos      = n_distinct(driverId),
+    n_construtores = n_distinct(constructorId)
+  )
+
+## calculando a quantidade de voltas em cada prova
+voltas_por_prova <- resultados %>% 
+  # considerando apenas os pilotos que concluiram cada prova
+  filter(status == 'Finished') %>% 
+  # selecionando as colunas de interesse
+  select(raceId, laps) %>% 
+  # pegando o valor maximo da quantidade de voltas por prova
+  group_by(raceId) %>% 
+  summarise(laps = max(laps))
+
+## calculando a velocidade maxima registrada em cada prova
+velocidade_por_prova <- resultados %>% 
+  # parseando a coluna para numerico
+  mutate(
+    fastestLapSpeed = parse_number(fastestLapSpeed)
+  ) %>% 
+  # calculando a velocidade maxima registrada em cada prova
+  group_by(raceId) %>% 
+  summarise(top_speed = max(fastestLapSpeed, na.rm = TRUE))
+
+## mapeando cada circuito à uma prova
+provas <- left_join(x = tt_dataset$races,
+                    y = tt_dataset$circuits,
+                    by = 'circuitId') %>% 
+  # removendo URL da wikipedia
+  select(-contains('url'), -circuitRef, -circuitId, -round) %>%
+  # renomeando o nome do GP e do circuito
+  rename(gp = name.x, circuit = name.y) %>% 
+  # levantando informacoes de data
+  mutate(
+    data = paste(date, time),
+    data = as_datetime(data),
+    mes = month(data),
+    semana = isoweek(x = data),
+    turno_pm = pm(data)
+  ) %>% 
+  select(-date, -time)
+```
+
+## Base Analítica
+
+blablabla
+
+```{r junta_features_por_prova}
+## juntando informacoes das provas com a quantidade de participantes e construtores
+features_por_prova <- left_join(x = provas,
+                             y = participantes_por_prova,
+                             by = 'raceId') %>% 
+  ## juntando de voltas por prova
+  left_join(y = voltas_por_prova,
+            by = 'raceId') %>% 
+  # juntando velocidade maxima registrada em cada prova
+  left_join(y = velocidade_por_prova,
+            by = 'raceId') %>% 
+  # juntando informacoes dos dispositivos de seguranca disponiveis por ano
+  left_join(y = dispositivos_seguranca, by = c('year' = 'Year')) %>% 
+  # substituindo os valores NA por 0
+  mutate(
+    across(I001:n_safety, replace_na, 0)
+  )
+features_por_prova
+```
+
+blablabla
+
+```{r cria_base_analitica}
+df <- left_join(x = acidentes_por_prova, y = features_por_prova, by = 'raceId')
+df
+```
+
+# Análise Exploratória
+
+# Análise dos Dados
+
+# Conclusão
