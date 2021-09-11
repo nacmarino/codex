@@ -31,35 +31,186 @@ theme_set(new = theme_minimal(base_family = 'Roboto'))
 
 # atualizando o tema
 theme_update(
-  plot.title    = element_text(face = 'bold', size = 8),
-  plot.subtitle = element_text(size = 6),
-  plot.caption  = element_text(size = 6),
-  axis.title    = element_text(face = 'bold', size = 6),
-  axis.text     = element_text(color = 'black', size = 6),
-  strip.text    = element_text(face = 'bold', size = 6)
+  plot.title    = element_text(face = 'bold', size = 10),
+  plot.subtitle = element_text(size = 8),
+  plot.caption  = element_text(size = 8),
+  axis.title    = element_text(face = 'bold', size = 8),
+  axis.text     = element_text(color = 'black', size = 8),
+  strip.text    = element_text(face = 'bold', size = 8)
 )
 ```
 
 # Motivação
 
-Distill is a publication format for scientific and technical writing, native to the web.
+# Preparação dos Dados
 
-Learn more about using Distill at <https://rstudio.github.io/distill>.
+## Carregando os Dados
 
-```{r carrega_dados, code_folding = TRUE}
+blablabla
+
+```{r carrega_dados}
 # carregando os pacotes necessários
 library(tidyverse) # core
-library(tidytuesdayR) # ler os arquivos do tidytuesday
+# library(tidytuesdayR) # ler os arquivos do tidytuesday
 library(fs) # manipular paths
+library(lubridate) # trablhar com datas
 
 # carregando todos os dados a partir do github do tidytuesday
 # tt_dataset <- tt_load(x = 2021, week = 37) # se você quiser baixar os dados direto da fonte
 
 # carregando a copia local dos dados
+## extraindo os paths das copias locais
+paths_copias_locais <- dir_ls(path = 'data/')
+# paths_copias_locais <- dir_ls(path = '_posts/2021-09-06-f1-tempos-de-prova/data/')
 
+## criando vetor de nomes dos arquivos
+nomes_arquivos <- paths_copias_locais %>% 
+  path_file() %>% 
+  path_ext_remove()
+
+## carregando os arquivos em uma lista
+tt_dataset <- map(.x = paths_copias_locais, .f = read_rds)
+
+## renomeando os elementos da lista
+names(tt_dataset) <- nomes_arquivos
 ```
 
-# Preparação dos Dados
+## Variável Resposta 
+
+blablabla
+
+```{r junta_status_dict}
+## adicionando o dicionario com o de-para do statusId
+resultados <- left_join(x = tt_dataset$results,
+                        y = tt_dataset$status,
+                        by = 'statusId')
+resultados
+```
+
+```{r cria_base_target}
+# criando base com o minimo, media e maximo dos tempos de cada prova
+tempos_de_prova <- resultados %>% 
+  # pegando apenas os pilotos que concluiram a prova
+  filter(status == 'Finished') %>% 
+  # removendo qualquer valor na coluna milliseconds que não contenha pelo menos um número
+  filter(str_detect(string = milliseconds, pattern = '[0-9]')) %>% 
+  # parseando a coluna de milliseconds para numerico
+  mutate(
+    milliseconds = parse_number(milliseconds)
+  ) %>% 
+  # agrupando pela prova
+  group_by(raceId) %>% 
+  # pegando o valor minimo, medio e maximo dos tempo de prova
+  summarise(
+    minimo = min(milliseconds),
+    media  = mean(milliseconds),
+    maximo = max(milliseconds)
+  ) %>% 
+  # passando millisegundos para minutos
+  mutate(
+    across(.cols = minimo:maximo, \(x) (x / 1000) / 60)
+  ) %>% 
+  pivot_longer(cols = minimo:maximo, names_to = 'metrica', values_to = 'duracao')
+tempos_de_prova
+```
+
+## Feature Engineering
+
+blablabla
+
+```{r participantes_por_prova}
+participantes_por_prova <- resultados %>% 
+  # pegando os valores unicos das chaves primarias por prova
+  distinct(raceId, driverId, constructorId) %>% 
+  # agrupando por prova
+  group_by(raceId) %>% 
+  # quantidade de pilotos e construtores por prova
+  summarise(
+    n_pilotos      = n_distinct(driverId),
+    n_construtores = n_distinct(constructorId)
+  )
+participantes_por_prova
+```
+
+blablabla
+
+```{r voltas_por_prova}
+## calculando a quantidade de voltas em cada prova
+voltas_por_prova <- resultados %>% 
+  # considerando apenas os pilotos que concluiram cada prova
+  filter(status == 'Finished') %>% 
+  # selecionando as colunas de interesse
+  select(raceId, laps) %>% 
+  # pegando o valor maximo da quantidade de voltas por prova
+  group_by(raceId) %>% 
+  summarise(laps = max(laps))
+voltas_por_prova
+```
+
+blablabla
+
+```{r velocidade_por_prova}
+## calculando a velocidade maxima registrada em cada prova
+velocidade_por_prova <- resultados %>% 
+  # parseando a coluna para numerico
+  mutate(
+    fastestLapSpeed = parse_number(fastestLapSpeed)
+  ) %>% 
+  # calculando a velocidade maxima registrada em cada prova
+  group_by(raceId) %>% 
+  summarise(top_speed = max(fastestLapSpeed, na.rm = TRUE))
+velocidade_por_prova
+```
+
+blablabla
+
+```{r infos_das_provas}
+## mapeando cada circuito à uma prova
+provas <- left_join(x = tt_dataset$races,
+                    y = tt_dataset$circuits,
+                    by = 'circuitId') %>% 
+  # removendo URL da wikipedia
+  select(-contains('url'), -circuitRef, -circuitId, -round) %>%
+  # renomeando o nome do GP e do circuito
+  rename(gp = name.x, circuit = name.y) %>% 
+  # levantando informacoes de data
+  mutate(
+    data = paste(date, time),
+    data = as_datetime(data),
+    mes = month(data),
+    semana = isoweek(x = data),
+    turno_pm = pm(data)
+  ) %>% 
+  select(-date, -time)
+provas
+```
+
+## Base Analítica
+
+blablabla
+
+```{r junta_features_por_prova}
+## juntando informacoes das provas com a quantidade de participantes e construtores
+features_por_prova <- left_join(x = provas,
+                             y = participantes_por_prova,
+                             by = 'raceId') %>% 
+  ## juntando de voltas por prova
+  left_join(y = voltas_por_prova,
+            by = 'raceId') %>% 
+  # juntando velocidade maxima registrada em cada prova
+  left_join(y = velocidade_por_prova,
+            by = 'raceId')
+features_por_prova
+```
+
+blablabla
+
+```{r cria_base_analitica}
+df <- left_join(x = tempos_de_prova, y = features_por_prova, by = 'raceId')
+df
+```
+
+# Análise Exploratória
 
 # Análise dos Dados
 
