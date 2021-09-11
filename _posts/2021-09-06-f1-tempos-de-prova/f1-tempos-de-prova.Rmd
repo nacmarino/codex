@@ -56,6 +56,7 @@ library(fs) # manipular paths
 # tt_dataset <- tt_load(x = 2021, week = 37) # se você quiser baixar os dados direto da fonte
 
 # carregando a copia local dos dados
+
 ```
 
 # Preparação dos Dados
