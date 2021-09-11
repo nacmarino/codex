@@ -42,14 +42,161 @@ theme_update(
 
 # Motivação
 
+> https://blog.curso-r.com/posts/2018-02-18-fluxo-scraping/
+
 # Identificar
 
 # Navegar
 
 # Replicar
 
+blablabla
+
+```{r carrega_pacotes}
+library(tidyverse) # core
+library(httr) # web scrapping
+library(xml2) # parsear
+
+## para raspar o site
+base_url <- 'https://boardgamegeek.com/browse/boardgame/page/'
+```
+
+blablabla
+
+```{r raspa_pagina_1}
+# definindo qual pagina vamos raspar
+pagina_alvo <- 1
+
+## passando o get e salvando o arquivo html
+resultado <- GET(url = str_glue(base_url, pagina_alvo), 
+                 write_disk(path = str_glue('data/ranking_pagina_{pagina_alvo}.html'), overwrite = TRUE)
+                 # write_disk(path = str_glue('_posts/2021-09-11-raspando-a-pagina-do-ranking-da-boardgamegeek/data/ranking_pagina_{pagina_alvo}.html'), overwrite = TRUE)
+)
+```
+
+blablabla
+
+```{r get_status_code}
+resultado$status_code
+```
+
 # Parsear
+
+blablabla
+
+```{r coloca_ranking_na_tabela}
+## parseando o html para um tibble
+ranking_pagina_1 <- resultado %>% 
+  # pegando o conteudo do GET
+  content() %>% 
+  # pegando o xpath que contém a tabela
+  xml_find_all(xpath = '//table') %>% 
+  # parseando o codigo html para o rvest
+  rvest::html_table() %>% 
+  # extraindo o primeiro elemento da lista
+  pluck(1)
+ranking_pagina_1
+```
+
+blablabla
+
+```{r trata_ranking}
+ranking_pagina_1 <- ranking_pagina_1 %>% 
+  # usando o janitor para ajustar o nome das colunas
+  janitor::clean_names() %>% 
+  # pegando somente algumas das colunas
+  select(-thumbnail_image, -shop) %>% 
+  # ajustando a string do titulo
+  mutate(
+    # removendo o excesso de espaços da string
+    title = str_squish(string = title)
+  )
+ranking_pagina_1
+```
+
+blablabla
+
+```{r ajusta_texto_ranking}
+ranking_pagina_1 <- ranking_pagina_1 %>% 
+  mutate(
+    # pegando a apenas o titulo do jogo
+    titulo    = str_extract(string = title, pattern = '(.*)(?=\\s\\([0-9]{1,4}\\))'),
+    # ano de lançamento
+    ano       = str_extract(string = title, pattern = '(?<=\\()([0-9]{1,4})(?=\\))'),
+    # descrição
+    descricao = str_extract(string = title, pattern = '(?<=\\s\\([0-9]{1,4}\\)\\s)(.*)')
+  ) %>% 
+  # removendo colunas que nao precisamos mais
+  select(-title)
+ranking_pagina_1
+```
+
+blablabla
+
+```{r pega_link_do_jogo}
+resultado %>% 
+  # pegando o conteudo do GET
+  content() %>% 
+  # pegando todos as tags de link na classe primary
+  xml_find_all(xpath = '//table//a[@class="primary"]') %>% 
+  # pegando so os primeiros exemplos
+  head()
+```
+
+blablabla
+
+```{r junta_link}
+# colocando os links em uma lista
+links <- resultado %>% 
+  # pegando o conteudo do GET
+  content() %>% 
+  # pegando todos as tags de link na classe primary
+  xml_find_all(xpath = '//table//a[@class="primary"]') %>% 
+  # pegando o atributo href
+  xml_attr(attr = 'href')
+
+# colocando os links na tabela
+ranking_pagina_1 <- ranking_pagina_1 %>% 
+  mutate(
+    # colocando os links em uma coluna
+    link = links,
+    # extraindo o id do jogo
+    id   = str_extract(string = link, pattern = '(?<=boardgame\\/)([0-9]+)(?=\\/)')
+  ) %>% 
+  # organizando a tabela
+  relocate(
+    id, titulo, ano, .after = board_game_rank
+  ) %>% 
+  # renomeando as colunas
+  rename(
+    rank = board_game_rank, nota_bgg = geek_rating, nota_usuarios = avg_rating, votos = num_voters
+  )
+ranking_pagina_1
+```
 
 # Validar
 
+```{r validar_get}
+# funcao para fazer o GET
+```
+
+```{r validar_parsing}
+# funcao para fazer o parsing inicial + pegar os links e colocar na tabela
+```
+
+```{r exemplo_uso}
+# exemplo da função
+```
+
+
 # Conclusões
+
+```{r acha_ultima_pagina}
+ultima_pagina <- resultado %>% 
+  content() %>% 
+  xml_find_first(xpath = '//div//*[@title="last page"]') %>% 
+  xml_text() %>% 
+  parse_number()
+ultima_pagina
+```
+

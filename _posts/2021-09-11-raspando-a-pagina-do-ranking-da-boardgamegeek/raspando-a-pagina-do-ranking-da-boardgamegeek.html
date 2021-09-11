@@ -113,7 +113,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
   <!--/radix_placeholder_rmarkdown_metadata-->
   
   <script type="text/json" id="radix-resource-manifest">
-  {"type":"NULL"}
+  {"type":"character","attributes":{},"value":["data/ranking_pagina_1.html","images/web_scarapping_cycle_curso_r.png","raspando-a-pagina-do-ranking-da-boardgamegeek_files/anchor-4.2.2/anchor.min.js","raspando-a-pagina-do-ranking-da-boardgamegeek_files/bowser-1.9.3/bowser.min.js","raspando-a-pagina-do-ranking-da-boardgamegeek_files/distill-2.2.21/template.v2.js","raspando-a-pagina-do-ranking-da-boardgamegeek_files/header-attrs-2.10/header-attrs.js","raspando-a-pagina-do-ranking-da-boardgamegeek_files/jquery-1.11.3/jquery.min.js","raspando-a-pagina-do-ranking-da-boardgamegeek_files/popper-2.6.0/popper.min.js","raspando-a-pagina-do-ranking-da-boardgamegeek_files/tippy-6.2.7/tippy-bundle.umd.min.js","raspando-a-pagina-do-ranking-da-boardgamegeek_files/tippy-6.2.7/tippy-light-border.css","raspando-a-pagina-do-ranking-da-boardgamegeek_files/tippy-6.2.7/tippy.css","raspando-a-pagina-do-ranking-da-boardgamegeek_files/tippy-6.2.7/tippy.umd.min.js","raspando-a-pagina-do-ranking-da-boardgamegeek_files/webcomponents-2.0.0/webcomponents.js"]}
   </script>
   <!--radix_placeholder_navigation_in_header-->
   <!--/radix_placeholder_navigation_in_header-->
@@ -1495,13 +1495,241 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </nav>
 </div>
 <h1 id="motivação">Motivação</h1>
+<blockquote>
+<p><a href="https://blog.curso-r.com/posts/2018-02-18-fluxo-scraping/" class="uri">https://blog.curso-r.com/posts/2018-02-18-fluxo-scraping/</a></p>
+</blockquote>
 <h1 id="identificar">Identificar</h1>
 <h1 id="navegar">Navegar</h1>
 <h1 id="replicar">Replicar</h1>
+<p>blablabla</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://tidyverse.tidyverse.org'>tidyverse</a></span><span class='op'>)</span> <span class='co'># core</span>
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://httr.r-lib.org/'>httr</a></span><span class='op'>)</span> <span class='co'># web scrapping</span>
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://xml2.r-lib.org/'>xml2</a></span><span class='op'>)</span> <span class='co'># parsear</span>
+
+<span class='co'>## para raspar o site</span>
+<span class='va'>base_url</span> <span class='op'>&lt;-</span> <span class='st'>'https://boardgamegeek.com/browse/boardgame/page/'</span>
+</code></pre>
+</div>
+</div>
+<p>blablabla</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'># definindo qual pagina vamos raspar</span>
+<span class='va'>pagina_alvo</span> <span class='op'>&lt;-</span> <span class='fl'>1</span>
+
+<span class='co'>## passando o get e salvando o arquivo html</span>
+<span class='va'>resultado</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://httr.r-lib.org/reference/GET.html'>GET</a></span><span class='op'>(</span>url <span class='op'>=</span> <span class='fu'>str_glue</span><span class='op'>(</span><span class='va'>base_url</span>, <span class='va'>pagina_alvo</span><span class='op'>)</span>, 
+                 <span class='fu'><a href='https://httr.r-lib.org/reference/write_disk.html'>write_disk</a></span><span class='op'>(</span>path <span class='op'>=</span> <span class='fu'>str_glue</span><span class='op'>(</span><span class='st'>'data/ranking_pagina_{pagina_alvo}.html'</span><span class='op'>)</span>, overwrite <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+                 <span class='co'># write_disk(path = str_glue('_posts/2021-09-11-raspando-a-pagina-do-ranking-da-boardgamegeek/data/ranking_pagina_{pagina_alvo}.html'), overwrite = TRUE)</span>
+<span class='op'>)</span>
+</code></pre>
+</div>
+</div>
+<p>blablabla</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>resultado</span><span class='op'>$</span><span class='va'>status_code</span>
+</code></pre>
+</div>
+<pre><code>[1] 200</code></pre>
+</div>
 <h1 id="parsear">Parsear</h1>
+<p>blablabla</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## parseando o html para um tibble</span>
+<span class='va'>ranking_pagina_1</span> <span class='op'>&lt;-</span> <span class='va'>resultado</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># pegando o conteudo do GET</span>
+  <span class='fu'><a href='https://httr.r-lib.org/reference/content.html'>content</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># pegando o xpath que contém a tabela</span>
+  <span class='fu'><a href='http://xml2.r-lib.org/reference/xml_find_all.html'>xml_find_all</a></span><span class='op'>(</span>xpath <span class='op'>=</span> <span class='st'>'//table'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># parseando o codigo html para o rvest</span>
+  <span class='fu'>rvest</span><span class='fu'>::</span><span class='fu'><a href='https://rvest.tidyverse.org/reference/html_table.html'>html_table</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># extraindo o primeiro elemento da lista</span>
+  <span class='fu'>pluck</span><span class='op'>(</span><span class='fl'>1</span><span class='op'>)</span>
+<span class='va'>ranking_pagina_1</span>
+</code></pre>
+</div>
+<pre><code># A tibble: 100 × 7
+   `Board Game Rank` `Thumbnail imag… Title `Geek Rating` `Avg Rating`
+               &lt;int&gt; &lt;lgl&gt;            &lt;chr&gt;         &lt;dbl&gt;        &lt;dbl&gt;
+ 1                 1 NA               &quot;Glo…          8.53         8.77
+ 2                 2 NA               &quot;Pan…          8.45         8.6 
+ 3                 3 NA               &quot;Bra…          8.41         8.67
+ 4                 4 NA               &quot;Ter…          8.28         8.42
+ 5                 5 NA               &quot;Glo…          8.26         8.75
+ 6                 6 NA               &quot;Twi…          8.26         8.69
+ 7                 7 NA               &quot;Gai…          8.18         8.49
+ 8                 8 NA               &quot;Sta…          8.17         8.43
+ 9                 9 NA               &quot;Thr…          8.16         8.4 
+10                10 NA               &quot;Gre…          8.13         8.3 
+# … with 90 more rows, and 2 more variables: Num Voters &lt;int&gt;,
+#   Shop &lt;chr&gt;</code></pre>
+</div>
+<p>blablabla</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>ranking_pagina_1</span> <span class='op'>&lt;-</span> <span class='va'>ranking_pagina_1</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># usando o janitor para ajustar o nome das colunas</span>
+  <span class='fu'>janitor</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/janitor/man/clean_names.html'>clean_names</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># pegando somente algumas das colunas</span>
+  <span class='fu'>select</span><span class='op'>(</span><span class='op'>-</span><span class='va'>thumbnail_image</span>, <span class='op'>-</span><span class='va'>shop</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># ajustando a string do titulo</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>
+    <span class='co'># removendo o excesso de espaços da string</span>
+    title <span class='op'>=</span> <span class='fu'>str_squish</span><span class='op'>(</span>string <span class='op'>=</span> <span class='va'>title</span><span class='op'>)</span>
+  <span class='op'>)</span>
+<span class='va'>ranking_pagina_1</span>
+</code></pre>
+</div>
+<pre><code># A tibble: 100 × 5
+   board_game_rank title             geek_rating avg_rating num_voters
+             &lt;int&gt; &lt;chr&gt;                   &lt;dbl&gt;      &lt;dbl&gt;      &lt;int&gt;
+ 1               1 Gloomhaven (2017…        8.53       8.77      45526
+ 2               2 Pandemic Legacy:…        8.45       8.6       43649
+ 3               3 Brass: Birmingha…        8.41       8.67      22950
+ 4               4 Terraforming Mar…        8.28       8.42      70288
+ 5               5 Gloomhaven: Jaws…        8.26       8.75      12978
+ 6               6 Twilight Imperiu…        8.26       8.69      14950
+ 7               7 Gaia Project (20…        8.18       8.49      17874
+ 8               8 Star Wars: Rebel…        8.17       8.43      24552
+ 9               9 Through the Ages…        8.16       8.4       24591
+10              10 Great Western Tr…        8.13       8.3       31531
+# … with 90 more rows</code></pre>
+</div>
+<p>blablabla</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>ranking_pagina_1</span> <span class='op'>&lt;-</span> <span class='va'>ranking_pagina_1</span> <span class='op'>%&gt;%</span> 
+  <span class='fu'>mutate</span><span class='op'>(</span>
+    <span class='co'># pegando a apenas o titulo do jogo</span>
+    titulo    <span class='op'>=</span> <span class='fu'>str_extract</span><span class='op'>(</span>string <span class='op'>=</span> <span class='va'>title</span>, pattern <span class='op'>=</span> <span class='st'>'(.*)(?=\\s\\([0-9]{1,4}\\))'</span><span class='op'>)</span>,
+    <span class='co'># ano de lançamento</span>
+    ano       <span class='op'>=</span> <span class='fu'>str_extract</span><span class='op'>(</span>string <span class='op'>=</span> <span class='va'>title</span>, pattern <span class='op'>=</span> <span class='st'>'(?&lt;=\\()([0-9]{1,4})(?=\\))'</span><span class='op'>)</span>,
+    <span class='co'># descrição</span>
+    descricao <span class='op'>=</span> <span class='fu'>str_extract</span><span class='op'>(</span>string <span class='op'>=</span> <span class='va'>title</span>, pattern <span class='op'>=</span> <span class='st'>'(?&lt;=\\s\\([0-9]{1,4}\\)\\s)(.*)'</span><span class='op'>)</span>
+  <span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># removendo colunas que nao precisamos mais</span>
+  <span class='fu'>select</span><span class='op'>(</span><span class='op'>-</span><span class='va'>title</span><span class='op'>)</span>
+<span class='va'>ranking_pagina_1</span>
+</code></pre>
+</div>
+<pre><code># A tibble: 100 × 7
+   board_game_rank geek_rating avg_rating num_voters titulo      ano  
+             &lt;int&gt;       &lt;dbl&gt;      &lt;dbl&gt;      &lt;int&gt; &lt;chr&gt;       &lt;chr&gt;
+ 1               1        8.53       8.77      45526 Gloomhaven  2017 
+ 2               2        8.45       8.6       43649 Pandemic L… 2015 
+ 3               3        8.41       8.67      22950 Brass: Bir… 2018 
+ 4               4        8.28       8.42      70288 Terraformi… 2016 
+ 5               5        8.26       8.75      12978 Gloomhaven… 2020 
+ 6               6        8.26       8.69      14950 Twilight I… 2017 
+ 7               7        8.18       8.49      17874 Gaia Proje… 2017 
+ 8               8        8.17       8.43      24552 Star Wars:… 2016 
+ 9               9        8.16       8.4       24591 Through th… 2015 
+10              10        8.13       8.3       31531 Great West… 2016 
+# … with 90 more rows, and 1 more variable: descricao &lt;chr&gt;</code></pre>
+</div>
+<p>blablabla</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>resultado</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># pegando o conteudo do GET</span>
+  <span class='fu'><a href='https://httr.r-lib.org/reference/content.html'>content</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># pegando todos as tags de link na classe primary</span>
+  <span class='fu'><a href='http://xml2.r-lib.org/reference/xml_find_all.html'>xml_find_all</a></span><span class='op'>(</span>xpath <span class='op'>=</span> <span class='st'>'//table//a[@class="primary"]'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># pegando so os primeiros exemplos</span>
+  <span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span><span class='op'>(</span><span class='op'>)</span>
+</code></pre>
+</div>
+<pre><code>{xml_nodeset (6)}
+[1] &lt;a href=&quot;/boardgame/174430/gloomhaven&quot; class=&quot;primary&quot;&gt;Gloomhav ...
+[2] &lt;a href=&quot;/boardgame/161936/pandemic-legacy-season-1&quot; class=&quot;pri ...
+[3] &lt;a href=&quot;/boardgame/224517/brass-birmingham&quot; class=&quot;primary&quot;&gt;Br ...
+[4] &lt;a href=&quot;/boardgame/167791/terraforming-mars&quot; class=&quot;primary&quot;&gt;T ...
+[5] &lt;a href=&quot;/boardgame/291457/gloomhaven-jaws-lion&quot; class=&quot;primary ...
+[6] &lt;a href=&quot;/boardgame/233078/twilight-imperium-fourth-edition&quot; cl ...</code></pre>
+</div>
+<p>blablabla</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'># colocando os links em uma lista</span>
+<span class='va'>links</span> <span class='op'>&lt;-</span> <span class='va'>resultado</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># pegando o conteudo do GET</span>
+  <span class='fu'><a href='https://httr.r-lib.org/reference/content.html'>content</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># pegando todos as tags de link na classe primary</span>
+  <span class='fu'><a href='http://xml2.r-lib.org/reference/xml_find_all.html'>xml_find_all</a></span><span class='op'>(</span>xpath <span class='op'>=</span> <span class='st'>'//table//a[@class="primary"]'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># pegando o atributo href</span>
+  <span class='fu'><a href='http://xml2.r-lib.org/reference/xml_attr.html'>xml_attr</a></span><span class='op'>(</span>attr <span class='op'>=</span> <span class='st'>'href'</span><span class='op'>)</span>
+
+<span class='co'># colocando os links na tabela</span>
+<span class='va'>ranking_pagina_1</span> <span class='op'>&lt;-</span> <span class='va'>ranking_pagina_1</span> <span class='op'>%&gt;%</span> 
+  <span class='fu'>mutate</span><span class='op'>(</span>
+    <span class='co'># colocando os links em uma coluna</span>
+    link <span class='op'>=</span> <span class='va'>links</span>,
+    <span class='co'># extraindo o id do jogo</span>
+    id   <span class='op'>=</span> <span class='fu'>str_extract</span><span class='op'>(</span>string <span class='op'>=</span> <span class='va'>link</span>, pattern <span class='op'>=</span> <span class='st'>'(?&lt;=boardgame\\/)([0-9]+)(?=\\/)'</span><span class='op'>)</span>
+  <span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># organizando a tabela</span>
+  <span class='fu'>relocate</span><span class='op'>(</span>
+    <span class='va'>id</span>, <span class='va'>titulo</span>, <span class='va'>ano</span>, .after <span class='op'>=</span> <span class='va'>board_game_rank</span>
+  <span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># renomeando as colunas</span>
+  <span class='fu'>rename</span><span class='op'>(</span>
+    rank <span class='op'>=</span> <span class='va'>board_game_rank</span>, nota_bgg <span class='op'>=</span> <span class='va'>geek_rating</span>, nota_usuarios <span class='op'>=</span> <span class='va'>avg_rating</span>, votos <span class='op'>=</span> <span class='va'>num_voters</span>
+  <span class='op'>)</span>
+<span class='va'>ranking_pagina_1</span>
+</code></pre>
+</div>
+<pre><code># A tibble: 100 × 9
+    rank id     titulo   ano   nota_bgg nota_usuarios votos descricao 
+   &lt;int&gt; &lt;chr&gt;  &lt;chr&gt;    &lt;chr&gt;    &lt;dbl&gt;         &lt;dbl&gt; &lt;int&gt; &lt;chr&gt;     
+ 1     1 174430 Gloomha… 2017      8.53          8.77 45526 Vanquish …
+ 2     2 161936 Pandemi… 2015      8.45          8.6  43649 Mutating …
+ 3     3 224517 Brass: … 2018      8.41          8.67 22950 Build net…
+ 4     4 167791 Terrafo… 2016      8.28          8.42 70288 Compete w…
+ 5     5 291457 Gloomha… 2020      8.26          8.75 12978 Vanquish …
+ 6     6 233078 Twiligh… 2017      8.26          8.69 14950 Build an …
+ 7     7 220308 Gaia Pr… 2017      8.18          8.49 17874 Expand, r…
+ 8     8 187645 Star Wa… 2016      8.17          8.43 24552 Strike fr…
+ 9     9 182028 Through… 2015      8.16          8.4  24591 Rewrite h…
+10    10 193738 Great W… 2016      8.13          8.3  31531 Use strat…
+# … with 90 more rows, and 1 more variable: link &lt;chr&gt;</code></pre>
+</div>
 <h1 id="validar">Validar</h1>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'># funcao para fazer o GET</span>
+</code></pre>
+</div>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'># funcao para fazer o parsing inicial + pegar os links e colocar na tabela</span>
+</code></pre>
+</div>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'># exemplo da função</span>
+</code></pre>
+</div>
+</div>
 <h1 id="conclusões">Conclusões</h1>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>ultima_pagina</span> <span class='op'>&lt;-</span> <span class='va'>resultado</span> <span class='op'>%&gt;%</span> 
+  <span class='fu'><a href='https://httr.r-lib.org/reference/content.html'>content</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='fu'><a href='http://xml2.r-lib.org/reference/xml_find_all.html'>xml_find_first</a></span><span class='op'>(</span>xpath <span class='op'>=</span> <span class='st'>'//div//*[@title="last page"]'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='fu'><a href='http://xml2.r-lib.org/reference/xml_text.html'>xml_text</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='fu'>parse_number</span><span class='op'>(</span><span class='op'>)</span>
+<span class='va'>ultima_pagina</span>
+</code></pre>
+</div>
+<pre><code>[1] 1302</code></pre>
+</div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <!--radix_placeholder_article_footer-->
 <!--/radix_placeholder_article_footer-->
 </div>
