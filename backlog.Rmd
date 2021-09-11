@@ -9,7 +9,7 @@ theme: theme.css
 - Como raspar os anúncios do ZapImóveis;
 - Interagindo com a API REST da Ludopedia;
 - Interagindo com a API XML da BoardGameGeek;
-- Raspando a página do ranking dos jogos de tabuleiro da BoardGameGeek.
+- [On going] Raspando a página do ranking dos jogos de tabuleiro da BoardGameGeek.
 
 # TidyTuesday
 ### Y2021W36 - BirdBaths 
@@ -21,9 +21,8 @@ O dataset da semana contém uma lista de espécies de pássaros que foram avista
 ### Y2021W37 - Fórmula 1
 Estes dados trazem todo o histórico das corridas de Fórmula 1 desde muito antigo! Têm uma infinidade de perguntas que daria para fazer, mas gostaria de focar em três delas:  
   
-- As provas da Fórmula 1 estão ficando mais curtas a cada temporada?
-- Que fatores contribuem para que um piloto não conclua uma prova?
-- O que explica a variação na quantidade de acidentes ao longo das temporadas?
+- [On going] As provas da Fórmula 1 estão ficando mais curtas a cada temporada?
+- [On going] O que está associado à ocorrência de acidentes?
 
 # Análises
 
