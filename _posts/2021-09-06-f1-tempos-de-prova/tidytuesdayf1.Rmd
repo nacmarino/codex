@@ -1,5 +1,5 @@
 ---
-title: "TidyTuesday_F1"
+title: "F1 Tempos de Prova"
 description: |
   A short description of the post.
 author:
