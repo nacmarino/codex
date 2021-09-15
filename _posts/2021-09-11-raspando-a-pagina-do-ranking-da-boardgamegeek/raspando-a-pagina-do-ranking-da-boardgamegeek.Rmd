@@ -7,6 +7,7 @@ author:
     last_name: Marino
     url: https://github.com/nacmarino
 date: 09-06-2021
+bibliography: bibliografia.bib
 categories:
   - web scraping
   - boardgames
@@ -42,49 +43,80 @@ theme_update(
 
 # Motivação
 
-> https://blog.curso-r.com/posts/2018-02-18-fluxo-scraping/
+Eu sempre joguei os jogos de tabuleiro mais tradicionais, como Banco Imobiliário, Scotland Yard e War. Esses são jogos muito populares, apesar de cada partida ser muito repetitiva e eles demandarem uma quantidade razoável de jogadores para que eles tenham graça - e, no meio de uma pandemia, se já acabava sendo chato jogar um deles, a coisa passou a ser impossível. Mas será que não existem alternativas (mais divertidas, inclusive) para continuar com a distração num momento tão difícil como esse? Como eu bem descobri durante essa pandemia, a resposta estava nos próprios jogos de tabuleiro - mais precisamente, na reinvenção que eles sofreram nas últimas décadas.
+
+Existem inúmeros jogos de tabuleiro disponíveis atualmente e um número crescente de pessoas que os curtem. Dada esta diversidade de novos títulos, inúmeros _portais_ têm focado em criar e manter a cultura dos jogos de tabuleiro, trazendo reportagens, fóruns, _marketplaces_, _reviews_, _rankings_ e fichas técnicas de cada um deles. Dois exemplos destes sites são o [BoardGameGeek](https://boardgamegeek.com/) e a [Ludopedia](https://www.ludopedia.com.br/): ambos possuem praticamente o mesmo conteúdo, mas o primeiro é um portal americano e o segundo é brasileiro. Outro ponto interessante é que o consumo de informações desses portais não precisa ocorrer pelo _browser_, uma vez que ambos fornecem uma API para a obtenção de dados através de _requests_ simples. A Ludopedia oferece uma API REST bastante intuitivaˆ[Essa API ainda está em desenvolvimento, e devo escrever sobre o consumo de informações através dela em outro post], enquanto a o BoardGameGeek usa uma API XML que eu acabei achando meio complicada de usar. Mas o que isto tudo tem haver com dados?
+
+Bom, logo que descobri esse _hobby_, acabei ficando muito perdido sobre quais são os títulos mais legais para se jogar. São tantas as possibilidades e informações disponíveis sobre cada jogo, que eu me peguei navegando entre inúmeras páginas nesses portais para tentar encontrar aquilo que eu estava buscando. Logo, acabei tendo a ideia de tentar compilar esses dados e colocar tudo dentro de uma linguagem de programação, a fim de deixar a análise de dados me ajudar a encontrar os jogos que mais combinavam com aquilo que eu estava buscando. Para isso, tive a ideia de pegar as informações dos jogos da BoardGameGeek (BGG daqui em diante) através de sua API, tabular tudo o que estava buscando e partir para o abraço. Mas nada é tão simples quanto parece.
+
+A parede que encontrei é bem chatinha: o _request_ da API XML do Bofunciona muito melhor quando usamos o código numérico de identificação do jogo. Quando passamos o nome do jogo para o _request_, ele precisa estar grafado igual à como está na base do BGG, caso contrário ele pode falhar em trazer o que você está buscando ou trazer todos os títulos que tenham um _match_ parcial com aquele que você buscou (daí para a frente é só caos). Outra ressalva aqui é que essa API não oferece nenhum tipo de método através do qual podemos pegar uma tabelinha com todos os IDs numéricos e os nomes dos jogos, e o código numérico dos jogos também não é sequencial. Logo, não dá para fazer uma busca gulosa e _loopar_ os IDs de 1 até _n_. A solução mais simples para o problema é montar a nossa própria base de-para, catando o nome dos títulos e o seu ID numérico de algum lugar do site do BGG - e esse lugar é a página que contém o _ranking_ dos jogos de tabuleiro no site.
+
+Neste _post_ eu vou mostrar como raspar a página do _ranking_ do BGG, usando como base o fluxo do Web Scrapping que a galera da Curso-R criou (@Lente2018) e está muito bem ilustrada na figura abaixo.
+
+```{r code_folding = TRUE, fig.cap='Fluxo do Web Scrapping de acordo com o Lente (2018). Figura copiada de https://blog.curso-r.com/posts/2018-02-18-fluxo-scraping/.'}
+knitr::include_graphics(path = 'images/web_scarapping_cycle_curso_r.png')
+```
 
 # Identificar
 
+A primeira coisa a se fazer é entender como funciona a página que queremos raspar e o seu fluxo de paginação - isto é, como fazer para navegar de uma página para a outra. No nosso caso, navegamos até a página inicial do ranking do BGG através do link `https://boardgamegeek.com/browse/boardgame`; isso deve nos levar à uma página similar à da figura abaixo.
+
+```{r code_folding = TRUE, layout = 'l-body-outset'}
+knitr::include_graphics(path = 'images/identificar_1.jpg')
+```
+
+Podemos ver que a página que contém o Top 100 dos jogos de tabuleiro apresenta as informações do ranking dentro de uma tabela: cada jogo no ranking ocupa uma linha da tabela, e cada coluna abriga uma informação distinta sobre o título que ocupa àquela posição no ranking (_i.e._, a posição do ranking, o título, uma pequena descrição, quantidade de votos, notas,...). Além disso, podemos ver que o ranking é composto por milhares de páginas, e podemos navegar através da página clicando na paginação acima ou abaixo da tabela. 
+
+```{r code_folding = TRUE, layout = 'l-body-outset'}
+knitr::include_graphics(path = 'images/identificar_2.jpg')
+```
+
+Ao passarmos para a segunda página, podemos ver que agora temos acesso às informações do Top 101 ao 200 dos jogos de tabuleiro. Assim, dá para entender que cada página deve conter uma tabelinha com 100 linhas, uma para cada título ocupando cada uma das posições. Outro ponto importante é que quando mudamos para a segunda página do ranking, houve a adição do sufixo `page/2` à _url_. Se brincarmos um pouquinho com essa _url_ podemos ver que é possível navegar entre as páginas simplesmente mudando o número ao final da url: `https://boardgamegeek.com/browse/boardgame/page/1`, `https://boardgamegeek.com/browse/boardgame/page/2`, `https://boardgamegeek.com/browse/boardgame/page/3` e assim por diante. Ou seja, para raspar as páginas do ranking basta usarmos a _url_ base (`https://boardgamegeek.com/browse/boardgame/page/`) e variar apenas a numeração ali no fim.
+
 # Navegar
+
+Uma vez que entendemos de que forma funcionam as páginas que queremos raspar, precisamos agora é entender de onde vem o dado que queremos extrair através do código da página. De forma bem geral, podemos usar as ferramentas do desenvolvedor do nosso navegar e ir até a aba de _Network_ para ver se a página está fazendo alguma chamada à uma API para carregar o seu conteúdo - se esse for o caso, podemos aprender a usar a API e usar ela para obter os dados que buscamos. Caso não haja uma API por trás da informação que estamos buscando, podemos ir direto na aba _Elements_ e olhar o código HTML para entender como o que estamos buscando está estruturado.
+
+No nosso caso, não consegui achar uma API alimentando os dados da tabela que queremos raspar - aparentemente, todo o dado é carregando junto do HTML da página. Assim, olhando o código HTML da página, dá para ver que a tabela que buscamos está dentro de uma tag _table_ e, olhando dentro dela, podemos ver que ela está organizada no código da página. Portanto, se conseguirmos pegar o HTML da página, teremos acesso direto aos dados que estamos buscando.
+
+```{r code_folding = TRUE, layout = 'l-body-outset'}
+knitr::include_graphics(path = 'images/navegar_1.jpg')
+```
 
 # Replicar
 
-blablabla
+Juntar a base da url com o numero da pagina e escrever para o disco (por que escrevi para o disco?). 
 
-```{r carrega_pacotes}
+```{r replicar_pagina_1}
 library(tidyverse) # core
 library(httr) # web scrapping
 library(xml2) # parsear
+library(fs) # mexer com paths
+library(patchwork) # compor figuras)
 
 ## para raspar o site
 base_url <- 'https://boardgamegeek.com/browse/boardgame/page/'
-```
 
-blablabla
-
-```{r raspa_pagina_1}
 # definindo qual pagina vamos raspar
 pagina_alvo <- 1
 
 ## passando o get e salvando o arquivo html
 resultado <- GET(url = str_glue(base_url, pagina_alvo), 
-                 write_disk(path = str_glue('data/ranking_pagina_{pagina_alvo}.html'), overwrite = TRUE)
-                 # write_disk(path = str_glue('_posts/2021-09-11-raspando-a-pagina-do-ranking-da-boardgamegeek/data/ranking_pagina_{pagina_alvo}.html'), overwrite = TRUE)
+                 write_disk(path = str_glue('data/page_{pagina_alvo}.html'), overwrite = TRUE)
 )
 ```
 
-blablabla
+Saber se o request foi bem sucedido.
 
-```{r get_status_code}
+```{r replicar_status_code}
 resultado$status_code
 ```
 
 # Parsear
 
-blablabla
+Significa extrair os dados desejados de um arquivo HTML. Como fazer isso para uma página.
 
-```{r coloca_ranking_na_tabela}
+```{r parser_tabela, layout = 'l-body-outset'}
 ## parseando o html para um tibble
 ranking_pagina_1 <- resultado %>% 
   # pegando o conteudo do GET
@@ -98,42 +130,9 @@ ranking_pagina_1 <- resultado %>%
 ranking_pagina_1
 ```
 
-blablabla
+Pegando o link, que faltava.
 
-```{r trata_ranking}
-ranking_pagina_1 <- ranking_pagina_1 %>% 
-  # usando o janitor para ajustar o nome das colunas
-  janitor::clean_names() %>% 
-  # pegando somente algumas das colunas
-  select(-thumbnail_image, -shop) %>% 
-  # ajustando a string do titulo
-  mutate(
-    # removendo o excesso de espaços da string
-    title = str_squish(string = title)
-  )
-ranking_pagina_1
-```
-
-blablabla
-
-```{r ajusta_texto_ranking}
-ranking_pagina_1 <- ranking_pagina_1 %>% 
-  mutate(
-    # pegando a apenas o titulo do jogo
-    titulo    = str_extract(string = title, pattern = '(.*)(?=\\s\\([0-9]{1,4}\\))'),
-    # ano de lançamento
-    ano       = str_extract(string = title, pattern = '(?<=\\()([0-9]{1,4})(?=\\))'),
-    # descrição
-    descricao = str_extract(string = title, pattern = '(?<=\\s\\([0-9]{1,4}\\)\\s)(.*)')
-  ) %>% 
-  # removendo colunas que nao precisamos mais
-  select(-title)
-ranking_pagina_1
-```
-
-blablabla
-
-```{r pega_link_do_jogo}
+```{r parser_pega_link_exemplo}
 resultado %>% 
   # pegando o conteudo do GET
   content() %>% 
@@ -143,9 +142,9 @@ resultado %>%
   head()
 ```
 
-blablabla
+Colocando o link na tabela.
 
-```{r junta_link}
+```{r parser_finaliza, layout = 'l-body-outset'}
 # colocando os links em uma lista
 links <- resultado %>% 
   # pegando o conteudo do GET
@@ -159,9 +158,96 @@ links <- resultado %>%
 ranking_pagina_1 <- ranking_pagina_1 %>% 
   mutate(
     # colocando os links em uma coluna
-    link = links,
+    link = links
+  )
+ranking_pagina_1
+```
+
+# Validar
+
+Precisamos apenas reproduzir o procedimento descrito até agora para algumas outras páginas de modo verificar se estamos de fato extraindo corretamente tudo o que queremos.
+
+```{r validar_funcoes}
+# função para fazer o GET
+pega_pagina <- function(url_base, pagina, save_dir) {
+  ## junta a base url com o numero da pagina e salva no diretorio alvo
+  resultado_do_get <- GET(url = str_glue(url_base, pagina), 
+                          write_disk(path = str_glue('{save_dir}/page_{pagina}.html'), overwrite = TRUE)
+  )
+  # retorna o resultado do GET
+  resultado_do_get
+}
+
+# função para parsear o resultado
+parser_pagina <- function(pagina_raspada){
+  # pegando todos os links que estão dentro da tabela 
+  links_da_pagina <- pagina_raspada %>% 
+    xml_find_all(xpath = '//table//a[@class="primary"]') %>% 
+    xml_attr(attr = 'href')
+    
+  ## parseando o codigo HTML da tabela para um tibble
+  tabela_da_pagina <- pagina_raspada %>% 
+    xml_find_all(xpath = '//table') %>% 
+    rvest::html_table() %>% 
+    pluck(1) %>% 
+    mutate(link = links)
+  
+  ## retornando a tabela
+  tabela_da_pagina
+}
+```
+
+```{r validar_exemplo, layout = 'l-body-outset'}
+## pegando o conteudo da segunda pagina do ranking
+ranking_pagina_2 <- pega_pagina(url_base = base_url, 
+                                pagina = 2,
+                                save_dir = 'data/'
+)
+
+## parseando o resultado do GET
+ranking_pagina_2 <- parser_pagina(pagina_raspada = content(ranking_pagina_2))
+ranking_pagina_2
+```
+
+# Iterar
+
+Encapsular o scraper em uma função que recebe uma série de links e aplica o mesmo procedimento em cada um.
+
+```{r iterar_scrapper, layout = 'l-body-outset'}
+## listando os arquivos html na pasta data
+paginas_salvas <- dir_ls(path = 'data/')
+
+## parseando as duas paginas
+paginas_raspadas <- map(.x = paginas_salvas, .f = read_html) %>% 
+  map(.f = parser_pagina) %>% 
+  bind_rows
+paginas_raspadas
+```
+
+# Faxinar (não incluído, mas importante)
+
+blablabla
+
+```{r faxina_tabela, layout = 'l-body-outset'}
+paginas_faxinadas <- paginas_raspadas %>% 
+  # usando o janitor para ajustar o nome das colunas
+  janitor::clean_names() %>% 
+  # pegando somente algumas das colunas
+  select(-thumbnail_image, -shop) %>% 
+  # ajustando a string do titulo
+  mutate(
+    # removendo o excesso de espaços da string do title
+    title = str_squish(string = title),
+    # pegando a apenas o titulo do jogo
+    titulo    = str_extract(string = title, pattern = '(.*)(?=\\s\\([0-9]{1,4}\\))'),
+    # ano de lançamento
+    ano       = str_extract(string = title, pattern = '(?<=\\()([0-9]{1,4})(?=\\))'),
+    # descrição
+    descricao = str_extract(string = title, pattern = '(?<=\\s\\([0-9]{1,4}\\)\\s)(.*)'),
     # extraindo o id do jogo
-    id   = str_extract(string = link, pattern = '(?<=boardgame\\/)([0-9]+)(?=\\/)')
+    id        = str_extract(string = link, pattern = '(?<=boardgame\\/)([0-9]+)(?=\\/)'),
+    # parseando o ano para numerico
+    ano       = parse_number(ano)
   ) %>% 
   # organizando a tabela
   relocate(
@@ -169,25 +255,17 @@ ranking_pagina_1 <- ranking_pagina_1 %>%
   ) %>% 
   # renomeando as colunas
   rename(
-    rank = board_game_rank, nota_bgg = geek_rating, nota_usuarios = avg_rating, votos = num_voters
+    rank = board_game_rank, nota_bgg = geek_rating, 
+    nota_usuarios = avg_rating, votos = num_voters
   )
-ranking_pagina_1
+paginas_faxinadas
 ```
 
-# Validar
-
-```{r validar_get}
-# funcao para fazer o GET
+```{r figura_exploratoria}
+p1 <- ggplot(data = paginas_faxinadas, mapping = aes(x = votos, y = nota_bgg))
+p2 <- ggplot(data = paginas_faxinadas, mapping = aes(x = nota_usuarios, y = nota_bgg))
+p1 / p2
 ```
-
-```{r validar_parsing}
-# funcao para fazer o parsing inicial + pegar os links e colocar na tabela
-```
-
-```{r exemplo_uso}
-# exemplo da função
-```
-
 
 # Conclusões
 
