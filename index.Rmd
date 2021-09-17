@@ -3,5 +3,6 @@ title: 'Postagens'
 site: distill::distill_website
 listing: 
   posts:
+    - 2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek
     - 2021-08-27-prevendo-o-preco-de-apartamentos-em-niteroi
 ---

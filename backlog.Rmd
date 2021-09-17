@@ -8,8 +8,7 @@ theme: theme.css
 # Web Scrapping
 - Como raspar os anúncios do ZapImóveis;
 - Interagindo com a API REST da Ludopedia;
-- Interagindo com a API XML da BoardGameGeek;
-- [On going] Raspando a página do ranking dos jogos de tabuleiro da BoardGameGeek.
+- Interagindo com a API XML da BoardGameGeek.  
 
 # TidyTuesday
 ### Y2021W36 - BirdBaths 
