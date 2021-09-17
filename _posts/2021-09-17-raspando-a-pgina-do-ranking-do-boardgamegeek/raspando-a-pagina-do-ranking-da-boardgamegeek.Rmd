@@ -6,7 +6,7 @@ author:
   - first_name: Nicholas 
     last_name: Marino
     url: https://github.com/nacmarino
-date: 09-06-2021
+date: 09-17-2021
 bibliography: bibliografia.bib
 categories:
   - web scraping
@@ -17,7 +17,7 @@ output:
     toc: true
     code_folding: true
     highlight: rstudio
-draft: true
+draft: false
 ---
 
 ```{r setup, include=FALSE}
