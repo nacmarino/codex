@@ -1,7 +1,7 @@
 ---
 title: "Raspando a página do ranking do BoardGameGeek"
 description: |
-  A short description of the post.
+  Neste post eu faço a raspagem da tabela do ranking dos jogos de tabuleiro do BoardGameGeek. Essa tarefa foi necessária para que eu conseguisse interagir da melhor forma possível com a API XML que o site oferece.
 author:
   - first_name: Nicholas 
     last_name: Marino
