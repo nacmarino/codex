@@ -1498,11 +1498,11 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </nav>
 </div>
 <h1 id="motivação">Motivação</h1>
-<p>Eu sempre joguei os jogos de tabuleiro mais tradicionais, como Banco Imobiliário, Scotland Yard e War. Esses são jogos muito populares, apesar de cada partida ser muito repetitiva e eles demandarem uma quantidade razoável de jogadores para que eles tenham graça - e, no meio de uma pandemia, se já acabava sendo chato jogar um deles, a coisa passou a ser impossível. Mas será que não existem alternativas (mais divertidas, inclusive) para continuar com a distração num momento tão difícil como esse? Como eu bem descobri durante essa pandemia, a resposta estava nos próprios jogos de tabuleiro - mais precisamente, na reinvenção que eles sofreram nas últimas décadas.</p>
-<p>Existem inúmeros jogos de tabuleiro disponíveis atualmente e um número crescente de pessoas que os curtem. Dada esta diversidade de novos títulos, inúmeros portais têm focado em criar e manter a cultura dos jogos de tabuleiro, trazendo reportagens, fóruns, <em>marketplaces</em>, <em>reviews</em>, <em>rankings</em> e fichas técnicas de cada um deles. Dois exemplos destes sites são o <a href="https://boardgamegeek.com/">BoardGameGeek</a> e a <a href="https://www.ludopedia.com.br/">Ludopedia</a>: ambos possuem praticamente o mesmo conteúdo, mas o primeiro é um portal americano e o segundo é brasileiro. Outro ponto interessante é que o consumo de informações desses portais não precisa ocorrer pelo <em>browser</em>, uma vez que ambos fornecem uma API para a obtenção de dados através de <em>requests</em> simples. A Ludopedia oferece uma API REST bastante intuitivaˆ[Essa API ainda está em desenvolvimento, e devo escrever sobre o consumo de informações através dela em outro post], enquanto a o BoardGameGeek usa uma API XML que eu acabei achando meio complicada de usar. Mas o que isto tudo tem haver com dados?</p>
-<p>Bom, logo que descobri esse <em>hobby</em>, acabei ficando muito perdido sobre quais são os títulos mais legais para se jogar. São tantas as possibilidades e informações disponíveis sobre cada jogo, que eu me peguei navegando entre inúmeras páginas nesses portais para tentar encontrar aquilo que eu estava buscando. Logo, acabei tendo a ideia de tentar compilar esses dados e colocar tudo dentro de uma linguagem de programação, a fim de deixar a análise de dados me ajudar a encontrar os jogos que mais combinavam com aquilo que eu estava buscando. Para isso, tive a ideia de pegar as informações dos jogos da BoardGameGeek (BGG daqui em diante) através de sua API, tabular tudo o que estava buscando e partir para o abraço. Mas nada é tão simples quanto parece.</p>
-<p>A parede que encontrei é bem chatinha: o <em>request</em> da API XML do Bofunciona muito melhor quando usamos o código numérico de identificação do jogo. Quando passamos o nome do jogo para o <em>request</em>, ele precisa estar grafado igual à como está na base do BGG, caso contrário ele pode falhar em trazer o que você está buscando ou trazer todos os títulos que tenham um <em>match</em> parcial com aquele que você buscou (daí para a frente é só caos). Outra ressalva aqui é que essa API não oferece nenhum tipo de método através do qual podemos pegar uma tabelinha com todos os IDs numéricos e os nomes dos jogos, e o código numérico dos jogos também não é sequencial. Logo, não dá para fazer uma busca gulosa e <em>loopar</em> os IDs de 1 até <em>n</em>. A solução mais simples para o problema é montar a nossa própria base de-para, catando o nome dos títulos e o seu ID numérico de algum lugar do site do BGG - e esse lugar é a página que contém o <em>ranking</em> dos jogos de tabuleiro no site.</p>
-<p>Neste <em>post</em> eu vou mostrar como raspar a página do <em>ranking</em> do BGG, usando como base o fluxo do Web Scrapping que a galera da Curso-R criou (<span class="citation" data-cites="Lente2018"><a href="#ref-Lente2018" role="doc-biblioref">Lente</a> (<a href="#ref-Lente2018" role="doc-biblioref">2018</a>)</span>) e está muito bem ilustrada na figura abaixo.</p>
+<p>Sempre joguei os jogos de tabuleiro mais tradicionais, como Banco Imobiliário, Scotland Yard e War. Esses são jogos muito populares, apesar de cada partida ser muito repetitiva e eles demandarem uma quantidade razoável de jogadores para que tenham graça - e, no meio de uma pandemia, se já acabava sendo chato jogar um deles, a coisa passou a ser impossível. Mas será que não existem alternativas (mais divertidas, inclusive) para continuar com a distração num momento tão difícil como esse? Como eu bem descobri, a resposta estava nos próprios jogos de tabuleiro - mais precisamente, na reinvenção que eles sofreram nas últimas décadas.</p>
+<p>Existem inúmeros jogos de tabuleiro disponíveis atualmente e um número crescente de pessoas que os curtem. Dada esta diversidade de novos títulos, inúmeros portais têm focado em criar e manter essa cultura, trazendo reportagens, fóruns, <em>marketplaces</em>, <em>reviews</em>, rankings e fichas técnicas de cada um deles. Dois exemplos destes sites são o <a href="https://boardgamegeek.com/">BoardGameGeek</a> e a <a href="https://www.ludopedia.com.br/">Ludopedia</a>: ambos possuem praticamente o mesmo conteúdo, mas o primeiro é um portal americano e o segundo é brasileiro. Outro ponto interessante é que o consumo de informações desses portais não precisa ocorrer pelo <em>browser</em>, uma vez que ambos fornecem uma API. A Ludopedia oferece uma API REST bastante intuitiva<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>, enquanto o BoardGameGeek usa uma API XML que eu acabei achando meio complicada de usar. Mas o que isto tudo tem haver com dados?</p>
+<p>Bom, logo que descobri esse <em>hobby</em>, acabei ficando muito perdido sobre quais são os títulos mais legais para se jogar. São tantas as possibilidades e informações disponíveis sobre cada jogo, que eu me peguei navegando entre inúmeras páginas naqueles portais para tentar encontrar aquilo que eu estava buscando. Assim, acabei tendo a ideia de compilar essas informações e colocar tudo dentro de uma linguagem de programação, a fim de deixar a análise de dados me ajudar a encontrar os jogos que mais combinavam com aquilo que eu estava buscando. Para isso, tive a ideia de pegar as informações dos jogos do BoardGameGeek (BGG daqui em diante) através de sua API, tabular tudo o que estava buscando e partir para o abraço. Mas nada é tão simples quanto parece.</p>
+<p>A parede que encontrei é bem chatinha: o <em>request</em> da API XML do BoardGameGeek funciona muito melhor quando usamos o código numérico de identificação do jogo. Quando passamos o nome do jogo para o <em>request</em>, ele precisa estar grafado igual à como está na base do BGG, caso contrário ele pode falhar em trazer o que você está buscando ou trazer todos os títulos que tenham um <em>match</em> parcial com aquele que você buscou (daí para a frente é só caos). Outra ressalva aqui é que essa API não oferece nenhum tipo de método através do qual podemos pegar um de-para dos IDs numéricos para os nomes dos jogos, e o código numérico deles também não é sequencial. Logo, não dá para fazer uma busca gulosa e <em>loopar</em> os IDs de 1 até <em>n</em>. A solução mais simples para o problema é montar a nossa própria base de-para, catando o nome dos títulos e o seu ID numérico de algum lugar do site do BGG - e esse lugar é a página que contém o ranking dos jogos de tabuleiro no site.</p>
+<p>Neste <em>post</em> eu vou mostrar como raspar a página do ranking do BGG, usando como base o fluxo do Web Scrapping que a galera da Curso-R criou (<span class="citation" data-cites="Lente2018"><a href="#ref-Lente2018" role="doc-biblioref">Lente</a> (<a href="#ref-Lente2018" role="doc-biblioref">2018</a>)</span>), e muito bem ilustrada na figura abaixo.</p>
 <div class="layout-chunk" data-layout="l-body">
 <details>
 <summary>
@@ -1534,7 +1534,7 @@ Show code
 </details>
 <p><img src="images/identificar_1.jpg" width="1668" style="display: block; margin: auto;" /></p>
 </div>
-<p>Podemos ver que a página que contém o Top 100 dos jogos de tabuleiro apresenta as informações do ranking dentro de uma tabela: cada jogo no ranking ocupa uma linha da tabela, e cada coluna abriga uma informação distinta sobre o título que ocupa àquela posição no ranking (<em>i.e.</em>, a posição do ranking, o título, uma pequena descrição, quantidade de votos, notas,…). Além disso, podemos ver que o ranking é composto por milhares de páginas, e podemos navegar através da página clicando na paginação acima ou abaixo da tabela.</p>
+<p>Podemos ver que a página que contém o Top 100 dos jogos de tabuleiro apresenta as informações do ranking dentro de uma tabela: cada jogo no ranking ocupa uma linha da tabela, e cada coluna abriga uma informação distinta sobre o título que ocupa àquela posição (<em>i.e.</em>, ranking, título, uma pequena descrição, quantidade de votos, notas,…). Além disso, podemos ver que o ranking é composto por dezenas de páginas, e podemos navegar através delas pela paginação acima ou abaixo da tabela.</p>
 <div class="layout-chunk" data-layout="l-body-outset">
 <details>
 <summary>
@@ -1550,7 +1550,7 @@ Show code
 <p>Ao passarmos para a segunda página, podemos ver que agora temos acesso às informações do Top 101 ao 200 dos jogos de tabuleiro. Assim, dá para entender que cada página deve conter uma tabelinha com 100 linhas, uma para cada título ocupando cada uma das posições. Outro ponto importante é que quando mudamos para a segunda página do ranking, houve a adição do sufixo <code>page/2</code> à <em>url</em>. Se brincarmos um pouquinho com essa <em>url</em> podemos ver que é possível navegar entre as páginas simplesmente mudando o número ao final da url: <code>https://boardgamegeek.com/browse/boardgame/page/1</code>, <code>https://boardgamegeek.com/browse/boardgame/page/2</code>, <code>https://boardgamegeek.com/browse/boardgame/page/3</code> e assim por diante. Ou seja, para raspar as páginas do ranking basta usarmos a <em>url</em> base (<code>https://boardgamegeek.com/browse/boardgame/page/</code>) e variar apenas a numeração ali no fim.</p>
 <h1 id="navegar">Navegar</h1>
 <p>Uma vez que entendemos de que forma funcionam as páginas que queremos raspar, precisamos agora é entender de onde vem o dado que queremos extrair através do código da página. De forma bem geral, podemos usar as ferramentas do desenvolvedor do nosso navegar e ir até a aba de <em>Network</em> para ver se a página está fazendo alguma chamada à uma API para carregar o seu conteúdo - se esse for o caso, podemos aprender a usar a API e usar ela para obter os dados que buscamos. Caso não haja uma API por trás da informação que estamos buscando, podemos ir direto na aba <em>Elements</em> e olhar o código HTML para entender como o que estamos buscando está estruturado.</p>
-<p>No nosso caso, não consegui achar uma API alimentando os dados da tabela que queremos raspar - aparentemente, todo o dado é carregando junto do HTML da página. Assim, olhando o código HTML da página, dá para ver que a tabela que buscamos está dentro de uma tag <em>table</em> e, olhando dentro dela, podemos ver que ela está organizada no código da página. Portanto, se conseguirmos pegar o HTML da página, teremos acesso aos dados que estamos buscando.</p>
+<p>No nosso caso, não consegui achar uma API alimentando os dados da tabela que queremos raspar - aparentemente, todo o dado é carregando junto do HTML da página. Assim, olhando o código HTML da página, dá para ver que a tabela que buscamos está dentro de uma tag <em>table</em>. Portanto, se conseguirmos pegar o HTML da página, teremos acesso aos dados que estamos buscando.</p>
 <div class="layout-chunk" data-layout="l-body-outset">
 <details>
 <summary>
@@ -1564,7 +1564,7 @@ Show code
 <p><img src="images/navegar_1.jpg" width="1677" style="display: block; margin: auto;" /></p>
 </div>
 <h1 id="replicar">Replicar</h1>
-<p>Como sabemos a <em>url</em> base e como navegar entre as páginas, a ideia será tentar pegar uma das páginas e ver se temos sucesso na tarefa. Vamos então para o R. Primeiro vamos carregar alguns pacotes para nos ajudar a fazer o web scrapping, manipular os dados e algumas coisas mais. Vou então criar um objeto que vai receber a <em>url</em> base do ranking do BGG e mais um objeto com a numeração da página do ranking que vamos tentar pegar na primeira tentativa.</p>
+<p>Como sabemos a <em>url</em> base e como navegar entre as páginas, a ideia será tentar pegar uma das páginas e ver se temos sucesso na tarefa. Vamos então para o R. Primeiro vou carregar alguns pacotes para nos ajudar a fazer o web scrapping, manipular os dados e algumas coisas mais. Vou então criar um objeto que vai receber a <em>url</em> base do ranking do BGG e mais um objeto com a numeração da página do ranking que vamos tentar pegar na primeira tentativa.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://tidyverse.tidyverse.org'>tidyverse</a></span><span class='op'>)</span> <span class='co'># core</span>
@@ -1581,7 +1581,7 @@ Show code
 </code></pre>
 </div>
 </div>
-<p>Com estes pacotes e objetos definindos, vou utilizar então a função <code>GET</code> do pacote <code>httr</code> para fazer o <em>request</em> da página. Vamos passar o endereço da página para a função e, também, escrever o resultado do nosso <em>request</em> para o disco passando uma outra função (<code>write_disk</code>) para o <code>GET</code>. O benefício de escrever o resultado do <em>request</em> para o disco são pelo menos dois: (1) podemos manter uma memória exata do que foi raspado naquele dia e (2) usar o dado raspado <em>offline</em>, sem a necessidade de ter que ficar bombardeando o site o tempo todo de <em>resquests</em>.</p>
+<p>Com estes pacotes e objetos definindos, vou utilizar então a função <code>GET</code> do pacote <code>httr</code> para fazer o <em>request</em> da página. Vou passar o endereço da página para a função e, também, escrever o resultado do <em>request</em> para o disco passando uma outra função (<code>write_disk</code>) para o <code>GET</code>. O benefício disso são pelo menos dois: (1) podemos manter uma memória exata do que foi raspado naquele dia e (2) usar o dado raspado <em>offline</em>, sem a necessidade de ter que ficar bombardeando o site o tempo todo de <em>resquests</em>.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## passando o get e salvando o arquivo html</span>
@@ -1601,7 +1601,7 @@ Show code
 <pre><code>[1] &quot;Status code: 200&quot;</code></pre>
 </div>
 <h1 id="parsear">Parsear</h1>
-<p>O que estamos buscando está dentro de uma tabela no código HTML, conforme havíamos visto anteriormente. Podemos tomar vantagem disto e buscar a <em>tag</em> <em>table</em> dentro do código HTML através do respectivo XPath através da função <code>xml_find_all</code>. Com este resultado, podemos então utilizar a função <code>html_table</code> do pacote <code>rvest</code>, que é muito útil em casos como esse: ela é capaz de converter a tabela HTML diretamente para uma <code>tibble</code>. Como o resultado desse processo é uma <code>tibble</code> como o primeiro elemento de uma lista, vou usar a função <code>pluck</code> para extrair este objeto.</p>
+<p>O que estamos buscando está dentro de uma tabela no código HTML, conforme havíamos visto anteriormente. Podemos tomar vantagem disto e buscar a <em>tag</em> <em>table</em> dentro do código HTML através do respectivo XPath utilizando a função <code>xml_find_all</code>. Com este resultado, podemos então utilizar a função <code>html_table</code> do pacote <code>rvest</code>, que é muito útil em casos como esse: ela é capaz de converter a tabela HTML diretamente para uma <code>tibble</code>. Como o resultado desse processo é uma <code>tibble</code> como o primeiro elemento de uma lista, vou usar a função <code>pluck</code> para extrair este objeto.</p>
 <div class="layout-chunk" data-layout="l-body-outset">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## parseando o html para um tibble</span>
@@ -1646,7 +1646,7 @@ Show code
 </details>
 <p><img src="images/parsear_1.jpg" width="1680" style="display: block; margin: auto;" /></p>
 </div>
-<p>Essa sequência numérica ali na <em>url</em> para o título na página nada mais é do que o <em>id</em> que estamos buscando. Se buscarmos este padrão dentro do HTML da página do ranking do BGG, podemos ver que ele está dentro do XPath da tabela que já havíamos rapasdo, mas dentro de uma outra <em>tag</em> dentro dela. Dado que ainda temos o resultado do nosso <em>request</em>, podemos então utilizar o XPath para pegar todos os <em>links</em> na tabela HTML que possuem a classe <em>primary</em>.</p>
+<p>Essa sequência numérica ali na <em>url</em> para o título na página nada mais é do que o <em>id</em> que estamos buscando. Se procurarmos este padrão dentro do HTML da página do ranking do BGG, podemos ver que ele está dentro do XPath da tabela que já havíamos rapasdo, mas dentro de uma outra <em>tag</em>. Dado que ainda temos o resultado do nosso <em>request</em>, podemos então utilizar o XPath para pegar todos os <em>links</em> na tabela HTML que possuem a classe <em>primary</em>.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='va'>resultado</span> <span class='op'>%&gt;%</span> 
@@ -1761,15 +1761,15 @@ Show code
  4               104 NA               &quot;Ini…          7.50         7.81
  5               105 NA               &quot;Pan…          7.50         7.6 
  6               106 NA               &quot;Cla…          7.49         7.85
- 7               107 NA               &quot;Cha…          7.49         7.76
- 8               108 NA               &quot;Pan…          7.49         7.92
+ 7               107 NA               &quot;Pan…          7.49         7.92
+ 8               108 NA               &quot;Cha…          7.49         7.76
  9               109 NA               &quot;Yok…          7.49         7.85
 10               110 NA               &quot;For…          7.48         7.98
 # … with 90 more rows, and 3 more variables: Num Voters &lt;int&gt;,
 #   Shop &lt;chr&gt;, link &lt;chr&gt;</code></pre>
 </div>
 <h1 id="iterar">Iterar</h1>
-<p>O objetivo aqui seria passar uma sequência de página de 1 até <code>n</code> e usar as funções <code>pega_pagina</code> e <code>parser_pagina</code> para escalar o processo. No entanto, como a idéia é apenas demonstrar, vou raspar apenas as 5 primeiras páginas do ranking, fazendo uma pequena modificação na função que criei para não bombardear o BGG de <em>requests</em> num curto período de tempo. Para isso, vou adicionar um <code>Sys.sleep</code> depois do GET para que ele espere alguns segundos entre requisições, definindo o tempo de espera entre requisições através de uma distribuição uniforme.</p>
+<p>O objetivo aqui seria passar uma sequência de páginas de 1 até <code>n</code> e usar as funções <code>pega_pagina</code> e <code>parser_pagina</code> para escalar o processo. Como a idéia é apenas demonstrar, vou raspar apenas as 5 primeiras páginas do ranking, fazendo uma pequena modificação na função que criei para não bombardear o BGG de <em>requests</em> num curto período de tempo. Para isso, vou adicionar um <code>Sys.sleep</code> depois do <code>GET</code>, para que ele espere alguns segundos entre requisições, definindo o tempo de espera entre requisições através de uma distribuição uniforme.</p>
 <div class="layout-chunk" data-layout="l-body-outset">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'># adicionando um sys.sleep na função</span>
@@ -1815,7 +1815,7 @@ Show code
 #   Shop &lt;chr&gt;, link &lt;chr&gt;</code></pre>
 </div>
 <h1 id="faxinar-não-incluído-mas-importante">Faxinar (não incluído, mas importante)</h1>
-<p>Apesar desta etapa não estar apresentada de forma explícita na figura da Curso-R, acredito que seja importante e legal a gente dar um jeitinho nos dados antes de terminar. O código abaixo dá conta disso, fazendo algumas coisas: (a) ajeitando o nome das colunas, (b) removendo colunas que não vamos precisar, (c) extraindo e organizando o nome do jogo, o ano e sua descrição curta a partir da coluna <code>Title</code>, (d) extraindo o <em>id</em> numérico único de cada jogo e (e) renomeando algumas colunas para algo um pouco mais intuitivo. Com isso, a tabela fica bem arrumada e mais apresentável.</p>
+<p>Apesar desta etapa não estar apresentada de forma explícita na figura da Curso-R, acredito que seja importante e legal a gente dar um jeitinho nos dados antes de terminar. O código abaixo dá conta disso, fazendo algumas coisas: (a) ajeitando o nome das colunas, (b) removendo colunas que não vou precisar, (c) extraindo e organizando o nome do jogo, o ano e sua descrição curta a partir da coluna <code>Title</code>, (d) extraindo o <em>id</em> numérico único de cada jogo e (e) renomeando algumas colunas para algo um pouco mais intuitivo. Com isso, a tabela fica bem arrumada e mais apresentável.</p>
 <div class="layout-chunk" data-layout="l-body-outset">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='va'>paginas_faxinadas</span> <span class='op'>&lt;-</span> <span class='va'>paginas_raspadas</span> <span class='op'>%&gt;%</span> 
@@ -1860,32 +1860,33 @@ Show code
 <pre><code># A tibble: 500 × 10
     rank id     titulo    ano nota_bgg nota_usuarios votos title link 
    &lt;int&gt; &lt;chr&gt;  &lt;chr&gt;   &lt;dbl&gt;    &lt;dbl&gt;         &lt;dbl&gt; &lt;int&gt; &lt;chr&gt; &lt;chr&gt;
- 1     1 174430 Gloomh…  2017     8.53          8.76 45605 Gloo… /boa…
- 2     2 161936 Pandem…  2015     8.45          8.6  43684 Pand… /boa…
- 3     3 224517 Brass:…  2018     8.41          8.67 23050 Bras… /boa…
- 4     4 167791 Terraf…  2016     8.28          8.42 70401 Terr… /boa…
- 5     5 291457 Gloomh…  2020     8.26          8.74 13075 Gloo… /boa…
- 6     6 233078 Twilig…  2017     8.26          8.69 15001 Twil… /boa…
- 7     7 220308 Gaia P…  2017     8.18          8.49 17914 Gaia… /boa…
- 8     8 187645 Star W…  2016     8.17          8.43 24598 Star… /boa…
- 9     9 182028 Throug…  2015     8.16          8.4  24627 Thro… /boa…
-10    10 193738 Great …  2016     8.13          8.3  31586 Grea… /boa…
+ 1     1 174430 Gloomh…  2017     8.53          8.76 45618 Gloo… /boa…
+ 2     2 161936 Pandem…  2015     8.45          8.6  43686 Pand… /boa…
+ 3     3 224517 Brass:…  2018     8.41          8.67 23075 Bras… /boa…
+ 4     4 167791 Terraf…  2016     8.28          8.42 70417 Terr… /boa…
+ 5     5 291457 Gloomh…  2020     8.26          8.74 13096 Gloo… /boa…
+ 6     6 233078 Twilig…  2017     8.26          8.69 15000 Twil… /boa…
+ 7     7 220308 Gaia P…  2017     8.18          8.49 17926 Gaia… /boa…
+ 8     8 187645 Star W…  2016     8.17          8.43 24605 Star… /boa…
+ 9     9 182028 Throug…  2015     8.16          8.4  24635 Thro… /boa…
+10    10 193738 Great …  2016     8.13          8.3  31595 Grea… /boa…
 # … with 490 more rows, and 1 more variable: descricao &lt;chr&gt;</code></pre>
 </div>
-<p>E só para fechar: uma figura sobre os dados que raspamos né! Só para tirar a dúvida: qual a relação entre a nota do BGG, a nota média dada pelos usuários e quantidade de votos recebidos por cada jogo? A figura abaixo mostra que as notas dadas pelos usuários parecem sempre maiores do que as notas do ranking final do BGG - fato que ocorre pois o BGG usa uma média bayesiana para montar o seu ranking. Além disso, podemos ver que parece existir uma tendência aos jogos que recebem mais votos terem maiores notas no ranking do BGG. Por outro lado, os jogos que os usuários deram o maior volume de votos parecem ser aqueles com maior tendência a terem notas menores. Curioso, não?</p>
+<p>E só para fechar: uma figura sobre os dados que raspamos né! Vamos tentar visualizar qual a relação entre a nota do BGG, a nota média dada pelos usuários e quantidade de votos recebidos por cada jogo. A figura abaixo mostra que as notas dadas pelos usuários parecem ser maiores do que as notas do ranking final do BGG - fato que ocorre pois o BGG usa uma média bayesiana para montar o seu ranking. Além disso, podemos ver que parece existir uma tendência aos jogos que recebem mais votos também terem maiores notas no ranking do BGG. Por outro lado, parece que os jogos mais votados são aqueles com menores notas dadas pelos usuários. Curioso, não?</p>
 <div class="layout-chunk" data-layout="l-body-outset">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='va'>paginas_faxinadas</span> <span class='op'>%&gt;%</span> 
   <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/ggplot.html'>ggplot</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>+</span>
-  <span class='fu'><a href='https://ggforce.data-imaginist.com/reference/geom_autopoint.html'>geom_autopoint</a></span><span class='op'>(</span>alpha <span class='op'>=</span> <span class='fl'>0.5</span><span class='op'>)</span> <span class='op'>+</span>
-  <span class='fu'><a href='https://ggforce.data-imaginist.com/reference/geom_autohistogram.html'>geom_autodensity</a></span><span class='op'>(</span>mapping <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>.panel_x</span>, y <span class='op'>=</span> <span class='va'>.panel_y</span><span class='op'>)</span>, color <span class='op'>=</span> <span class='st'>'grey50'</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggforce.data-imaginist.com/reference/geom_autopoint.html'>geom_autopoint</a></span><span class='op'>(</span>alpha <span class='op'>=</span> <span class='fl'>0.7</span>, shape <span class='op'>=</span> <span class='fl'>21</span>, fill <span class='op'>=</span> <span class='st'>'deepskyblue3'</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggforce.data-imaginist.com/reference/geom_autohistogram.html'>geom_autodensity</a></span><span class='op'>(</span>mapping <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>.panel_x</span>, y <span class='op'>=</span> <span class='va'>.panel_y</span><span class='op'>)</span>, 
+                   fill <span class='op'>=</span> <span class='st'>'deepskyblue3'</span>, color <span class='op'>=</span> <span class='st'>'black'</span>, alpha <span class='op'>=</span> <span class='fl'>0.7</span><span class='op'>)</span> <span class='op'>+</span>
   <span class='fu'><a href='https://ggforce.data-imaginist.com/reference/facet_matrix.html'>facet_matrix</a></span><span class='op'>(</span>rows <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/vars.html'>vars</a></span><span class='op'>(</span><span class='va'>nota_bgg</span><span class='op'>:</span><span class='va'>votos</span><span class='op'>)</span>, layer.diag <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
 </code></pre>
 </div>
 <p><img src="raspando-a-pagina-do-ranking-da-boardgamegeek_files/figure-html5/figura_exploratoria-1.png" width="1950" style="display: block; margin: auto;" /></p>
 </div>
 <h1 id="conclusões">Conclusões</h1>
-<p>Esse foi o passo-a-passo que eu usei para pegar os jogos que estão na página do ranking do BoardGameGeek (BGG) e o <em>id</em> numérico deles. Precisei fazer essa raspagem pois a API XML do BGG funciona melhor através da utilização deste <em>id</em>, e não encontrei outra forma de pegar essa informação em nenhum outro lugar no site ou na API. Existem melhorias que dão para ser feitas na função e no <em>pipeline</em> de raspagem aqui, tais como adicionar uns <code>safely</code> ou <code>insistently</code> no <code>GET</code> em caso de falhas ou coisas do gênero e, também, automatizar a detecção da última página que precisa ser raspada. Para este último, deixo até a dica aqui de como pegar o valor: ele está numa <em>tag</em> <em>div</em> no início e no fim do HTML, de forma que basta pegarmos a sua primeira ocorrência para saber o valor máximo da quantidade de páginas; então, é só colocá-lo em um objeto e chamar ele na hora de usar o <code>walk</code>.</p>
+<p>Esse foi o passo-a-passo que eu usei para pegar os jogos que estão na página do ranking do BoardGameGeek (BGG) e o <em>id</em> numérico deles. Precisei fazer essa raspagem pois a API XML do BGG funciona melhor através da utilização deste <em>id</em>, e não encontrei outra forma de pegar essa informação em nenhum outro lugar no site ou na API. Existem melhorias que poderiam ser feitas na função e no <em>pipeline</em> de raspagem aqui, tais como adicionar uns <code>safely</code> ou <code>insistently</code> no <code>GET</code> em caso de falhas ou coisas do gênero. Outra melhoria seria também automatizar a identificação da última página que precisa ser raspada. Para este último, deixo até a dica aqui de como pegar o valor: ele está numa <em>tag</em> <em>div</em> no início e no fim do HTML, de forma que basta pegarmos a sua primeira ocorrência para saber o valor máximo da quantidade de páginas; então, é só colocá-lo em um objeto e chamar ele na hora de usar o <code>walk</code> ali em cima.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='va'>ultima_pagina</span> <span class='op'>&lt;-</span> <span class='va'>resultado</span> <span class='op'>%&gt;%</span> 
@@ -1900,7 +1901,7 @@ Show code
 <span class='va'>ultima_pagina</span>
 </code></pre>
 </div>
-<pre><code>[1] 1303</code></pre>
+<pre><code>[1] 1304</code></pre>
 </div>
 <p>Dúvidas ou sugestões? É só me procurar que a gente conversa!</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
@@ -1909,6 +1910,12 @@ Show code
 Lente, Caio. 2018. <span>“O Fluxo Do Web Scraping.”</span> <em>Blog Da Curso-R</em>. <a href="https://blog.curso-r.com/posts/2018-02-18-fluxo-scraping/">https://blog.curso-r.com/posts/2018-02-18-fluxo-scraping/</a>.
 </div>
 </div>
+<section class="footnotes" role="doc-endnotes">
+<hr />
+<ol>
+<li id="fn1" role="doc-endnote"><p>Essa API ainda está em desenvolvimento, e devo escrever sobre o consumo de informações através dela em outro post<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
 <!--radix_placeholder_article_footer-->
 <!--/radix_placeholder_article_footer-->
 </div>

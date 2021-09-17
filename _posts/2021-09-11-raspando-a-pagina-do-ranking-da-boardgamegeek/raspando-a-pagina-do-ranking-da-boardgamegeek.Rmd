@@ -43,15 +43,15 @@ theme_update(
 
 # Motivação
 
-Eu sempre joguei os jogos de tabuleiro mais tradicionais, como Banco Imobiliário, Scotland Yard e War. Esses são jogos muito populares, apesar de cada partida ser muito repetitiva e eles demandarem uma quantidade razoável de jogadores para que eles tenham graça - e, no meio de uma pandemia, se já acabava sendo chato jogar um deles, a coisa passou a ser impossível. Mas será que não existem alternativas (mais divertidas, inclusive) para continuar com a distração num momento tão difícil como esse? Como eu bem descobri durante essa pandemia, a resposta estava nos próprios jogos de tabuleiro - mais precisamente, na reinvenção que eles sofreram nas últimas décadas.
+Sempre joguei os jogos de tabuleiro mais tradicionais, como Banco Imobiliário, Scotland Yard e War. Esses são jogos muito populares, apesar de cada partida ser muito repetitiva e eles demandarem uma quantidade razoável de jogadores para que tenham graça - e, no meio de uma pandemia, se já acabava sendo chato jogar um deles, a coisa passou a ser impossível. Mas será que não existem alternativas (mais divertidas, inclusive) para continuar com a distração num momento tão difícil como esse? Como eu bem descobri, a resposta estava nos próprios jogos de tabuleiro - mais precisamente, na reinvenção que eles sofreram nas últimas décadas.
 
-Existem inúmeros jogos de tabuleiro disponíveis atualmente e um número crescente de pessoas que os curtem. Dada esta diversidade de novos títulos, inúmeros portais têm focado em criar e manter a cultura dos jogos de tabuleiro, trazendo reportagens, fóruns, _marketplaces_, _reviews_, _rankings_ e fichas técnicas de cada um deles. Dois exemplos destes sites são o [BoardGameGeek](https://boardgamegeek.com/) e a [Ludopedia](https://www.ludopedia.com.br/): ambos possuem praticamente o mesmo conteúdo, mas o primeiro é um portal americano e o segundo é brasileiro. Outro ponto interessante é que o consumo de informações desses portais não precisa ocorrer pelo _browser_, uma vez que ambos fornecem uma API para a obtenção de dados através de _requests_ simples. A Ludopedia oferece uma API REST bastante intuitivaˆ[Essa API ainda está em desenvolvimento, e devo escrever sobre o consumo de informações através dela em outro post], enquanto a o BoardGameGeek usa uma API XML que eu acabei achando meio complicada de usar. Mas o que isto tudo tem haver com dados?
+Existem inúmeros jogos de tabuleiro disponíveis atualmente e um número crescente de pessoas que os curtem. Dada esta diversidade de novos títulos, inúmeros portais têm focado em criar e manter essa cultura, trazendo reportagens, fóruns, _marketplaces_, _reviews_, rankings e fichas técnicas de cada um deles. Dois exemplos destes sites são o [BoardGameGeek](https://boardgamegeek.com/) e a [Ludopedia](https://www.ludopedia.com.br/): ambos possuem praticamente o mesmo conteúdo, mas o primeiro é um portal americano e o segundo é brasileiro. Outro ponto interessante é que o consumo de informações desses portais não precisa ocorrer pelo _browser_, uma vez que ambos fornecem uma API. A Ludopedia oferece uma API REST bastante intuitiva^[Essa API ainda está em desenvolvimento, e devo escrever sobre o consumo de informações através dela em outro post], enquanto o BoardGameGeek usa uma API XML que eu acabei achando meio complicada de usar. Mas o que isto tudo tem haver com dados?
 
-Bom, logo que descobri esse _hobby_, acabei ficando muito perdido sobre quais são os títulos mais legais para se jogar. São tantas as possibilidades e informações disponíveis sobre cada jogo, que eu me peguei navegando entre inúmeras páginas nesses portais para tentar encontrar aquilo que eu estava buscando. Logo, acabei tendo a ideia de tentar compilar esses dados e colocar tudo dentro de uma linguagem de programação, a fim de deixar a análise de dados me ajudar a encontrar os jogos que mais combinavam com aquilo que eu estava buscando. Para isso, tive a ideia de pegar as informações dos jogos da BoardGameGeek (BGG daqui em diante) através de sua API, tabular tudo o que estava buscando e partir para o abraço. Mas nada é tão simples quanto parece.
+Bom, logo que descobri esse _hobby_, acabei ficando muito perdido sobre quais são os títulos mais legais para se jogar. São tantas as possibilidades e informações disponíveis sobre cada jogo, que eu me peguei navegando entre inúmeras páginas naqueles portais para tentar encontrar aquilo que eu estava buscando. Assim, acabei tendo a ideia de compilar essas informações e colocar tudo dentro de uma linguagem de programação, a fim de deixar a análise de dados me ajudar a encontrar os jogos que mais combinavam com aquilo que eu estava buscando. Para isso, tive a ideia de pegar as informações dos jogos do BoardGameGeek (BGG daqui em diante) através de sua API, tabular tudo o que estava buscando e partir para o abraço. Mas nada é tão simples quanto parece.
 
-A parede que encontrei é bem chatinha: o _request_ da API XML do Bofunciona muito melhor quando usamos o código numérico de identificação do jogo. Quando passamos o nome do jogo para o _request_, ele precisa estar grafado igual à como está na base do BGG, caso contrário ele pode falhar em trazer o que você está buscando ou trazer todos os títulos que tenham um _match_ parcial com aquele que você buscou (daí para a frente é só caos). Outra ressalva aqui é que essa API não oferece nenhum tipo de método através do qual podemos pegar uma tabelinha com todos os IDs numéricos e os nomes dos jogos, e o código numérico dos jogos também não é sequencial. Logo, não dá para fazer uma busca gulosa e _loopar_ os IDs de 1 até _n_. A solução mais simples para o problema é montar a nossa própria base de-para, catando o nome dos títulos e o seu ID numérico de algum lugar do site do BGG - e esse lugar é a página que contém o _ranking_ dos jogos de tabuleiro no site.
+A parede que encontrei é bem chatinha: o _request_ da API XML do BoardGameGeek funciona muito melhor quando usamos o código numérico de identificação do jogo. Quando passamos o nome do jogo para o _request_, ele precisa estar grafado igual à como está na base do BGG, caso contrário ele pode falhar em trazer o que você está buscando ou trazer todos os títulos que tenham um _match_ parcial com aquele que você buscou (daí para a frente é só caos). Outra ressalva aqui é que essa API não oferece nenhum tipo de método através do qual podemos pegar um de-para dos IDs numéricos para os nomes dos jogos, e o código numérico deles também não é sequencial. Logo, não dá para fazer uma busca gulosa e _loopar_ os IDs de 1 até _n_. A solução mais simples para o problema é montar a nossa própria base de-para, catando o nome dos títulos e o seu ID numérico de algum lugar do site do BGG - e esse lugar é a página que contém o ranking dos jogos de tabuleiro no site.
 
-Neste _post_ eu vou mostrar como raspar a página do _ranking_ do BGG, usando como base o fluxo do Web Scrapping que a galera da Curso-R criou (@Lente2018) e está muito bem ilustrada na figura abaixo.
+Neste _post_ eu vou mostrar como raspar a página do ranking do BGG, usando como base o fluxo do Web Scrapping que a galera da Curso-R criou (@Lente2018), e muito bem ilustrada na figura abaixo.
 
 ```{r code_folding = TRUE, fig.cap='Fluxo do Web Scrapping de acordo com o Lente (2018). Figura copiada de https://blog.curso-r.com/posts/2018-02-18-fluxo-scraping/.'}
 knitr::include_graphics(path = 'images/web_scarapping_cycle_curso_r.png')
@@ -65,7 +65,7 @@ A primeira coisa a se fazer é entender como funciona a página que queremos ras
 knitr::include_graphics(path = 'images/identificar_1.jpg')
 ```
 
-Podemos ver que a página que contém o Top 100 dos jogos de tabuleiro apresenta as informações do ranking dentro de uma tabela: cada jogo no ranking ocupa uma linha da tabela, e cada coluna abriga uma informação distinta sobre o título que ocupa àquela posição no ranking (_i.e._, a posição do ranking, o título, uma pequena descrição, quantidade de votos, notas,...). Além disso, podemos ver que o ranking é composto por milhares de páginas, e podemos navegar através da página clicando na paginação acima ou abaixo da tabela. 
+Podemos ver que a página que contém o Top 100 dos jogos de tabuleiro apresenta as informações do ranking dentro de uma tabela: cada jogo no ranking ocupa uma linha da tabela, e cada coluna abriga uma informação distinta sobre o título que ocupa àquela posição (_i.e._, ranking, título, uma pequena descrição, quantidade de votos, notas,...). Além disso, podemos ver que o ranking é composto por dezenas de páginas, e podemos navegar através delas pela paginação acima ou abaixo da tabela. 
 
 ```{r code_folding = TRUE, layout = 'l-body-outset'}
 knitr::include_graphics(path = 'images/identificar_2.jpg')
@@ -77,7 +77,7 @@ Ao passarmos para a segunda página, podemos ver que agora temos acesso às info
 
 Uma vez que entendemos de que forma funcionam as páginas que queremos raspar, precisamos agora é entender de onde vem o dado que queremos extrair através do código da página. De forma bem geral, podemos usar as ferramentas do desenvolvedor do nosso navegar e ir até a aba de _Network_ para ver se a página está fazendo alguma chamada à uma API para carregar o seu conteúdo - se esse for o caso, podemos aprender a usar a API e usar ela para obter os dados que buscamos. Caso não haja uma API por trás da informação que estamos buscando, podemos ir direto na aba _Elements_ e olhar o código HTML para entender como o que estamos buscando está estruturado.
 
-No nosso caso, não consegui achar uma API alimentando os dados da tabela que queremos raspar - aparentemente, todo o dado é carregando junto do HTML da página. Assim, olhando o código HTML da página, dá para ver que a tabela que buscamos está dentro de uma tag _table_ e, olhando dentro dela, podemos ver que ela está organizada no código da página. Portanto, se conseguirmos pegar o HTML da página, teremos acesso aos dados que estamos buscando.
+No nosso caso, não consegui achar uma API alimentando os dados da tabela que queremos raspar - aparentemente, todo o dado é carregando junto do HTML da página. Assim, olhando o código HTML da página, dá para ver que a tabela que buscamos está dentro de uma tag _table_. Portanto, se conseguirmos pegar o HTML da página, teremos acesso aos dados que estamos buscando.
 
 ```{r code_folding = TRUE, layout = 'l-body-outset'}
 knitr::include_graphics(path = 'images/navegar_1.jpg')
@@ -85,7 +85,7 @@ knitr::include_graphics(path = 'images/navegar_1.jpg')
 
 # Replicar
 
-Como sabemos a _url_ base e como navegar entre as páginas, a ideia será tentar pegar uma das páginas e ver se temos sucesso na tarefa. Vamos então para o R. Primeiro vamos carregar alguns pacotes para nos ajudar a fazer o web scrapping, manipular os dados e algumas coisas mais. Vou então criar um objeto que vai receber a _url_ base do ranking do BGG e mais um objeto com a numeração da página do ranking que vamos tentar pegar na primeira tentativa. 
+Como sabemos a _url_ base e como navegar entre as páginas, a ideia será tentar pegar uma das páginas e ver se temos sucesso na tarefa. Vamos então para o R. Primeiro vou carregar alguns pacotes para nos ajudar a fazer o web scrapping, manipular os dados e algumas coisas mais. Vou então criar um objeto que vai receber a _url_ base do ranking do BGG e mais um objeto com a numeração da página do ranking que vamos tentar pegar na primeira tentativa. 
 
 ```{r replicar_carrega}
 library(tidyverse) # core
@@ -101,7 +101,7 @@ base_url <- 'https://boardgamegeek.com/browse/boardgame/page/'
 pagina_alvo <- 1
 ```
 
-Com estes pacotes e objetos definindos, vou utilizar então a função `GET` do pacote `httr` para fazer o _request_ da página. Vamos passar o endereço da página para a função e, também, escrever o resultado do nosso _request_ para o disco passando uma outra função (`write_disk`) para o `GET`. O benefício de escrever o resultado do _request_ para o disco são pelo menos dois: (1) podemos manter uma memória exata do que foi raspado naquele dia e (2) usar o dado raspado _offline_, sem a necessidade de ter que ficar bombardeando o site o tempo todo de _resquests_.
+Com estes pacotes e objetos definindos, vou utilizar então a função `GET` do pacote `httr` para fazer o _request_ da página. Vou passar o endereço da página para a função e, também, escrever o resultado do _request_ para o disco passando uma outra função (`write_disk`) para o `GET`. O benefício disso são pelo menos dois: (1) podemos manter uma memória exata do que foi raspado naquele dia e (2) usar o dado raspado _offline_, sem a necessidade de ter que ficar bombardeando o site o tempo todo de _resquests_.
 
 ```{r replicar_pagina_1}
 ## passando o get e salvando o arquivo html
@@ -119,7 +119,7 @@ sprintf('Status code: %.0d', resultado$status_code)
 
 # Parsear
 
-O que estamos buscando está dentro de uma tabela no código HTML, conforme havíamos visto anteriormente. Podemos tomar vantagem disto e buscar a _tag_ _table_ dentro do código HTML através do respectivo XPath através da função `xml_find_all`. Com este resultado, podemos então utilizar a função `html_table` do pacote `rvest`, que é muito útil em casos como esse: ela é capaz de converter a tabela HTML diretamente para uma `tibble`. Como o resultado desse processo é uma `tibble` como o primeiro elemento de uma lista, vou usar a função `pluck` para extrair este objeto.
+O que estamos buscando está dentro de uma tabela no código HTML, conforme havíamos visto anteriormente. Podemos tomar vantagem disto e buscar a _tag_ _table_ dentro do código HTML através do respectivo XPath utilizando a função `xml_find_all`. Com este resultado, podemos então utilizar a função `html_table` do pacote `rvest`, que é muito útil em casos como esse: ela é capaz de converter a tabela HTML diretamente para uma `tibble`. Como o resultado desse processo é uma `tibble` como o primeiro elemento de uma lista, vou usar a função `pluck` para extrair este objeto.
 
 ```{r parser_tabela, layout = 'l-body-outset'}
 ## parseando o html para um tibble
@@ -141,7 +141,7 @@ Beleza! Já temos quase tudo o que queríamos! Só faltou uma coisinha: onde est
 knitr::include_graphics(path = 'images/parsear_1.jpg')
 ```
 
-Essa sequência numérica ali na _url_ para o título na página nada mais é do que o _id_ que estamos buscando. Se buscarmos este padrão dentro do HTML da página do ranking do BGG, podemos ver que ele está dentro do XPath da tabela que já havíamos rapasdo, mas dentro de uma outra _tag_ dentro dela. Dado que ainda temos o resultado do nosso _request_, podemos então utilizar o XPath para pegar todos os _links_ na tabela HTML que possuem a classe _primary_.
+Essa sequência numérica ali na _url_ para o título na página nada mais é do que o _id_ que estamos buscando. Se procurarmos este padrão dentro do HTML da página do ranking do BGG, podemos ver que ele está dentro do XPath da tabela que já havíamos rapasdo, mas dentro de uma outra _tag_. Dado que ainda temos o resultado do nosso _request_, podemos então utilizar o XPath para pegar todos os _links_ na tabela HTML que possuem a classe _primary_.
 
 ```{r parser_pega_link_exemplo}
 resultado %>% 
@@ -225,7 +225,7 @@ ranking_pagina_2
 
 # Iterar
 
-O objetivo aqui seria passar uma sequência de página de 1 até `n` e usar as funções `pega_pagina` e `parser_pagina` para escalar o processo. No entanto, como a idéia é apenas demonstrar, vou raspar apenas as 5 primeiras páginas do ranking, fazendo uma pequena modificação na função que criei para não bombardear o BGG de _requests_ num curto período de tempo. Para isso, vou adicionar um `Sys.sleep` depois do GET para que ele espere alguns segundos entre requisições, definindo o tempo de espera entre requisições através de uma distribuição uniforme.
+O objetivo aqui seria passar uma sequência de páginas de 1 até `n` e usar as funções `pega_pagina` e `parser_pagina` para escalar o processo. Como a idéia é apenas demonstrar, vou raspar apenas as 5 primeiras páginas do ranking, fazendo uma pequena modificação na função que criei para não bombardear o BGG de _requests_ num curto período de tempo. Para isso, vou adicionar um `Sys.sleep` depois do `GET`, para que ele espere alguns segundos entre requisições, definindo o tempo de espera entre requisições através de uma distribuição uniforme.
 
 ```{r iterar_scrapper, layout = 'l-body-outset'}
 # adicionando um sys.sleep na função
@@ -256,7 +256,7 @@ paginas_raspadas
 
 # Faxinar (não incluído, mas importante)
 
-Apesar desta etapa não estar apresentada de forma explícita na figura da Curso-R, acredito que seja importante e legal a gente dar um jeitinho nos dados antes de terminar. O código abaixo dá conta disso, fazendo algumas coisas: (a) ajeitando o nome das colunas, (b) removendo colunas que não vamos precisar, (c) extraindo e organizando o nome do jogo, o ano e sua descrição curta a partir da coluna `Title`, (d) extraindo o _id_ numérico único de cada jogo e (e) renomeando algumas colunas para algo um pouco mais intuitivo. Com isso, a tabela fica bem arrumada e mais apresentável.
+Apesar desta etapa não estar apresentada de forma explícita na figura da Curso-R, acredito que seja importante e legal a gente dar um jeitinho nos dados antes de terminar. O código abaixo dá conta disso, fazendo algumas coisas: (a) ajeitando o nome das colunas, (b) removendo colunas que não vou precisar, (c) extraindo e organizando o nome do jogo, o ano e sua descrição curta a partir da coluna `Title`, (d) extraindo o _id_ numérico único de cada jogo e (e) renomeando algumas colunas para algo um pouco mais intuitivo. Com isso, a tabela fica bem arrumada e mais apresentável.
 
 ```{r faxina_tabela, layout = 'l-body-outset'}
 paginas_faxinadas <- paginas_raspadas %>% 
@@ -298,9 +298,9 @@ paginas_faxinadas <- paginas_raspadas %>%
 paginas_faxinadas
 ```
 
-E só para fechar: uma figura sobre os dados que raspamos né! Só para tirar a dúvida: qual a relação entre a nota do BGG, a nota média dada pelos usuários e quantidade de votos recebidos por cada jogo? A figura abaixo mostra que as notas dadas pelos usuários parecem sempre maiores do que as notas do ranking final do BGG - fato que ocorre pois o BGG usa uma média bayesiana para montar o seu ranking. Além disso, podemos ver que parece existir uma tendência aos jogos que recebem mais votos terem maiores notas no ranking do BGG. Por outro lado, os jogos que os usuários deram o maior volume de votos parecem ser aqueles com maior tendência a terem notas menores. Curioso, não?
+E só para fechar: uma figura sobre os dados que raspamos né! Vamos tentar visualizar qual a relação entre a nota do BGG, a nota média dada pelos usuários e quantidade de votos recebidos por cada jogo. A figura abaixo mostra que as notas dadas pelos usuários parecem ser maiores do que as notas do ranking final do BGG - fato que ocorre pois o BGG usa uma média bayesiana para montar o seu ranking. Além disso, podemos ver que parece existir uma tendência aos jogos que recebem mais votos também terem maiores notas no ranking do BGG. Por outro lado, parece que os jogos mais votados são aqueles com menores notas dadas pelos usuários. Curioso, não?
 
-```{r figura_exploratoria, layout = 'l-body-outset', fig.height=6, dpi = 300}
+```{r figura_exploratoria, layout = 'l-body-outset', fig.height=6, dpi = 300, preview = TRUE}
 paginas_faxinadas %>% 
   ggplot() +
   geom_autopoint(alpha = 0.7, shape = 21, fill = 'deepskyblue3') +
@@ -311,7 +311,7 @@ paginas_faxinadas %>%
 
 # Conclusões
 
-Esse foi o passo-a-passo que eu usei para pegar os jogos que estão na página do ranking do BoardGameGeek (BGG) e o _id_ numérico deles. Precisei fazer essa raspagem pois a API XML do BGG funciona melhor através da utilização deste _id_, e não encontrei outra forma de pegar essa informação em nenhum outro lugar no site ou na API. Existem melhorias que dão para ser feitas na função e no _pipeline_ de raspagem aqui, tais como adicionar uns `safely` ou `insistently` no `GET` em caso de falhas ou coisas do gênero e, também, automatizar a detecção da última página que precisa ser raspada. Para este último, deixo até a dica aqui de como pegar o valor: ele está numa _tag_ _div_ no início e no fim do HTML, de forma que basta pegarmos a sua primeira ocorrência para saber o valor máximo da quantidade de páginas; então, é só colocá-lo em um objeto e chamar ele na hora de usar o `walk`.
+Esse foi o passo-a-passo que eu usei para pegar os jogos que estão na página do ranking do BoardGameGeek (BGG) e o _id_ numérico deles. Precisei fazer essa raspagem pois a API XML do BGG funciona melhor através da utilização deste _id_, e não encontrei outra forma de pegar essa informação em nenhum outro lugar no site ou na API. Existem melhorias que poderiam ser feitas na função e no _pipeline_ de raspagem aqui, tais como adicionar uns `safely` ou `insistently` no `GET` em caso de falhas ou coisas do gênero. Outra melhoria seria também automatizar a identificação da última página que precisa ser raspada. Para este último, deixo até a dica aqui de como pegar o valor: ele está numa _tag_ _div_ no início e no fim do HTML, de forma que basta pegarmos a sua primeira ocorrência para saber o valor máximo da quantidade de páginas; então, é só colocá-lo em um objeto e chamar ele na hora de usar o `walk` ali em cima.
 
 ```{r acha_ultima_pagina}
 ultima_pagina <- resultado %>% 
