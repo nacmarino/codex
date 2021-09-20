@@ -54,6 +54,7 @@ library(tidyverse) # core
 # library(tidytuesdayR) # ler os arquivos do tidytuesday
 library(fs) # manipular paths
 library(lubridate) # trablhar com datas
+library(ggforce) # extender o ggplot2
 
 # carregando todos os dados a partir do github do tidytuesday
 # tt_dataset <- tt_load(x = 2021, week = 37) # se você quiser baixar os dados direto da fonte
@@ -192,8 +193,8 @@ blablabla
 ```{r junta_features_por_prova}
 ## juntando informacoes das provas com a quantidade de participantes e construtores
 features_por_prova <- left_join(x = provas,
-                             y = participantes_por_prova,
-                             by = 'raceId') %>% 
+                                y = participantes_por_prova,
+                                by = 'raceId') %>% 
   ## juntando de voltas por prova
   left_join(y = voltas_por_prova,
             by = 'raceId') %>% 
@@ -211,6 +212,156 @@ df
 ```
 
 # Análise Exploratória
+
+Como é a série histórica.
+
+```{r serie_temporal, layout = 'l-body-outset', fig.height=4, dpi = 300}
+df %>% 
+  mutate(
+    data = as_date(data),
+    decada = (year %/% 10) * 10,
+    decada = as.character(decada)) %>% 
+  filter(metrica == 'media') %>% 
+  ggplot(mapping = aes(x = data, y = duracao)) +
+  geom_line(alpha = 0.3, size = 1) +
+  geom_point(mapping = aes(fill = decada), 
+             shape = 21, size = 1.5, alpha = 0.3, color = 'black', show.legend = FALSE) +
+  geom_smooth(se = FALSE, color = 'firebrick3') +
+  scale_x_date(breaks = seq.Date(from = as.Date('1950-01-01'), to = as.Date('2021-12-01'), by = '5 years'),
+               labels = seq(from = 1950, to = 2020, by = 5)) +
+  scale_fill_viridis_d() +
+  labs(
+    title    = 'Série histórica da duração das provas',
+    subtitle = 'A linha vermelha representa a tendência geral de duração das provas no histórico, enquanto os pontos representam\na duração de cada uma das provas ocorridas',
+    x        = 'Período',
+    y        = 'Duração Média (minutos)'
+  ) +
+  theme(legend.position = 'none')
+```
+
+Quais GPs ocorreram em quais períodos. Prepara o dado.
+
+```{r monta_historico_gp_ano}
+historico_gps_ano <- df %>% 
+  distinct(gp, data) %>% 
+  mutate(ano = year(data)) %>% 
+  arrange(gp, ano) %>% 
+  group_by(gp) %>%
+  mutate(
+    recorrencia = (ano - lag(ano)) != 1 | is.na(ano - lag(ano)),
+    grupo_recorrencia = cumsum(recorrencia),
+    n_gps = n()
+  )
+filter(historico_gps_ano, gp == 'Argentine Grand Prix')
+```
+
+Mostra o dado.
+
+```{r historico_gp_ano, layout = 'l-body-outset', fig.height=10, dpi = 300}
+historico_gps_ano %>% 
+  group_by(gp, grupo_recorrencia) %>% 
+  summarise(
+    inicio  = min(ano),
+    fim     = max(ano),
+    n_gps   = max(n_gps),
+    .groups = 'drop'
+  ) %>% 
+  mutate(
+    gp = fct_reorder(.f = gp, .x = n_gps, .fun = max)
+  ) %>% 
+  ggplot() +
+  geom_segment(mapping = aes(x = inicio, xend = fim, y = gp, yend = gp)) +
+  geom_point(mapping = aes(x = inicio, y = gp), size = 3,
+             shape = 21, color = 'black', fill = 'white') +
+  geom_point(mapping = aes(x = fim, y = gp), size = 3,
+             shape = 21, color = 'black', fill = 'grey40') +
+  scale_x_continuous(breaks = seq(from = 1950, to = 2020, by = 5)) +
+  labs(
+    title    = 'Ocorrência de cada Gran Prix ao longo dos anos',
+    subtitle = 'Os segmentos sinalizam o intervalo de anos seguidos nos quais cada GP ocorreu',
+    x        = 'Período'
+  ) +
+  theme(axis.title.y = element_blank())
+```
+
+Ocorrência dos GPs varia entre meses no histórico também.
+
+```{r historico_gp_mes, layout = 'l-body-outset', fig.height=10, dpi = 300, code_folding = TRUE}
+df %>% 
+  distinct(gp, data) %>% 
+  mutate(mes = month(data)) %>%  
+  count(gp, mes, name = 'observacoes') %>% 
+  group_by(gp) %>% 
+  mutate(
+    total   = sum(observacoes),
+    obs_std = observacoes / total
+  ) %>% 
+  ungroup %>% 
+  mutate(
+    gp = fct_reorder(.f = gp, .x = mes, .fun = min),
+    gp = fct_rev(f = gp)
+  ) %>% 
+  complete(gp, mes) %>% 
+  ggplot(mapping = aes(x = mes, y = gp, fill = obs_std)) +
+  geom_tile(color = 'black') +
+  geom_text(mapping = aes(label = observacoes, color = obs_std)) +
+  scale_fill_viridis_c(na.value = 'white') +
+  scale_color_viridis_c(option = 'A', direction = -1, na.value = 'white') +
+  scale_x_continuous(breaks = seq(from = 1, to = 12, by = 1),
+                     labels = month(x = 1:12, label = TRUE, abbr = TRUE, locale = 'pt_BR'),
+                     expand = c(0, 0)) +
+  labs(
+    title = 'Distribuição histórica da ocorrências dos GPs entre meses',
+    x     = 'Período'
+  ) +
+  theme(
+    legend.position = 'none',
+    axis.title.y = element_blank()
+  )
+```
+
+Ocorrencias por circuito.
+
+```{r ocorrencias_por_circuito, layout = 'l-page', fig.height=10, fig.width=10, dpi = 300}
+df %>% 
+  distinct(gp, circuit, year) %>% 
+  count(gp, circuit, name = 'ocorrencias') %>% 
+  mutate(
+    n_unico = 1
+  ) %>% 
+  mutate(
+    gp      = fct_reorder(.f = gp, .x = n_unico, .fun = sum),
+    circuit = fct_reorder(.f = circuit, .x = ocorrencias, .fun = sum)) %>% 
+  ggplot(mapping = aes(x = n_unico, y = gp, group = circuit)) +
+  geom_col(fill = 'grey30', color = 'white') +
+  geom_text(mapping = aes(label = paste0(abbreviate(circuit), ': ', ocorrencias)), 
+            color = 'white', size = 3,
+            position = position_stack(vjust = 0.5)) +
+  theme(legend.position = 'none')
+```
+
+GP da Grã-Bretanha.
+
+```{r serie_temporal_british, layout = 'l-body-outset', fig.height=4, dpi = 300}
+df %>% 
+  mutate(
+    data = as_date(data)
+  ) %>% 
+  filter(metrica == 'media', gp %in% c('British Grand Prix', 'Italian Grand Prix')) %>% 
+  ggplot(mapping = aes(x = data, y = duracao, color = gp)) +
+  facet_wrap(~ gp, scales = 'free', nrow = 2) +
+  geom_line(size = 1) +
+  geom_point(shape = 21, size = 1.5, color = 'black', fill = 'white') +
+  scale_x_date(breaks = seq.Date(from = as.Date('1950-01-01'), to = as.Date('2021-12-01'), by = '5 years'),
+               labels = seq(from = 1950, to = 2020, by = 5)) +
+  labs(
+    title    = 'Série histórica da duração dos GPs da Inglaterra e Itália',
+    subtitle = 'Estas são as duas provas com a série histórica de ocorrências mais consistente',
+    x        = 'Período',
+    y        = 'Duração Média (minutos)'
+  ) +
+  theme(legend.position = 'none')
+```
 
 # Análise dos Dados
 
