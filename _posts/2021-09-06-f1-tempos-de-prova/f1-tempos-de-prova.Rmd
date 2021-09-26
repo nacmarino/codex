@@ -9,7 +9,7 @@ author:
 date: 09-06-2021
 categories:
   - tidytuesday
-  - tidymodels
+  - meta-análise
 output:
   distill::distill_article:
     self_contained: false
@@ -51,10 +51,12 @@ blablabla
 ```{r carrega_dados}
 # carregando os pacotes necessários
 library(tidyverse) # core
-# library(tidytuesdayR) # ler os arquivos do tidytuesday
 library(fs) # manipular paths
 library(lubridate) # trablhar com datas
 library(ggforce) # extender o ggplot2
+library(broom) # wrangling dos resultados da regressão
+library(metafor) # para a meta-análise
+# library(tidytuesdayR) # ler os arquivos do tidytuesday
 
 # carregando todos os dados a partir do github do tidytuesday
 # tt_dataset <- tt_load(x = 2021, week = 37) # se você quiser baixar os dados direto da fonte
@@ -97,41 +99,22 @@ tempos_de_prova <- resultados %>%
   filter(str_detect(string = milliseconds, pattern = '[0-9]')) %>% 
   # parseando a coluna de milliseconds para numerico
   mutate(
-    milliseconds = parse_number(milliseconds)
+    milliseconds = parse_number(milliseconds),
+    # calculando a quantidade de tempo em horas
+    horas        = (milliseconds / 1000) / 60
   ) %>% 
   # agrupando pela prova
   group_by(raceId) %>% 
   # pegando o valor minimo, medio e maximo dos tempo de prova
   summarise(
-    minimo = min(milliseconds),
-    media  = mean(milliseconds),
-    maximo = max(milliseconds)
-  ) %>% 
-  # passando millisegundos para minutos
-  mutate(
-    across(.cols = minimo:maximo, \(x) (x / 1000) / 60)
-  ) %>% 
-  pivot_longer(cols = minimo:maximo, names_to = 'metrica', values_to = 'duracao')
+    media  = mean(horas, na.rm = TRUE),
+    erro   = sd(horas, na.rm = TRUE),
+    obs    = n()
+  )
 tempos_de_prova
 ```
 
 ## Feature Engineering
-
-blablabla
-
-```{r participantes_por_prova}
-participantes_por_prova <- resultados %>% 
-  # pegando os valores unicos das chaves primarias por prova
-  distinct(raceId, driverId, constructorId) %>% 
-  # agrupando por prova
-  group_by(raceId) %>% 
-  # quantidade de pilotos e construtores por prova
-  summarise(
-    n_pilotos      = n_distinct(driverId),
-    n_construtores = n_distinct(constructorId)
-  )
-participantes_por_prova
-```
 
 blablabla
 
@@ -146,21 +129,6 @@ voltas_por_prova <- resultados %>%
   group_by(raceId) %>% 
   summarise(laps = max(laps))
 voltas_por_prova
-```
-
-blablabla
-
-```{r velocidade_por_prova}
-## calculando a velocidade maxima registrada em cada prova
-velocidade_por_prova <- resultados %>% 
-  # parseando a coluna para numerico
-  mutate(
-    fastestLapSpeed = parse_number(fastestLapSpeed)
-  ) %>% 
-  # calculando a velocidade maxima registrada em cada prova
-  group_by(raceId) %>% 
-  summarise(top_speed = max(fastestLapSpeed, na.rm = TRUE))
-velocidade_por_prova
 ```
 
 blablabla
@@ -191,15 +159,9 @@ provas
 blablabla
 
 ```{r junta_features_por_prova}
-## juntando informacoes das provas com a quantidade de participantes e construtores
+## juntando de voltas por prova
 features_por_prova <- left_join(x = provas,
-                                y = participantes_por_prova,
-                                by = 'raceId') %>% 
-  ## juntando de voltas por prova
-  left_join(y = voltas_por_prova,
-            by = 'raceId') %>% 
-  # juntando velocidade maxima registrada em cada prova
-  left_join(y = velocidade_por_prova,
+            y = voltas_por_prova,
             by = 'raceId')
 features_por_prova
 ```
@@ -215,18 +177,17 @@ df
 
 Como é a série histórica.
 
-```{r serie_temporal, layout = 'l-body-outset', fig.height=4, dpi = 300}
+```{r serie_temporal, layout = 'l-body-outset', fig.height=4, dpi = 300, code_folding = TRUE}
 df %>% 
   mutate(
     data = as_date(data),
     decada = (year %/% 10) * 10,
     decada = as.character(decada)) %>% 
-  filter(metrica == 'media') %>% 
-  ggplot(mapping = aes(x = data, y = duracao)) +
+  ggplot(mapping = aes(x = data, y = media)) +
   geom_line(alpha = 0.3, size = 1) +
   geom_point(mapping = aes(fill = decada), 
              shape = 21, size = 1.5, alpha = 0.3, color = 'black', show.legend = FALSE) +
-  geom_smooth(se = FALSE, color = 'firebrick3') +
+  geom_smooth(se = FALSE, color = 'firebrick3', method = 'loess') +
   scale_x_date(breaks = seq.Date(from = as.Date('1950-01-01'), to = as.Date('2021-12-01'), by = '5 years'),
                labels = seq(from = 1950, to = 2020, by = 5)) +
   scale_fill_viridis_d() +
@@ -241,7 +202,7 @@ df %>%
 
 Quais GPs ocorreram em quais períodos. Prepara o dado.
 
-```{r monta_historico_gp_ano}
+```{r monta_historico_gp_ano, code_folding = TRUE}
 historico_gps_ano <- df %>% 
   distinct(gp, data) %>% 
   mutate(ano = year(data)) %>% 
@@ -257,7 +218,7 @@ filter(historico_gps_ano, gp == 'Argentine Grand Prix')
 
 Mostra o dado.
 
-```{r historico_gp_ano, layout = 'l-body-outset', fig.height=10, dpi = 300}
+```{r historico_gp_ano, layout = 'l-body-outset', fig.height=9, dpi = 300, code_folding = TRUE}
 historico_gps_ano %>% 
   group_by(gp, grupo_recorrencia) %>% 
   summarise(
@@ -286,7 +247,7 @@ historico_gps_ano %>%
 
 Ocorrência dos GPs varia entre meses no histórico também.
 
-```{r historico_gp_mes, layout = 'l-body-outset', fig.height=10, dpi = 300, code_folding = TRUE}
+```{r historico_gp_mes, layout = 'l-body-outset', fig.height=9, dpi = 300, code_folding = TRUE}
 df %>% 
   distinct(gp, data) %>% 
   mutate(mes = month(data)) %>%  
@@ -322,47 +283,268 @@ df %>%
 
 Ocorrencias por circuito.
 
-```{r ocorrencias_por_circuito, layout = 'l-page', fig.height=10, fig.width=10, dpi = 300}
+```{r ocorrencias_por_circuito, layout = 'l-page', fig.height=10, fig.width=10, dpi = 300, code_folding = TRUE}
 df %>% 
   distinct(gp, circuit, year) %>% 
   count(gp, circuit, name = 'ocorrencias') %>% 
   mutate(
-    n_unico = 1
-  ) %>% 
-  mutate(
+    n_unico = 1,
     gp      = fct_reorder(.f = gp, .x = n_unico, .fun = sum),
     circuit = fct_reorder(.f = circuit, .x = ocorrencias, .fun = sum)) %>% 
   ggplot(mapping = aes(x = n_unico, y = gp, group = circuit)) +
-  geom_col(fill = 'grey30', color = 'white') +
+  geom_col(color = 'white') +
   geom_text(mapping = aes(label = paste0(abbreviate(circuit), ': ', ocorrencias)), 
             color = 'white', size = 3,
             position = position_stack(vjust = 0.5)) +
-  theme(legend.position = 'none')
-```
-
-GP da Grã-Bretanha.
-
-```{r serie_temporal_british, layout = 'l-body-outset', fig.height=4, dpi = 300}
-df %>% 
-  mutate(
-    data = as_date(data)
-  ) %>% 
-  filter(metrica == 'media', gp %in% c('British Grand Prix', 'Italian Grand Prix')) %>% 
-  ggplot(mapping = aes(x = data, y = duracao, color = gp)) +
-  facet_wrap(~ gp, scales = 'free', nrow = 2) +
-  geom_line(size = 1) +
-  geom_point(shape = 21, size = 1.5, color = 'black', fill = 'white') +
-  scale_x_date(breaks = seq.Date(from = as.Date('1950-01-01'), to = as.Date('2021-12-01'), by = '5 years'),
-               labels = seq(from = 1950, to = 2020, by = 5)) +
+  scale_x_continuous(breaks = seq(from = 0.5, to = 6.5, by = 1), 
+                     labels = seq(from = 1, to = 7, by = 1)) +
   labs(
-    title    = 'Série histórica da duração dos GPs da Inglaterra e Itália',
-    subtitle = 'Estas são as duas provas com a série histórica de ocorrências mais consistente',
-    x        = 'Período',
-    y        = 'Duração Média (minutos)'
+    title = 'Quantidade de provas por circuito em cada GP',
+    x     = 'Quantidade de circuitos'
   ) +
-  theme(legend.position = 'none')
+  theme(legend.position = 'none',
+        axis.title.y = element_blank())
 ```
 
 # Análise dos Dados
+
+## Visão Geral
+
+blablabla
+
+```{r prepara_df_regs}
+## pegando as provas que ocorrem em sequencia
+provas_alvo <- df %>% 
+  select(raceId, gp, circuit, year) %>% 
+  arrange(circuit, year) %>% 
+  group_by(circuit) %>% 
+  mutate(
+    recorrencia = (year - lag(year)) != 1 | is.na(year - lag(year)),
+    grupo_recorrencia = cumsum(recorrencia)
+  ) %>% 
+  add_count(circuit, grupo_recorrencia, name = 'ocorrencias_continuas') %>% 
+  ungroup %>% 
+  filter(ocorrencias_continuas >= 5) %>% 
+  select(raceId, grupo_recorrencia)
+
+## criando dataframe com as provas que vamos usar
+df_regs <- provas_alvo %>% 
+  left_join(y = df, by = 'raceId')
+df_regs
+```
+
+## Abordagem Meta-Analítica I
+
+```{r regressoes_por_circuito, layout = 'l-page', dpi = 300, fig.height = 8, fig.width=12, code_folding = TRUE}
+## visualizando regressões
+df_regs %>% 
+  ggplot(mapping = aes(x = year, y = media, color = circuit, group = grupo_recorrencia)) +
+  facet_wrap(~ circuit, scales = 'free') +
+  geom_point(color = 'black', fill = 'indianred3', shape = 21) +
+  geom_smooth(color = 'black', linetype = 1, method = 'lm', se = TRUE) +
+  labs(
+    title = 'Regressões aplicadas à cada período dentro de cada circuito',
+    x     = 'Ano',
+    y     = 'Duração Média (minutos)'
+  )
+```
+
+```{r}
+df_regs %>% 
+  ggplot(mapping = aes(x = year, y = laps)) +
+  facet_wrap(~ circuit) +
+  geom_point()
+```
+
+blablabla
+
+```{r aninha_data_frame}
+df_regs <- nest(df_regs, data = -c(circuit, grupo_recorrencia))
+df_regs
+```
+
+blablabla
+
+```{r ajusta_regressoes}
+df_regs <- df_regs %>% 
+  mutate(
+    data      = map(.x = data, .f = mutate, year_scaled = (year - mean(year)) / sd(year)),
+    modelo    = map(.x = data, .f = ~ lm(media ~ year_scaled, data = .x)),
+    tidyed    = map(.x = modelo, .f = tidy),
+    ano_max   = map_dbl(.x = data, .f = ~ pull(.x, 'year') %>% max),
+    ano_min   = map_dbl(.x = data, .f = ~ pull(.x, 'year') %>% min),
+    intervalo = ano_max - ano_min,
+    desvio    = map_dbl(.x = data, .f = ~ pull(.x, 'year') %>% sd)
+  )
+```
+
+blablabla
+
+```{r exploratorio_regressoes}
+df_regs %>% 
+  unnest(tidyed) %>% 
+  filter(term == 'year_scaled') %>% 
+  ggplot() +
+  geom_autopoint() +
+  geom_autodensity() +
+  facet_matrix(vars(estimate, ano_max, intervalo), layer.diag = 2)
+```
+
+blablabla
+
+```{r tree_plot_regressoes, layout = 'l-body-outset'}
+df_regs %>% 
+  unnest(tidyed) %>% 
+  filter(term == 'year_scaled') %>% 
+  mutate(
+    circuit  = fct_reorder(.f = circuit, .x = estimate, .fun = sum),
+    lower_ci = estimate - 1.96 * std.error,
+    upper_ci = estimate + 1.96 * std.error,
+    efeito   = case_when(estimate > 0 & lower_ci > 0 ~ 'pos',
+                         estimate < 0 & lower_ci < 0 ~ 'neg',
+                         TRUE ~ 'none')
+      ) %>% 
+  ggplot(mapping = aes(y = circuit, x = estimate, group = grupo_recorrencia)) +
+  geom_vline(xintercept = 0, color = 'grey50') +
+  geom_errorbar(mapping = aes(xmin = lower_ci, xmax = upper_ci), 
+                width = 0, size = 0.5, color = 'grey50') +
+  geom_point(mapping = aes(fill = efeito), shape = 21, size = 2.5, color = 'black') +
+  scale_fill_manual(values = c('indianred3', 'white', 'dodgerblue3')) +
+  labs(
+    title    = 'Slopes da regressão linear por período em cada circuito',
+    subtitle = 'Cada círculo representa o slope da regressão entre o ano e a duração média das provas. 
+Círculos azuis indicam um tendência significativa ao aumento na duração da prova, enquanto os circulos
+vermelhos indicam o contrário. Os círculos brancos indicam as provas onde não há evidência de mudança
+na duração.',
+    x        = 'Slope'
+  ) +
+  theme(legend.position = 'none',
+        axis.title.y    = element_blank())
+```
+
+```{r prepara_df_ma_1}
+## desempacotando os resultados das regressoes
+df_regs <- df_regs %>% 
+  select(-data, - modelo) %>% 
+  unnest(cols = tidyed) %>% 
+  filter(term == 'year_scaled') %>% 
+  mutate(
+    variance = std.error ^ 2
+  )
+```
+
+```{r modelo_ma_slopes}
+modelo_ma_slopes <- rma.mv(yi = estimate, V = variance, random = ~ 1 | circuit, data = df_regs)
+modelo_ma_slopes
+```
+
+```{r backtransform_ma_1}
+modelo_ma_slopes %>%
+  unclass %>% 
+  keep(names(.) %in% c('b', 'se', 'ci.lb', 'ci.ub')) %>% 
+  map(.f = as.data.frame) %>% 
+  bind_cols() %>% 
+  tibble() %>% 
+  set_names(nm = c('estimate', 'se', 'ci.lb', 'ci.ub')) %>% 
+  mutate(desvio_medio = mean(df_regs$desvio)) %>% 
+  mutate(across(estimate:ci.ub, \(x) x * desvio_medio))
+```
+
+```{r ranef_ma_1}
+ranef(object = modelo_ma_slopes) %>% 
+  pluck('circuit') %>% 
+  rownames_to_column(var = 'circuit') %>% 
+  mutate(across(intrcpt:pi.ub, \(x) x * mean(df_regs$desvio))) %>% 
+  mutate(
+    circuit  = fct_reorder(.f = circuit, .x = intrcpt, .fun = mean),
+    efeito   = case_when(intrcpt > 0 & pi.lb > 0 ~ 'pos',
+                         intrcpt < 0 & pi.ub < 0 ~ 'neg',
+                         TRUE ~ 'none')
+      ) %>% 
+  ggplot(mapping = aes(y = circuit, x = intrcpt)) +
+  geom_vline(xintercept = 0, color = 'grey50') +
+  geom_errorbar(mapping = aes(xmin = pi.lb, xmax = pi.ub), 
+                width = 0, size = 0.5, color = 'grey50') +
+  geom_point(mapping = aes(fill = efeito), shape = 21, size = 2.5, color = 'black') +
+  scale_fill_manual(values = c('indianred3', 'white', 'dodgerblue3')) +
+  labs(
+    title    = 'Diferença na estimativa do tamanho do efeito associado à cada circuito',
+    subtitle = 'Este figura demonstra o quanto cada circuito se afasta da estimativa do tamanho de efeito global. Neste contexto, a linha horizontal centrada em zero representaria aquele efeito, e a diferença no eixo horizontal é o quanto que uma instância pertencer à cada circuito o modifica.',
+    x        = 'Diferença no tamanho do efeito'
+  ) +
+  theme(
+    legend.position = 'none',
+    axis.title.y    = element_blank()
+  )
+```
+
+## Abordagem Meta-Analítica II
+
+```{r lrr_calculation}
+df_diffs <- df %>% 
+  select(raceId:circuit) %>% 
+  arrange(circuit, -year) %>% 
+  group_by(circuit) %>% 
+  mutate(
+    lrr           = log(first(media) / media),
+    lrr_var       = ((first(erro) ^ 2) / (first(obs) * (first(media) ^ 2))) +
+      ((erro ^ 2) / (obs * (media ^ 2))),
+    intervalo     = first(year) - year,
+    bin_intervalo = as.factor((intervalo %/% 5) * 5)
+  ) %>% 
+  ungroup %>% 
+  filter(intervalo > 0)
+df_diffs
+```
+
+```{r modelo_ma_diffs}
+modelo_ma_diffs <- rma.mv(yi = lrr, V = lrr_var, 
+                          # mods = ~ poly(x = intervalo, degree = 2, raw = TRUE), 
+                          mods = ~ bin_intervalo,
+                          random = ~ 1 | circuit, data = df_diffs)
+modelo_ma_diffs
+```
+
+```{r contraste_ma_2}
+## construindo matriz identidade para traçar o contraste
+matriz_contraste <- diag(x = 1, nrow = length(unique(df_diffs$bin_intervalo)))
+
+## colocando 1 na primeira coluna para que todo calculo de efeito seja
+## baseado no valor do intercepto + nivel
+matriz_contraste[, 1] <- 1
+
+## calculando o efeito de cada nível
+anova(modelo_ma_diffs, L = matriz_contraste) %>% 
+  unclass %>% 
+  keep(names(.) %in% c('hyp', 'Xb', 'se', 'pval')) %>% 
+  map(.f = as.data.frame) %>% 
+  bind_cols() %>% 
+  as_tibble() %>% 
+  set_names(nm = c('intervalo', 'estimate', 'se', 'pval')) %>% 
+  mutate(
+    intervalo   = str_extract(string = intervalo, pattern = '(?<=bin_intervalo)[0-9]{1,2}'),
+    intervalo   = as.numeric(intervalo),
+    significant = pval <= 0.05
+  ) %>% 
+  replace_na(replace = list(intervalo = 0)) %>% 
+  ggplot(mapping = aes(x = intervalo, y = estimate)) +
+  geom_hline(yintercept = 0, color = 'grey40') +
+  geom_errorbar(mapping = aes(ymin = estimate - 1.96 * se, ymax = estimate + 1.96 * se)) +
+  geom_point(mapping = aes(fill = significant), shape = 21, size = 4, color = 'black') +
+  scale_x_continuous(breaks = seq(from = 0, to = 70, by = 5)) +
+  scale_y_continuous(breaks = seq(from = -1, to = 0.2, by = 0.2), limits = c(-0.9, 0.2)) +
+  scale_fill_manual(values = c('black', 'white')) +
+  labs(
+    title    = 'Diferença entre o tempo de prova mais recente e os anteriores',
+    subtitle = 'As provas parecem ter ficado mais rápidas quando comparadas à 40 ou 50 anos atrás e, desde então, os tempos parece que deram uma estagnada',
+    x        = 'Anos de Diferença',
+    y        = 'Log Response Ratio'
+  ) +
+  theme(
+    legend.position = 'none',
+    panel.grid      = element_blank(),
+    axis.line       = element_line()
+  )
+```
 
 # Conclusão
