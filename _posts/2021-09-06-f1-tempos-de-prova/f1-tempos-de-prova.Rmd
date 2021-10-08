@@ -1,12 +1,13 @@
 ---
 title: "F1 Tempos de Prova"
 description: |
-  A short description of the post.
+  A Fórmula 1 é um dos esportes de velocidade mais famosos do mundo, com provas ocorrendo desde o início da década de 50 até os dias de hoje. Muita coisa mudou nestes 70 anos, especialmente os carros: cada vez mais bonitos, mais seguros e mais rápidos. Mas será que isso também se traduziu em provas cada vez mais curtas também? Neste post eu examino de que forma a duração das provas da Fórmula 1 têm evoluído ao longo das temporadas.
 author:
   - first_name: Nicholas 
     last_name: Marino
     url: https://github.com/nacmarino
-date: 09-06-2021
+date: 10-08-2021
+bibliography: bibliografia.bib
 categories:
   - tidytuesday
   - meta-análise
@@ -16,12 +17,12 @@ output:
     toc: true
     code_folding: true
     highlight: rstudio
-draft: true
+draft: false
 ---
 
 ```{r setup, include=FALSE}
 # setando as opções gerais dos code chunks
-knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, fig.align = 'center')
+knitr::opts_chunk$set(echo = FALSE, code_folding = TRUE, cache = FALSE, fig.align = 'center')
 
 # presetando o ggplot2
 library(ggplot2)
@@ -42,13 +43,9 @@ theme_update(
 
 # Motivação
 
-# Preparação dos Dados
+A Fórmula 1 é um dos esportes de velocidade mais famosos do mundo, com provas ocorrendo desde o início da década de 50 até os dias de hoje. Com um histórico tanto grande desses, com provas tão intrincadas, tantas montadoras, pilotos e acontecimentos, é de se imaginar também que uma enorme quantidade de dados tenham sido gerados em cada prova. Seguindo esta ideia, existe um [site](^http://ergast.com/mrd/) que hospeda este registro histórico, e que foi o tema de um [_#TidyTuesday_](^https://github.com/rfordatascience/tidytuesday) recentemente. Achei os dados disponíveis bastante interessantes e, como (toda) pessoa interessada em dados, logo comecei a pensar sobre os tipos de perguntas que poderiam ser respondidos olhando para eles. Mas antes de seguir essa estória, vamos baixar os dados do repositório oficial do _TidyTuesday_ (ou usá-los localmente se você já o tiver baixado).
 
-## Carregando os Dados
-
-blablabla
-
-```{r carrega_dados}
+```{r carrega_dados, code_folding = FALSE}
 # carregando os pacotes necessários
 library(tidyverse) # core
 library(fs) # manipular paths
@@ -56,10 +53,16 @@ library(lubridate) # trablhar com datas
 library(ggforce) # extender o ggplot2
 library(broom) # wrangling dos resultados da regressão
 library(metafor) # para a meta-análise
-# library(tidytuesdayR) # ler os arquivos do tidytuesday
+library(reactable) # tabelas reativas
+library(sparkline) # embedar widgets
+library(patchwork) # compor figuras
+library(tidytuesdayR) # ler os arquivos do tidytuesday
 
 # carregando todos os dados a partir do github do tidytuesday
-# tt_dataset <- tt_load(x = 2021, week = 37) # se você quiser baixar os dados direto da fonte
+# se você quiser baixar os dados direto da fonte é só descomentar 
+# como existe um limite de requests que podem ser feitos ao site, resolvi
+# deixar aqui só para referência mesmo
+# tt_dataset <- tt_load(x = 2021, week = 37)
 
 # carregando a copia local dos dados
 ## extraindo os paths das copias locais
@@ -78,19 +81,16 @@ tt_dataset <- map(.x = paths_copias_locais, .f = read_rds)
 names(tt_dataset) <- nomes_arquivos
 ```
 
-## Variável Resposta 
+Uma das primeiras coisas que me ocorreram é que ao longo do tempo a tecnologia do setor automobilístico avançou bastante, levando ao desenvolvimento de motores cada vez mais performáticos e potentes. Não só os motores em si devem ter melhorado, mas todas as outras partes dos carros sofreram alterações no intuito de melhorar a sua aerodinâmica e fornecer mais vantagens aos pilotos que os conduzem - seja em termos de manobrabilidade, velocidade, aceleração ou segurança. Neste contexto, eu esperaria que as provas da Fórmula 1 ficassem cada vez mais curtas com o passar dos anos, certo? Então, a primeira coisa que fiz foi montar um histórico com a evolução da duração das provas ao longo dos anos.
 
-blablabla
+Como primeiro passo para construir este histórico precisei combinar duas tabelas que estão disponíveis junto aos dados - `tt_dataset$results` e `tt_dataset$status`. Fiz isso pois a primeira tabela traz o tempo de conclusão de prova de cada piloto, enquanto a segunda tabela é um de-para que nos permite mapear quais pilotos concluíram ou não cada uma delas. Usei esta informação para filtrar a primeira tabela e extrair o tempo de prova (em minutos) de cada piloto que as concluiu. Com base nessa informação, então, calculei o tempo de duração de cada prova como a média do tempo entre todos os pilotos, bem como o desvio padrão deste valor e a quantidade de observações nas quais se baseiam estas estimativas.
 
-```{r junta_status_dict}
+```{r cria_base_target}
 ## adicionando o dicionario com o de-para do statusId
 resultados <- left_join(x = tt_dataset$results,
                         y = tt_dataset$status,
                         by = 'statusId')
-resultados
-```
 
-```{r cria_base_target}
 # criando base com o minimo, media e maximo dos tempos de cada prova
 tempos_de_prova <- resultados %>% 
   # pegando apenas os pilotos que concluiram a prova
@@ -101,24 +101,87 @@ tempos_de_prova <- resultados %>%
   mutate(
     milliseconds = parse_number(milliseconds),
     # calculando a quantidade de tempo em horas
-    horas        = (milliseconds / 1000) / 60
+    minutos      = (milliseconds / 1000) / 60
   ) %>% 
   # agrupando pela prova
   group_by(raceId) %>% 
   # pegando o valor minimo, medio e maximo dos tempo de prova
   summarise(
-    media  = mean(horas, na.rm = TRUE),
-    erro   = sd(horas, na.rm = TRUE),
+    media  = mean(minutos, na.rm = TRUE),
+    erro   = sd(minutos, na.rm = TRUE),
     obs    = n()
   )
-tempos_de_prova
+
+## criando a tabela para a visualização
+tempos_de_prova %>% 
+  # passando para caracter só para facilitar o plot da tabela
+  mutate(raceId = as.character(raceId)) %>% 
+  reactable(striped = TRUE, highlight = TRUE, compact = TRUE, 
+            columns = list(
+              media = colDef(name = 'Duração média (min)', format = colFormat(digits = 2)),
+              erro  = colDef(name = 'Desvio padrão', format = colFormat(digits = 2)),
+              obs = colDef(name = 'Observações')
+            ),
+            defaultColDef = colDef(align = 'center',
+                                   footer = function(values) {
+                                     if (!is.numeric(values)) return()
+                                     sparkline(values, type = "box", width = 100, height = 30)
+                                   })
+  )
 ```
 
-## Feature Engineering
+Como podemos ver na figura abaixo, existe uma tendência forte de queda no tempo de duração das provas até a década de 70 e, então, uma desaceleração desta tendência. Além disso, parece haver uma certa variância nesta série temporal ao longo da última década, inclusive com um aparente aumento nos tempos de prova. Isso acabou me surpreendendo, uma vez que a minha expectativa era de que as provas estariam ficando mais curtas. Mas o que será que poderia estar ocorrendo?
 
-blablabla
+```{r serie_temporal, layout = 'l-body-outset', fig.height=4, dpi = 300}
+tempos_de_prova %>% 
+  # juntando com as informacoes da data de ocorrência de cada prova
+  left_join(y = select(tt_dataset$races, raceId, date), 
+            by = 'raceId') %>% 
+  mutate(
+    # parseando a data para date
+    data   = as_date(x = date),
+    # extraindo o ano do objeto de data
+    year   = year(x = data),
+    # calculando a decada onde ocorreu cada prova
+    decada = (year %/% 10) * 10,
+    # passando a decada para caracter, pois quero que o mapeamento de cores
+    # seja feito usando uma escala discreta, e não contínua
+    decada = as.character(decada)
+  ) %>% 
+  # criando a figura do historico de tempos de prova
+  ggplot(mapping = aes(x = data, y = media)) +
+  geom_line(alpha = 0.3, size = 0.7) +
+  geom_point(mapping = aes(fill = decada), 
+             shape = 21, size = 1.5, alpha = 0.3, color = 'black', show.legend = FALSE) +
+  geom_smooth(se = FALSE, color = 'firebrick3', method = 'loess') +
+  scale_x_date(breaks = seq.Date(from = as.Date('1950-01-01'), to = as.Date('2021-12-01'), by = '5 years'),
+               labels = seq(from = 1950, to = 2020, by = 5)) +
+  scale_fill_viridis_d() +
+  labs(
+    title    = 'Série histórica da duração média das provas',
+    subtitle = 'A linha vermelha representa a tendência geral de duração das provas no histórico, enquanto os pontos representam\na duração de cada uma das provas',
+    x        = 'Período',
+    y        = 'Duração Média (minutos)'
+  ) +
+  theme(legend.position = 'none')
+```
 
-```{r voltas_por_prova}
+Eu esperaria que a duração das provas permanecessem relativamente estáveis em pelo menos duas condições. A primeira delas é no caso dos carros _não_ estarem ficando mais rápidos ao longo dos anos. Não dá para avaliar isso tão bem com os dados que estão disponíveis, uma vez esta informação (_i.e._, `fastestLapSpeed`) só passou a ser registrado de forma consistente a partir de 2004 (painel A na figura abaixo). Esta série até mostra que a velocidade andou baixando um pouquinho na última década, mas precisávamos mesmo é ver como eram as velocidades lá para trás, quando a série temporal dos tempos de conclusão passou a ficar mais _flat_. 
+
+A segunda coisa que me ocorreu seria o caso onde houvesse uma mudança sistemática na quantidade de voltas em cada prova, que refletisse aquele mesmo padrão da duração das provas. Embora o painel B da figura abaixo mostre que existe alguma semelhança entre as duas séries temporais, podemos ver que a variância na quantidade de voltas pareceu ficar bem mais tamponada ao longo do tempo. Além disso, a queda observada ao longo das primeiras décadas não é tão forte quanto àquela observada na outra série temporal. Finalmente, ainda que a mesma quantidade de voltas em cada prova sejam dadas hoje e no passado, não me parece razoável acreditar que a velocidade dos carros não variou em nada neste mesmo período. Claro, pode sempre ter alguma regra da FIA que defina alguns padrões que segurassem aqueles comportamentos, mas algo não parece fechar.  
+
+```{r infos_por_prova, layout = 'l-body-outset', fig.height=6, dpi = 300}
+## mapeando a velocidade maxima por prova
+velocidades_por_prova <- resultados %>%
+  # parseando a velocidade para numerico
+  mutate(fastestLapSpeed = parse_number(fastestLapSpeed)) %>% 
+  # extraindo a velocidade maxima por prova
+  group_by(raceId) %>% 
+  filter(fastestLapSpeed == max(fastestLapSpeed, na.rm = TRUE)) %>% 
+  ungroup %>% 
+  # garantindo que temos valores unicos por prova
+  distinct(raceId, fastestLapSpeed)
+
 ## calculando a quantidade de voltas em cada prova
 voltas_por_prova <- resultados %>% 
   # considerando apenas os pilotos que concluiram cada prova
@@ -128,219 +191,203 @@ voltas_por_prova <- resultados %>%
   # pegando o valor maximo da quantidade de voltas por prova
   group_by(raceId) %>% 
   summarise(laps = max(laps))
-voltas_por_prova
-```
 
-blablabla
-
-```{r infos_das_provas}
 ## mapeando cada circuito à uma prova
 provas <- left_join(x = tt_dataset$races,
                     y = tt_dataset$circuits,
                     by = 'circuitId') %>% 
   # removendo URL da wikipedia
-  select(-contains('url'), -circuitRef, -circuitId, -round) %>%
+  select(-contains('url'), -circuitRef, -circuitId, -round, -time) %>%
   # renomeando o nome do GP e do circuito
-  rename(gp = name.x, circuit = name.y) %>% 
-  # levantando informacoes de data
-  mutate(
-    data = paste(date, time),
-    data = as_datetime(data),
-    mes = month(data),
-    semana = isoweek(x = data),
-    turno_pm = pm(data)
-  ) %>% 
-  select(-date, -time)
-provas
-```
+  rename(gp = name.x, circuit = name.y, data = date)
 
-## Base Analítica
+## juntando informacoes
+features_por_prova <- provas %>% 
+  ## juntando de voltas por prova
+  left_join(y = voltas_por_prova, by = 'raceId') %>% 
+  ## juntando velocidades por prova
+  left_join(y = velocidades_por_prova, by = 'raceId') %>% 
+  ## adicionando decada à tabela
+  mutate(decada = (year %/% 10) * 10)
 
-blablabla
-
-```{r junta_features_por_prova}
-## juntando de voltas por prova
-features_por_prova <- left_join(x = provas,
-            y = voltas_por_prova,
-            by = 'raceId')
-features_por_prova
-```
-
-blablabla
-
-```{r cria_base_analitica}
-df <- left_join(x = tempos_de_prova, y = features_por_prova, by = 'raceId')
-df
-```
-
-# Análise Exploratória
-
-Como é a série histórica.
-
-```{r serie_temporal, layout = 'l-body-outset', fig.height=4, dpi = 300, code_folding = TRUE}
-df %>% 
-  mutate(
-    data = as_date(data),
-    decada = (year %/% 10) * 10,
-    decada = as.character(decada)) %>% 
-  ggplot(mapping = aes(x = data, y = media)) +
-  geom_line(alpha = 0.3, size = 1) +
-  geom_point(mapping = aes(fill = decada), 
+## criando figura do historico de velocidade por prova
+fig1 <- features_por_prova %>% 
+  select(data, decada, fastestLapSpeed) %>% 
+  drop_na() %>% 
+  ggplot(mapping = aes(x = data, y = fastestLapSpeed)) +
+  geom_line(alpha = 0.3, size = 0.7) +
+  geom_point(mapping = aes(fill = as.character(decada)), 
              shape = 21, size = 1.5, alpha = 0.3, color = 'black', show.legend = FALSE) +
   geom_smooth(se = FALSE, color = 'firebrick3', method = 'loess') +
-  scale_x_date(breaks = seq.Date(from = as.Date('1950-01-01'), to = as.Date('2021-12-01'), by = '5 years'),
-               labels = seq(from = 1950, to = 2020, by = 5)) +
+  scale_x_date(breaks = seq.Date(from = as.Date('2004-01-01'), to = as.Date('2021-01-01'), by = '4 years'),
+               labels = seq(from = 2004, to = 2020, by = 4)) +
   scale_fill_viridis_d() +
   labs(
-    title    = 'Série histórica da duração das provas',
-    subtitle = 'A linha vermelha representa a tendência geral de duração das provas no histórico, enquanto os pontos representam\na duração de cada uma das provas ocorridas',
-    x        = 'Período',
-    y        = 'Duração Média (minutos)'
+    title = '(A) Série histórica da velocidade máxima nas provas',
+    x     = 'Período',
+    y     = 'Velocidade máxima (Km/h)'
   ) +
   theme(legend.position = 'none')
+
+## criando figura do historico de voltas por prova
+fig2 <- features_por_prova %>% 
+  ggplot(mapping = aes(x = data, y = laps)) +
+  geom_line(alpha = 0.3, size = 0.7) +
+  geom_point(mapping = aes(fill = as.character(decada)), 
+             shape = 21, size = 1.5, alpha = 0.3, color = 'black', show.legend = FALSE) +
+  geom_smooth(se = FALSE, color = 'firebrick3', method = 'loess') +
+  scale_x_date(breaks = seq.Date(from = as.Date('1950-01-01'), to = as.Date('2021-12-01'), by = '10 years'),
+               labels = seq(from = 1950, to = 2020, by = 10)) +
+  scale_fill_viridis_d() +
+  labs(
+    title = '(B) Série histórica da quantidade de voltas por prova',
+    x     = 'Período',
+    y     = 'Quantidade de voltas'
+  ) +
+  theme(legend.position = 'none')
+
+## criando composição
+fig1 / fig2
 ```
 
-Quais GPs ocorreram em quais períodos. Prepara o dado.
+Foi daí que me ocorreu que essa não era uma série temporal convencional. Isto porquê cada corrida dentro de uma temporada vem de uma prova ocorrida em um dado circuito, e poderia ser o caso que o _roster_ de circuitos tivesse mudado bastante entre as temporadas. Mais importante, dada tantas peculiaridades ligadas aos circuitos em si, não faria mais sentido tentar entender o quanto as provas dentro do mesmo circuito têm ou não ficado mais rápidas entre as temporadas? Isto é, será que nossa unidade básica de previsão para entender os padrões de duração das provas não seria o circuito, ao invés de cada prova em si? Afinal, observações vindas de um mesmo circuito não são independentes entre si. 
 
-```{r monta_historico_gp_ano, code_folding = TRUE}
-historico_gps_ano <- df %>% 
-  distinct(gp, data) %>% 
+Com isto em mente, isolei cada circuito e fiz um levantamento do período no qual cada um deles esteve no _roster_ das temporadas. A primeira coisa legal que vi com isso é que nenhum circuito esteve em todas as temporadas da Fórmula 1 (_i.e._, nenhum segmento é contínuo de ponta à ponta na figura abaixo). O segundo padrão interessante é que são poucos os circuitos que se mantiveram por um período longo de temporadas (_i.e._, os circuito estão ordenados de cima para baixo, daqueles com o maior volume de provas para o menor volume de provas). Por fim, outro padrão que me saltou aos olhos foi o fato de que alguns circuitos só acabaram estando em uma única temporada mesmo (_i.e._, os últimos circuitos na figura abaixo) ou, ainda, participado de forma muito intermitente do _roster_ (_i.e._, segmentos descontínuos e/ou pontos isolados). Em essência, (1) temos uma ~~série temporal~~ sequência de valores com a duração das provas da Fórmula 1 ao longo das temporadas, (2) estes valores não pertencem sempre as mesmas entidades e, (3) quando estas entidades se repetem, pode ser que estejam bem distantes uma das outras no tempo.
+
+```{r historico_gp_ano, layout = 'l-page', fig.height=10, dpi = 150}
+features_por_prova %>% 
+  # pegando as ocorrências únicas de cada circuito em cada temporada
+  distinct(circuit, data) %>% 
+  # extraindo o ano a partir da data de ocorrência da corrida
   mutate(ano = year(data)) %>% 
-  arrange(gp, ano) %>% 
-  group_by(gp) %>%
+  # organizando a base de acordo com os anos dentro de cada circuito
+  arrange(circuit, ano) %>% 
+  # agrupando pelo circuito
+  group_by(circuit) %>%
   mutate(
-    recorrencia = (ano - lag(ano)) != 1 | is.na(ano - lag(ano)),
+    # criando uma dummy que será 1 caso a diferença entre o ano de ocorrência
+    # de corridas sucessivas dentro de um mesmo circuito seja 1 ou caso seja
+    # o primeiro registro de prova naquele circuito
+    recorrencia       = (ano - lag(ano)) != 1 | is.na(ano - lag(ano)),
+    # acumulando a dummy de recorrencia, de forma a criar grupos que sinalizem
+    # anos sucessivos onde houve uma prova naquele circuito
     grupo_recorrencia = cumsum(recorrencia),
-    n_gps = n()
-  )
-filter(historico_gps_ano, gp == 'Argentine Grand Prix')
-```
-
-Mostra o dado.
-
-```{r historico_gp_ano, layout = 'l-body-outset', fig.height=9, dpi = 300, code_folding = TRUE}
-historico_gps_ano %>% 
-  group_by(gp, grupo_recorrencia) %>% 
+    # calculando a quantidade total provas registradas em cada circuito
+    n_provas          = n()
+  ) %>% 
+  # adicionando a recorrencia ao group_by
+  group_by(grupo_recorrencia, .add = TRUE) %>% 
   summarise(
-    inicio  = min(ano),
-    fim     = max(ano),
-    n_gps   = max(n_gps),
+    # extraindo o ano de inicio de cada fase sucessiva de ocorrência de provas
+    # em cada circuito
+    inicio   = min(ano),
+    # extraindo o ano de fim de cada fase sucessiva de ocorrência de provas
+    # em cada circuito
+    fim      = max(ano),
+    # extraindo a quantidade total de provas em cada circuito
+    n_provas = max(n_provas),
+    # dropando os grupos
     .groups = 'drop'
   ) %>% 
   mutate(
-    gp = fct_reorder(.f = gp, .x = n_gps, .fun = max)
+    # reordenando os níveis do circuito de acordo com a quantidade total de provas
+    circuit = fct_reorder(.f = circuit, .x = n_provas, .fun = sum)
   ) %>% 
+  # criando figura para ver o período e/ou ano de ocorrências das provas em cada circuito
   ggplot() +
-  geom_segment(mapping = aes(x = inicio, xend = fim, y = gp, yend = gp)) +
-  geom_point(mapping = aes(x = inicio, y = gp), size = 3,
+  geom_segment(mapping = aes(x = inicio, xend = fim, y = circuit, yend = circuit)) +
+  geom_point(mapping = aes(x = inicio, y = circuit), size = 2,
              shape = 21, color = 'black', fill = 'white') +
-  geom_point(mapping = aes(x = fim, y = gp), size = 3,
-             shape = 21, color = 'black', fill = 'grey40') +
-  scale_x_continuous(breaks = seq(from = 1950, to = 2020, by = 5)) +
+  geom_point(mapping = aes(x = fim, y = circuit), size = 2,
+             shape = 21, color = 'black', fill = 'grey70') +
+  scale_x_continuous(breaks = seq(from = 1950, to = 2020, by = 10)) +
   labs(
-    title    = 'Ocorrência de cada Gran Prix ao longo dos anos',
-    subtitle = 'Os segmentos sinalizam o intervalo de anos seguidos nos quais cada GP ocorreu',
+    title    = 'Ocorrência das provas em cada circuito ao longo dos anos',
+    subtitle = 'Os segmentos representam o intervalo de anos sucessivos nos quais cada circuito esteve no roster',
     x        = 'Período'
   ) +
   theme(axis.title.y = element_blank())
 ```
 
-Ocorrência dos GPs varia entre meses no histórico também.
-
-```{r historico_gp_mes, layout = 'l-body-outset', fig.height=9, dpi = 300, code_folding = TRUE}
-df %>% 
-  distinct(gp, data) %>% 
-  mutate(mes = month(data)) %>%  
-  count(gp, mes, name = 'observacoes') %>% 
-  group_by(gp) %>% 
-  mutate(
-    total   = sum(observacoes),
-    obs_std = observacoes / total
-  ) %>% 
-  ungroup %>% 
-  mutate(
-    gp = fct_reorder(.f = gp, .x = mes, .fun = min),
-    gp = fct_rev(f = gp)
-  ) %>% 
-  complete(gp, mes) %>% 
-  ggplot(mapping = aes(x = mes, y = gp, fill = obs_std)) +
-  geom_tile(color = 'black') +
-  geom_text(mapping = aes(label = observacoes, color = obs_std)) +
-  scale_fill_viridis_c(na.value = 'white') +
-  scale_color_viridis_c(option = 'A', direction = -1, na.value = 'white') +
-  scale_x_continuous(breaks = seq(from = 1, to = 12, by = 1),
-                     labels = month(x = 1:12, label = TRUE, abbr = TRUE, locale = 'pt_BR'),
-                     expand = c(0, 0)) +
-  labs(
-    title = 'Distribuição histórica da ocorrências dos GPs entre meses',
-    x     = 'Período'
-  ) +
-  theme(
-    legend.position = 'none',
-    axis.title.y = element_blank()
-  )
-```
-
-Ocorrencias por circuito.
-
-```{r ocorrencias_por_circuito, layout = 'l-page', fig.height=10, fig.width=10, dpi = 300, code_folding = TRUE}
-df %>% 
-  distinct(gp, circuit, year) %>% 
-  count(gp, circuit, name = 'ocorrencias') %>% 
-  mutate(
-    n_unico = 1,
-    gp      = fct_reorder(.f = gp, .x = n_unico, .fun = sum),
-    circuit = fct_reorder(.f = circuit, .x = ocorrencias, .fun = sum)) %>% 
-  ggplot(mapping = aes(x = n_unico, y = gp, group = circuit)) +
-  geom_col(color = 'white') +
-  geom_text(mapping = aes(label = paste0(abbreviate(circuit), ': ', ocorrencias)), 
-            color = 'white', size = 3,
-            position = position_stack(vjust = 0.5)) +
-  scale_x_continuous(breaks = seq(from = 0.5, to = 6.5, by = 1), 
-                     labels = seq(from = 1, to = 7, by = 1)) +
-  labs(
-    title = 'Quantidade de provas por circuito em cada GP',
-    x     = 'Quantidade de circuitos'
-  ) +
-  theme(legend.position = 'none',
-        axis.title.y = element_blank())
-```
+Parece que não tem muito o que fazer para abordarmos analiticamente a evolução da duração das provas da Fórmula 1. Por um lado, a sequência temporal está bem estacionária há uns 50 anos - fato que parece estar associado à constância na quantidade de voltas em cada prova e, mais recentemente, à mudança bem pequena na velocidade dos carros. Por outro lado, parece que parte do que estamos buscando entender pode estar sendo mascarado pelo fato das provas ocorrerem em diferentes circuitos em cada temporada. Se pudéssemos analisar a série temporal de cada circuito, isto nos daria mais _insights_ sobre a real evolução da duração das provas, uma vez que controlamos o efeito do circuito; todavia, como vimos, temos um _sashimi_ de séries temporais e, portanto, não daria para ajustar um modelo estatístico mais tradicional. Como então atacar esse problema?
 
 # Análise dos Dados
 
-## Visão Geral
+Meu objetivo é determinar como tem se dado a evolução da duração das provas da Fórmula 1. No entanto, vimos que talvez não valha a pena olhar os dados disponíveis como sendo pertencentes à uma única série temporal, mas sim olhá-los como o resultado agregado da evolução da duração das provas circuito-a-circuito. Neste contexto, é desejável um método que seja capaz de combinar as contribuições de cada circuito para estes padrões, bem como considerar que estes padrões podem não ser tão homogêneos assim entre os circuitos. Finalmente, este método deve dar conta do fato de que cada circuito pode contribuir com a compreensão daqueles padrões com diferentes recortes do tempo (_e.g._, existem provas do ano _x_ ao ano _y_ e do ano _z_ ao ano _k_ para o circuito XPTO - mas ambos os recortes caracterizam a duração das provas neste circuito).
 
-blablabla
+Um candidato ideal para nos ajudar a resolver este tipo de problema é uma abordagem meta-analítica. O termo meta-análise foi proposto por @glass1976, que o definiu como "a análise estatística de uma grande coleção de resultados de estudos individuais, com o propósito de integrar os seus achados". Todavia, uma definição que gosto mais vem do livro da Julia Koricheva (@koricheva2013), no qual ela define meta-análise como "o conjunto de métodos estatísticos utilizados para combinar as magnitudes dos efeitos (_effect sizes_) entre diferentes conjuntos de dados que buscam endereçar a mesma pergunta". A definição do termo já deixa clara a ideia geral por trás dessa técnica, mas acho legal trazer mais alguns benefícios gerais dela:  
 
-```{r prepara_df_regs}
-## pegando as provas que ocorrem em sequencia
-provas_alvo <- df %>% 
-  select(raceId, gp, circuit, year) %>% 
-  arrange(circuit, year) %>% 
-  group_by(circuit) %>% 
-  mutate(
-    recorrencia = (year - lag(year)) != 1 | is.na(year - lag(year)),
-    grupo_recorrencia = cumsum(recorrencia)
-  ) %>% 
-  add_count(circuit, grupo_recorrencia, name = 'ocorrencias_continuas') %>% 
-  ungroup %>% 
-  filter(ocorrencias_continuas >= 5) %>% 
-  select(raceId, grupo_recorrencia)
+- Impõem restrições quanto ao tipo de estudo que pode ser usado na síntese;  
+- __Não__ interpreta os estudos com base na significância estatística;  
+- Leva em consideração o tamanho do efeito estimado em cada estudo, a incerteza ao redor desta estimativa e o tamanho da amostra ao combinar os estudos;  
+- Fornece uma estimativa da magnitude do efeito médio e sua incerteza entre todos os estudos;  
+- Nos permite quantificar o quanto a estimativa do efeito médio está associado à diferenças entre _vs_ dentro dos estudos;    
+- Fornece as ferramentas necessárias para determinar o impacto dos fatores que contribuem para a variação nos efeitos entre os estudos.     
 
-## criando dataframe com as provas que vamos usar
-df_regs <- provas_alvo %>% 
-  left_join(y = df, by = 'raceId')
-df_regs
+A teoria por trás da meta-análise é bastante extensa, mas simples. Não vou me prender a explicar todos os detalhes aqui, dado que o objetivo é apenas demonstrar a aplicação. Assim, vou usar dois exemplos de aplicação aqui. Mas, antes de começar, vou juntar todas as features que calculei ao nível das provas com a base contendo a duração média das provas, seu desvio padrão e o número de observações utilizadas para calcular esses dois momentos.
+
+```{r cria_base_analitica, layout = 'l-page', code_folding = FALSE}
+## juntando as informações dos tempos de prova com aquele das features extraídas de cada prova
+df <- left_join(x = tempos_de_prova, y = features_por_prova, by = 'raceId') %>% 
+  # removendo a prova do GP da Belgica de 2020, que foi dado como concluído após a primeira 
+  # volta por conta de condições climáticas extremas
+  filter(raceId != 1063)
+rmarkdown::paged_table(x = df)
 ```
 
 ## Abordagem Meta-Analítica I
 
-```{r regressoes_por_circuito, layout = 'l-page', dpi = 300, fig.height = 8, fig.width=12, code_folding = TRUE}
+O sucesso de uma meta-análise está logo na sua primeira etapa: a definição de, pelo menos, 2 de 4 informações sobre o que queremos fazer:  
+
+- **População**: o objeto básico do nosso estudo. Nesta seção, a nossa população será _a sequência de provas ocorridas em um circuito_;  
+- **Intervenção:** o tratamento, intervenção ou variável independente que temos interesse em relacionar com a população. Nesta seção, isso será _o tempo_ - mais especificamente, uma sequência de provas ocorrendo de forma ininterrupta ao longo dos anos;  
+- **Comparação:** aquilo que queremos contrastar. Não faremos uso dessa informação nesta seção, mas na próxima;  
+- **Outcome:** aquilo que quantifica o impacto da intervenção sobre a população - isto é, o que servirá, direta ou indiretamente, para medir o efeito da intervenção na população. Nesta seção, isto será _a taxa de variação da duração das provas ao longo dos anos para um circuito_.  
+
+E como trabalhamos isto na prática? O outcome que vamos buscar nada mais é, nesse caso, do que o _slope_ de uma regressão entre a duração da prova e o tempo (_i.e._, os anos) para cada um dos circuitos. Se o _slope_ dessa relação for negativo, então é sinal de que as provas estão ficando curtas ao longo das temporadas; caso contrário, as provas estão ficando mais longas. Um detalhe que não podemos perder de vista é o fato de que muitas vezes um circuito sai do _roster_ e depois retorna. Assim, precisaremos ajustar uma regressão para cada uma das sequências ininterruptas de anos nos quais aquele circuito esteve no _roster_. Como não queremos errar muito na mão e ajustar uma regressão com poucos pontos, vamos colocar uma restrição para só considerarmos dentro da nossa população as sequências de provas que tenham ocorrido pelo menos durante 5 anos sucessivos em cada circuito. O pedaço de código abaixo dá conta de identificar as provas que atendem à essa restrição em cada circuito, e já prepara o `dataframe` que vamos usar para ajustar as regressões.
+
+```{r prepara_df_regs, code_folding = FALSE}
+## pegando as provas que ocorrem em sequencia
+provas_alvo <- df %>% 
+  # pegando só as informações do id da prova, circuito e ano
+  select(raceId, circuit, year) %>% 
+  # organizando a base de acordo com os anos dentro de cada circuito
+  arrange(circuit, year) %>% 
+  # agrupando a base pelo circuito
+  group_by(circuit) %>% 
+  mutate(
+    # criando uma dummy que será 1 caso a diferença entre o ano de ocorrência
+    # de corridas sucessivas dentro de um mesmo circuito seja 1 ou caso seja
+    # o primeiro registro de prova naquele circuito
+    recorrencia = (year - lag(year)) != 1 | is.na(year - lag(year)),
+    # acumulando a dummy de recorrencia, de forma a criar grupos que sinalizem
+    # anos sucessivos onde houve uma prova naquele circuito
+    grupo_recorrencia = cumsum(recorrencia)
+  ) %>% 
+  ungroup %>% 
+  # contando quantas vezes cada grupo dentro de cada circuito aparece - i.e., calculando
+  # o tamanho de cada uma das sequências ininterruptas de provas dentro de cada circuito
+  add_count(circuit, grupo_recorrencia, name = 'ocorrencias_continuas') %>% 
+  # removendo toda as sequências compostas por menos de 4 anos consecutivos
+  filter(ocorrencias_continuas >= 5) %>% 
+  # pegando só o id da prova e o grupo de recorrencia de cada uma
+  select(raceId, grupo_recorrencia)
+
+## criando dataframe com as provas que vamos usar
+df_regs <- provas_alvo %>% 
+  # filtrando as provas que de fato podemos usar
+  left_join(y = df, by = 'raceId')
+glimpse(x = df_regs)
+```
+
+Como podemos ver, das `r nrow(df)` provas que tínhamos originalmente, somente  `r nrow(df_regs)` atendem ao pré-requisito de terem ocorrido dentro daquela sequência contínua de anos em cada circuito. A figura abaixo tenta mostrar o que queremos fazer até aqui: ajustar uma regressão para cada sequência de anos dentro de cada circuito, extrair os _slopes_ destas regressões e os erros associado à cada um deles.
+
+```{r regressoes_por_circuito, layout = 'l-page', dpi = 300, fig.height = 8, fig.width=12}
 ## visualizando regressões
 df_regs %>% 
   ggplot(mapping = aes(x = year, y = media, color = circuit, group = grupo_recorrencia)) +
   facet_wrap(~ circuit, scales = 'free') +
-  geom_point(color = 'black', fill = 'indianred3', shape = 21) +
+  geom_point(color = 'black', fill = 'grey70', shape = 21) +
   geom_smooth(color = 'black', linetype = 1, method = 'lm', se = TRUE) +
   labs(
     title = 'Regressões aplicadas à cada período dentro de cada circuito',
@@ -349,118 +396,95 @@ df_regs %>%
   )
 ```
 
-```{r}
-df_regs %>% 
-  ggplot(mapping = aes(x = year, y = laps)) +
-  facet_wrap(~ circuit) +
-  geom_point()
-```
+Com isto em mente, é hora de ajustar das regressões! Vamos fazer isso de forma _tidy_, aninhando o `dataframe` e deixando de fora apenas o circuito e o identificador da sequência de anos dentro de cada um deles. Na sequência, vamos usar a função `purrr::map` para ajustar uma regressão para prever a duração das provas de acordo com uma sequência de anos. Um ponto importante é que diferenças nos valores do intervalo de anos para cada regressão influenciam diretamente a estimativa do _slope_ de cada uma delas. Portanto, vamos padronizar a variável independente ano dentro de cada recorte, de forma que os _slopes_ estejam livres do _confounding_ do valor dos anos utilizados para ajustá-los. Neste contexto, os _slopes_ vão representar a mudança na duração das provas para cada unidade de desvio padrão do tempo (_i.e._, anos).
 
-blablabla
-
-```{r aninha_data_frame}
-df_regs <- nest(df_regs, data = -c(circuit, grupo_recorrencia))
-df_regs
-```
-
-blablabla
-
-```{r ajusta_regressoes}
+```{r ajusta_regressoes, code_folding = FALSE}
 df_regs <- df_regs %>% 
+  # aninhando o dataframe e deixando de fora apenas o circuito e o identificador da 
+  # sequencia de anos dentro de cada circuito
+  nest(data = -c(circuit, grupo_recorrencia)) %>% 
   mutate(
+    # padronizando o ano dentro de cada recorte
     data      = map(.x = data, .f = mutate, year_scaled = (year - mean(year)) / sd(year)),
+    # ajustando uma regressão para cada recorte
     modelo    = map(.x = data, .f = ~ lm(media ~ year_scaled, data = .x)),
+    # extraindo os coeficientes da regressão
     tidyed    = map(.x = modelo, .f = tidy),
+    # extraindo o ano maximo dentro de cada recorte
     ano_max   = map_dbl(.x = data, .f = ~ pull(.x, 'year') %>% max),
+    # extraindo o ano minimo dentro de cada recorte
     ano_min   = map_dbl(.x = data, .f = ~ pull(.x, 'year') %>% min),
-    intervalo = ano_max - ano_min,
-    desvio    = map_dbl(.x = data, .f = ~ pull(.x, 'year') %>% sd)
+    # extraindo a quantidade de anos que cada intervalo compreende
+    intervalo = ano_max - ano_min
   )
 ```
 
-blablabla
+Regressões ajustadas, vamos olhar o que conseguimos extrair dos dados. A figura abaixo mostra que os _slopes_ (_i.e._, `estimate`) não estão muito relacionados às estimativas de erro, o ano de fim da estimativa e nem o intervalo de anos. Por outro lado e, como era de se esperar, as estimativas de erro parecem ser menores tanto maior forem a quantidade de pontos que usamos para ajustar as regressões. Tirando isso, nada de muito surpreendente nos dados.
 
-```{r exploratorio_regressoes}
+```{r exploratorio_regressoes, layout = 'l-body-outset', fig.height=4}
 df_regs %>% 
+  # desempacotando a coluna com as estimativas de cada regressão
   unnest(tidyed) %>% 
+  # pegando só os slopes
   filter(term == 'year_scaled') %>% 
+  # plotando a figura
   ggplot() +
-  geom_autopoint() +
-  geom_autodensity() +
-  facet_matrix(vars(estimate, ano_max, intervalo), layer.diag = 2)
+  geom_autopoint(shape = 21, color = 'black', fill = 'grey70', alpha = 0.5) +
+  geom_autodensity(color = 'black', fill = 'grey70') +
+  facet_matrix(vars(estimate, std.error, ano_max, intervalo), layer.diag = 2)
 ```
 
-blablabla
+Vamos fazer uma breve pausa para entender o próximo passo da meta-análise. O outcome que estávamos buscando é o _slope_ das regressões da duração das provas _vs_ o tempo para cada sequência ininterrupta de anos nos quais elas ocorreram em cada circuito. Dentro do contexto da meta-análise, utilizaremos estes _slopes_ como uma medida do tamanho do efeito (_i.e._, __effect size__): a informação sobre a magnitude e o sinal de uma intervenção sobre a população estudada. É esta a medida que será combinada através do modelo meta-analítico. Aqui estamos usando o _slope_ das regressões como métrica de tamanho do efeito, mas qualquer métrica quantitativa pode ser usada para tal em uma meta-análise: o valor de uma média, uma métrica relacionada a um modelo (_e.g._, coeficiente de determinação, coeficiente de correlação,...) a um tipo de problema de negócio (_e.g._, acurácia, AUC,...), informações extraídas de uma tabela de contingência, comparações entre médias (veremos um exemplo deste na próxima seção). O importante é que o tamanho do efeito seja caracterizado por uma métrica quantitativa, comum a todos os estudos na população que estamos estudando. A função `escalc` do pacote `metafor` fornece uma visão bastante detalhada sobre as diferentes métricas de tamanho do efeito e os seus casos de uso^[Além de ser a função utilizada para realizar os cálculos dos tamanhos do efeito quando estamos usando este pacote para fazer uma meta-análise.].
 
-```{r tree_plot_regressoes, layout = 'l-body-outset'}
-df_regs %>% 
-  unnest(tidyed) %>% 
-  filter(term == 'year_scaled') %>% 
-  mutate(
-    circuit  = fct_reorder(.f = circuit, .x = estimate, .fun = sum),
-    lower_ci = estimate - 1.96 * std.error,
-    upper_ci = estimate + 1.96 * std.error,
-    efeito   = case_when(estimate > 0 & lower_ci > 0 ~ 'pos',
-                         estimate < 0 & lower_ci < 0 ~ 'neg',
-                         TRUE ~ 'none')
-      ) %>% 
-  ggplot(mapping = aes(y = circuit, x = estimate, group = grupo_recorrencia)) +
-  geom_vline(xintercept = 0, color = 'grey50') +
-  geom_errorbar(mapping = aes(xmin = lower_ci, xmax = upper_ci), 
-                width = 0, size = 0.5, color = 'grey50') +
-  geom_point(mapping = aes(fill = efeito), shape = 21, size = 2.5, color = 'black') +
-  scale_fill_manual(values = c('indianred3', 'white', 'dodgerblue3')) +
-  labs(
-    title    = 'Slopes da regressão linear por período em cada circuito',
-    subtitle = 'Cada círculo representa o slope da regressão entre o ano e a duração média das provas. 
-Círculos azuis indicam um tendência significativa ao aumento na duração da prova, enquanto os circulos
-vermelhos indicam o contrário. Os círculos brancos indicam as provas onde não há evidência de mudança
-na duração.',
-    x        = 'Slope'
-  ) +
-  theme(legend.position = 'none',
-        axis.title.y    = element_blank())
-```
+Uma outra coisa que precisamos é uma estimativa da incerteza ao redor do tamanho do efeito. Isto é importante pois nem todos os estudos possuem a mesma precisão ao estimar as relações que estamos querendo investigar e, se queremos combiná-los, devemos levar em consideração que estimativas mais precisas devem ter um peso maior na nossa análise do que àquelas com maior erro. Esta medida de incerteza normalmente é dada como o inverso da variância do tamanho do efeito, e é utilizada no modelo meta-analítico para ponderar cada estudo. Logo, nesse contexto, um modelo meta-analítico pode ser pensado como um tipo de regressão ponderada. Um curiosidade importante: você só pode chamar uma meta-análise como tal caso esta medida de incerteza seja utilizada para ajustar o modelo; caso contrário (_i.e._, todos os tamanhos do efeito têm o mesmo peso), a análise feita pode ser chamada apenas de síntese. 
 
-```{r prepara_df_ma_1}
+Com esta visão em mente, vamos extrar os _slopes_ de cada um dos modelos ajustados anteriormente, bem como a estimativa do erro associado à cada um deles. Para chegarmos à variância do _slope_, basta então elevar o valor desse momento ao quadrado.  
+
+```{r prepara_df_ma_1, layout = 'l-page', code_folding = FALSE}
 ## desempacotando os resultados das regressoes
 df_regs <- df_regs %>% 
+  # removendo a list column de data e a coluna com o objeto dos modelos ajustados
   select(-data, - modelo) %>% 
+  # desaninhando a list column com os coeficientes das regressões
   unnest(cols = tidyed) %>% 
+  # pegando apenas o slope das regressões
   filter(term == 'year_scaled') %>% 
+  # dropando a coluna com a string do slope
+  select(-term) %>% 
+  # calculando a variância do slope, elevando o erro da estimativa ao quadrado
   mutate(
     variance = std.error ^ 2
   )
+rmarkdown::paged_table(x = df_regs)
 ```
 
-```{r modelo_ma_slopes}
+Temos tudo pronto, agora é só ajustar o modelo meta-analítica. Para isso, vou utilizar a função `rma.mv` do pacote `metafor` para ajustar um modelo meta-analítico de efeitos aleatórios. Este modelo vai combinar os tamanhos do efeito (_i.e._, _slopes_) obtidos a partir de cada regressão em um efeito global, ponderando cada observação através de sua variância^[a função calcula o inverso deste argumento internamente, mas é possível passar o inverso da variância já calculada através do argumento `W`]. Outro ponto importante é que como alguns circuitos contribuem com mais de uma medida, é necessário considerar esta fonte de não-independência na análise. Fazemos isso especificando o argumento `random`, e passando uma fórmula que especificará que os tamanhos do efeito estão agrupados através dos níveis da variável `circuit`. Posto de outra forma, este modelo funciona de forma muito parecida com um modelo de efeitos aleatórios^[Algumas pessoas também chamam de modelo de painel.] ponderado, onde estimamos um intercepto fixo para todas as observações e um intercepto aleatório para cada circuito. Para mais informações, o _help_ dessa função está muito bem documentada.
+
+```{r modelo_ma_slopes, code_folding = FALSE}
 modelo_ma_slopes <- rma.mv(yi = estimate, V = variance, random = ~ 1 | circuit, data = df_regs)
 modelo_ma_slopes
 ```
 
-```{r backtransform_ma_1}
-modelo_ma_slopes %>%
-  unclass %>% 
-  keep(names(.) %in% c('b', 'se', 'ci.lb', 'ci.ub')) %>% 
-  map(.f = as.data.frame) %>% 
-  bind_cols() %>% 
-  tibble() %>% 
-  set_names(nm = c('estimate', 'se', 'ci.lb', 'ci.ub')) %>% 
-  mutate(desvio_medio = mean(df_regs$desvio)) %>% 
-  mutate(across(estimate:ci.ub, \(x) x * desvio_medio))
-```
+O _output_ da análise traz algumas informações muito importantes:  
 
-```{r ranef_ma_1}
+- O valor em `sigma^2` quantifica a variância entre estudos, neste caso mostrando que existe uma variabilidade substancial no _slope_ das regressões entre circuitos;  
+- Isto também é representado através da estatística Q, que é utilizada para testar a hipótese nula de que todas as observações representam uma amostra aleatória homogênea da população de estudo (_i.e._, os _slopes_ são homogêneos entre os circuitos). O teste de hipótese baseado nesta estatística segue uma distribuição do Qui-Quadrado com K-1 graus de liberdade (onde K é o número de observações) e, nesse caso, sugere que devemos rejeitar a hipótese nula, em favor da hipótese de que os _slopes_ são de fato diferentes entre os circuitos^[E isto seria algo que poderia nos motivar a buscar entender o porquê disso, também através de uma meta-análise, utilizando moderadores - que é a forma como chamamos as variáveis preditoras na área.].
+- Finalmente, temos o resultado do modelo, que nos mostra: o valor da estimativa global estimada pelo modelo (`estimate`), o erro associado à esta estimativa (`se`), os intervalos de confiança inferior e superior da estimativa (`ci.lb` e `ci.ub`, respectivamente), bem como um teste estatístico da hipótese nula de que o efeito global estimado não difere de 0 (_i.e._, o _slope_ na realidade é _flat_). Neste caso, podemos ver que rejeitamos esta hipótese nula, o que também fica claro olhássemos só a estimativa do intervalo de confiança.  
+
+Mas beleza...o que esse último resultado quer nos dizer? Ele mostra que, entre todas as sequências ininterruptas de provas entre os circuitos, a evidência sugere que para cada mudança de um desvio padrão entre os anos (_i.e._, para cada três anos), as provas ficam cerca de `r round(abs(modelo_ma_slopes$b[[1]]), digits = 3)` minutos mais curtas, com um intervalo de confiança de `r round(abs(modelo_ma_slopes$ci.lb), digits = 3)` à `r round(abs(modelo_ma_slopes$ci.ub), digits = 3)` minutos. Isto é, quando levamos em consideração diferenças entre os circuitos, existe evidência para dizer que as provas estão ficando mais curtas sim - mas é tão pouco que chega à dar dó: de 40 segundos à 3 minutos.
+
+Para fechar essa seção, também podemos ter acesso aos valores dos interceptos aleatórios estimados pelo modelo através da função `ranef` (_i.e._, a diferença circuito-específico da estimativa global do modelo). O `0` na figura abaixo representa a estimativa global do modelo, e podemos ver que alguns circuitos têm um desvio consistente para cima (_i.e._, circuitos nos quais o _slope_ tende a ser mais positivo do que o estimado - círculos azuis) e outros para baixo (_i.e._, circuitos nos quais o _slope_ tende a ser mais negativo do que o estimado - círculos vermelhos), mas a maioria deles não difere muito do _slope_ global estimado (_i.e._, círculos vazios).
+
+```{r ranef_ma_1, layout = 'l-body-outset', fig.height=6}
 ranef(object = modelo_ma_slopes) %>% 
   pluck('circuit') %>% 
   rownames_to_column(var = 'circuit') %>% 
-  mutate(across(intrcpt:pi.ub, \(x) x * mean(df_regs$desvio))) %>% 
   mutate(
     circuit  = fct_reorder(.f = circuit, .x = intrcpt, .fun = mean),
     efeito   = case_when(intrcpt > 0 & pi.lb > 0 ~ 'pos',
                          intrcpt < 0 & pi.ub < 0 ~ 'neg',
                          TRUE ~ 'none')
-      ) %>% 
+  ) %>% 
   ggplot(mapping = aes(y = circuit, x = intrcpt)) +
   geom_vline(xintercept = 0, color = 'grey50') +
   geom_errorbar(mapping = aes(xmin = pi.lb, xmax = pi.ub), 
@@ -468,8 +492,11 @@ ranef(object = modelo_ma_slopes) %>%
   geom_point(mapping = aes(fill = efeito), shape = 21, size = 2.5, color = 'black') +
   scale_fill_manual(values = c('indianred3', 'white', 'dodgerblue3')) +
   labs(
-    title    = 'Diferença na estimativa do tamanho do efeito associado à cada circuito',
-    subtitle = 'Este figura demonstra o quanto cada circuito se afasta da estimativa do tamanho de efeito global. Neste contexto, a linha horizontal centrada em zero representaria aquele efeito, e a diferença no eixo horizontal é o quanto que uma instância pertencer à cada circuito o modifica.',
+    title    = 'Diferença no tamanho do efeito associado à cada circuito',
+    subtitle = 'Este figura demonstra o quanto cada circuito se afasta da estimativa do tamanho de
+efeito global. Neste contexto, a linha horizontal centrada em zero representaria aquele
+efeito, e a diferença no eixo horizontal é o quanto que uma instância pertencer à cada
+circuito o modifica.',
     x        = 'Diferença no tamanho do efeito'
   ) +
   theme(
@@ -478,26 +505,64 @@ ranef(object = modelo_ma_slopes) %>%
   )
 ```
 
+Com estes resultados, já temos a nossa resposta: sim, as provas estão ficando mais curtas ao longo das temporadas...mas bem pouquinho. Mas...o quanto será que este efeito varia de acordo com a janela de tempo que estamos usando para a comparação?
+
 ## Abordagem Meta-Analítica II
 
-```{r lrr_calculation}
+Vamos mudar um pouco a abordagem agora, e tentar entender se e o quanto a duração de cada prova tem mudado ano a ano. Isto é, vamos responder à pergunta do quão diferente é o tempo de prova 'hoje' quando comparada à cada um dos anos anteriores: se as provas estão ficando mais curtas, então esperamos que a diferença entre o agora e o passado fique cada vez maior tanto mais distante for esse passado. Para isso, vamos mudar um pouco a forma como definimos àquelas informações sobre o passo inicial de uma meta-análise. Nesta seção temos:
+
+- **População**: definida como _as provas ocorridas em um circuito_. Apesar de parecer ser a mesma população da seção anterior, agora consideraremos todas as provas, não só àquelas que ocorrem em uma sequência ininterrupta de anos;  
+- **Intervenção:** continuaremos olhando _o tempo_, mas aqui ele será representado como cada um dos anos nos quais uma prova ocorreu em cada circuito (e, novamente, independentemente destas provas terem ocorrido em uma sequência ininterrupta de anos ou não);  
+- **Comparação:** em alguns casos, queremos fazer uma comparação entre dois ou mais níveis de uma intervenção - e.g. tratamento _vs_ controle. No nosso caso, _vamos comparar a duração da prova mais recente em cada circuito com cada um dos tempos nos anos anteriores para aquele mesmo circuito_.
+- **Outcome:** como nossa ideia é comparar a duração das provas entre dois anos, vamos focar na diferença entre as médias destes tempos entre os dois anos para cada circutio. 
+
+Um ponto importante aqui é que como nosso foco é fazer uma comparação, precisaremos sintetizar esta diferença de alguma forma. Neste contexto, vamos utilizar uma métrica de tamanho de efeito bastante popular em meta-análise: o _log response ratio_ (novamente, o arquivo de ajuda da função `metafor::escalc` traz muita informação sobre essa métrica e suas aplicações). De forma muito breve, esta métrica é calculada através do logaritimo da razão entre as duas médias e, no nosso caso, será implementado para cada circuito _x_ como:
+
+$$
+LRR = log(\frac{\bar{x_i}}{\bar{x_j}})
+$$
+onde 
+$$\bar{x_i}~=~média~da~duração~da~prova~no~circuito~x~no~ano~i~(i = max(i)),$$
+$$\bar{x_j}~=~média~da~duração~da~prova~no~mesmo~circuito~x~no~ano~j~(j~<~i)$$
+
+Desta forma, se as provas tiverem ficado mais curtas quando comparamos o presente ao passado, então os valores desta métrica serão negativos (e o contrário quando as provas estiverem ficando mais longas). Além disso, essa métrica é de fácil interpretação, o que a torna bastante atraente também (_e.g._, um LRR = -0.10 representa uma redução de cerca de 10% na duração da prova do ano _i_ quando comparado ao ano _j_). Como em toda meta-análise, também precisamos calcular a incerteza ao redor da estimativa do tamanho do efeito do LRR (_i.e._, a variância do LRR). Ele é implementado no código abaixo, onde também calculamos o LRR e extraímos algumas outras informações dos dados.
+
+```{r lrr_calculation, layout = 'l-page', code_folding = FALSE}
 df_diffs <- df %>% 
+  # selecionando apenas as colunas que vamos usar
   select(raceId:circuit) %>% 
+  # removendo qualquer valor faltante na duração média e erro padrão associado
+  drop_na(media, erro) %>% 
+  # organizando a base em ordem decrescente de anos dentro de cada circuito
   arrange(circuit, -year) %>% 
+  # agrupando a base por circuito
   group_by(circuit) %>% 
   mutate(
+    # calculando o log response ratio para cada observação - log(atual / ti)
     lrr           = log(first(media) / media),
-    lrr_var       = ((first(erro) ^ 2) / (first(obs) * (first(media) ^ 2))) +
-      ((erro ^ 2) / (obs * (media ^ 2))),
+    # calculando a estimativa geral de variância de cada observação
+    variancia     = (erro ^ 2) / (obs * (media ^ 2)), 
+    # calculando a variância do log response ratio
+    lrr_var       = first(variancia) + variancia,
+    # calculando o intervalo em anos da comparação
     intervalo     = first(year) - year,
+    # categorizando a variável em torno de intervalos de 5 anos
     bin_intervalo = as.factor((intervalo %/% 5) * 5)
   ) %>% 
+  # desagrupando o dataframe
   ungroup %>% 
+  # removendo a primeira observação (_i.e._, atual vs atual)
   filter(intervalo > 0)
-df_diffs
+rmarkdown::paged_table(x = df_diffs)
 ```
 
-```{r modelo_ma_diffs}
+Como pode ser notado acima, a nossa estratégia foi calcular o tamanho do efeito comparando sempre a duração da prova mais recente disponível em cada circuito _vs_ cada uma das provas ocorridas nos anos anteriores naquele mesmo circuito. Neste sentido, se a prova mais recente disponível para o circuito _x_ tiver ocorrido no ano de 2015 e houverem outras duas provas em 2000 e 1990, então teremos uma instância com o LRR para a comparação 2015 _vs_ 2000 e uma outra para a comparação 2015 _vs_ 1990. Portanto, cada circuito contribui com N - 1 comparações (onde N é o número de provas para aquele circuito), e precisaremos considerar esta fonte de variação e não-independência dos dados modelo.
+
+Outra informação que extraímos no código foi a diferença de tempo entre o ano mais recente e cada um dos outros anos na comparação, que utilizaremos como moderador (_i.e._, variável preditora) no modelo. Só para lembrar, a nossa ideia principal nessa seção é averiguar se tanto mais para o passado realizarmos àquela comparação, tanto maior será a diferença observada no LRR. Desta forma, quando observamos uma comparação associada a um intervalo de 5 anos, estamos considerando todas as comparações que envolvam uma prova e àquelas ocorridas até 5 anos antes, e assim sucessivamente. Devido à natureza não-linear da relação entre o intervalo de tempo e o LRR, resolvi por discretizar o intervalo de anos em _buckets_ de 5 anos para facilitar a análise. No entanto, deixei uma linha comentada em que é possível usar esta variável em seu formato contínuo.
+
+O modelo funciona de forma bastante similar à versão da seção anterior. A única diferença é que agora especificamos o argumento `mods`, passando o _right-hand side_ da fórmula. Este modelo é conhecido com um modelo meta-analítico de efeitos mistos, pois temos uma variável fixa representada pelo moderador e uma variável aleatória representada pela identidade do circuito^[Em essência, vamos estimar um intercepto e um _slope_ fixo para todos os circuitos, além de um intercepto aleatório para cada circuito].
+
+```{r modelo_ma_diffs, code_folding = FALSE}
 modelo_ma_diffs <- rma.mv(yi = lrr, V = lrr_var, 
                           # mods = ~ poly(x = intervalo, degree = 2, raw = TRUE), 
                           mods = ~ bin_intervalo,
@@ -505,7 +570,12 @@ modelo_ma_diffs <- rma.mv(yi = lrr, V = lrr_var,
 modelo_ma_diffs
 ```
 
-```{r contraste_ma_2}
+Temos algumas novidades quanto ao output do modelo:  
+
+- A estatística Q agora é particionada entre Q~E~ e Q~M~: o primeiro é a mesma coisa que a definição da estatística Q dada na seção anterior, enquanto o segundo testa a significância estatística do modelo conforme representado pelos efeitos fixos - _i.e._, a significância do moderador. Neste caso, podemos ver que os tamanhos dos efeitos não representam uma amostra aleatória homogênea da população de estudo (_i.e._, existem diferenças entre circuitos em termos do LRR; p valor do Q~E~ é menor que 0.05) e que o moderador contribui para explicar a diferença no LRR entre os circuitos (_i.e._, p valor do Q~M~ é menor que 0.05);  
+- O _model results_ traz a estimativa não só para o intercepto, mas também para todos os outros níveis do moderador que utilizamos. Todavia, o intercepto aqui representa o primeiro nível do moderador - _i.e._, provas ocorridas até 5 anos antes da prova mais recente na base para cada circuito. Portanto, este valor de `estimate` representa o LRR global para este subconjunto de provas, enquanto todos os outros `estimates` representam a diferença entre os níveis seguintes e este primeiro. Em outras palavras, eles nos informam se existe e qual o tamanho da diferença entre o LRR global para provas ocorridas até 5 anos antes _vs_ provas ocorridas entre 5 à 9 anos antes, _vs_ 10 à 14 anos antes e etc. Explicando assim, fica difícil de entender, então vamos partir para a prática.  
+
+```{r matriz_contrastes}
 ## construindo matriz identidade para traçar o contraste
 matriz_contraste <- diag(x = 1, nrow = length(unique(df_diffs$bin_intervalo)))
 
@@ -514,7 +584,20 @@ matriz_contraste <- diag(x = 1, nrow = length(unique(df_diffs$bin_intervalo)))
 matriz_contraste[, 1] <- 1
 
 ## calculando o efeito de cada nível
-anova(modelo_ma_diffs, L = matriz_contraste) %>% 
+contrastes <- anova(modelo_ma_diffs, L = matriz_contraste) 
+contrastes
+```
+
+A matriz de contraste acima traz alguns resultados muito interessantes e importantes para fecharmos essa estória. Ela mostra que se compararmos as provas mais recentes em cada circuito com àquelas ocorridas:  
+
+- até 4 anos antes naquele mesmo circuito (`intrcpt`), existe uma tendência das provas serem ~6% mais curtas;  
+- entre 35 à 70 anos atrás (`intrcpt + bin_intervalo35` à `intrcpt + bin_intervalo70`, respectivamente), também podemos observar que as provas também estão mais curtas. Todavia, essa tendência varia bastante ao longo daquele intervalo: comparadas a ele, as provas estão entre ~3% (_e.g._, _vs_ 30 anos atrás) à ~70% mais curtas (_e.g._, _vs_ 65 anos através); e,  
+- entre 5 e 34 anos atrás (`intrcpt + bin_intervalo5` à `intrcpt + bin_intervalo30`, respectivamente), não existe evidência de que as provas estejam ficando mais curtas. Podemos tirar essa conclusão principalmente pelo fato do intervalo de confiança da estimativa (_i.e._, `estimate` $\pm$ 1.96 $\times$ `se`) cruzar o valor de 0. 
+
+O que estes resultados mostram é que é muito claro que as provas estão mais curtas hoje do que há 4 décadas atrás. Todavia, embora as provas estejam ligeiramente mais curtas quando olhamos o seu passado muito recente (até 4 anos), elas ainda sim têm durações semelhantes àquelas de 1 à 3 décadas atrás. Se, assim como eu, você prefere entender estes resultados visualmente, basta olhar o gráfico abaixo. Um tanto curioso este padrão, não?
+
+```{r contraste_ma_2, layout = 'l-body-outset', fig.height=4, preview = TRUE}
+contrastes %>% 
   unclass %>% 
   keep(names(.) %in% c('hyp', 'Xb', 'se', 'pval')) %>% 
   map(.f = as.data.frame) %>% 
@@ -528,15 +611,18 @@ anova(modelo_ma_diffs, L = matriz_contraste) %>%
   ) %>% 
   replace_na(replace = list(intervalo = 0)) %>% 
   ggplot(mapping = aes(x = intervalo, y = estimate)) +
-  geom_hline(yintercept = 0, color = 'grey40') +
-  geom_errorbar(mapping = aes(ymin = estimate - 1.96 * se, ymax = estimate + 1.96 * se)) +
-  geom_point(mapping = aes(fill = significant), shape = 21, size = 4, color = 'black') +
+  geom_hline(yintercept = 0, color = 'grey40', linetype = 2) +
+  geom_errorbar(mapping = aes(ymin = estimate - 1.96 * se, ymax = estimate + 1.96 * se),
+                width = 1) +
+  geom_point(mapping = aes(fill = significant), shape = 21, size = 2, color = 'black') +
   scale_x_continuous(breaks = seq(from = 0, to = 70, by = 5)) +
   scale_y_continuous(breaks = seq(from = -1, to = 0.2, by = 0.2), limits = c(-0.9, 0.2)) +
-  scale_fill_manual(values = c('black', 'white')) +
+  scale_fill_manual(values = c('grey70', 'white')) +
   labs(
     title    = 'Diferença entre o tempo de prova mais recente e os anteriores',
-    subtitle = 'As provas parecem ter ficado mais rápidas quando comparadas à 40 ou 50 anos atrás e, desde então, os tempos parece que deram uma estagnada',
+    subtitle = 'As provas ficaram cerca de 10% à 60% mais curtas quando comparadas àquelas mesmas provas quando ocorriam 50
+anos atrás. As provas ficam um pouco mais rápidas quando comparadas ao histórico mais recente (até 5 anos antes),
+mas a duração não muda muito quando comparada à 10 ou 35 anos atrás.',
     x        = 'Anos de Diferença',
     y        = 'Log Response Ratio'
   ) +
@@ -548,3 +634,22 @@ anova(modelo_ma_diffs, L = matriz_contraste) %>%
 ```
 
 # Conclusão
+
+Meu foco neste post foi entender a evolução da duração das provas da Fórmula 1 ao longo da estória deste esporte. Para isso, utilizei uma abordagem meta-analítica para comparar e combinar os dados de diferentes circuitos ao longo das temporadas, e obtive três resultados principais: 
+
+1. As provas estão sim ficando mais curtas ao longo do tempo;  
+2. Todavia, a taxa com a qual as provas têm se tornado mais curtas é bastante pequena: aproximadamente `r round(abs(modelo_ma_slopes$b[[1]]), digits = 3)` minutos à cada 3 anos;  
+3. Essa pequena redução na duração das provas é particularmente notável quando comparamos as provas mais recentes em cada circuito com àquelas ocorridas ali nos últimos 4 anos, onde é possível observar uma redução de cerca de 6% na duração das provas. Ainda assim, esta redução no tempo de prova não é tão representativa de uma tendência de longo prazo, uma vez que as durações destas mesmas provas parecem não diferir daquelas ocorridas entre uma à 3 décadas atrás.
+
+É claro que é impossível tentar enumerar os motivos relacionados a estes padrões aqui - mas isso também não é meu intuito. Claro, cheguei à pensar se não tinha alguma coisa haver com as regras do esporte (_e.g._, as provas precisam ter duração de _i_ a _j_ minutos), alguma coisa dos pilotos se overfitarem às provas (_e.g._, tipo quando você tá jogando _video game_ e decora o circuito ou os botões pra apertar, mas passando um tempo você já se esquece) ou até mesmo mudanças periódicas nos carros que hora melhoram a performance deles, hora pioram (_e.g._, faz uma coisa _x_ com as rodas para melhorar velocidade, mas algum tempo depois dá um _rollback_ ou outra coisa do gênero que tampona esse ganho de performance). Mas, como eu disse anteriormente, está muito além do escopo tentar achar o motivo desse padrão. De uma forma ou de outra, fico satisfeito de ter chegado à uma resposta para as perguntas que estavam na minha cabeça.
+
+Se você tiver se interessado pela abordagem da meta-análise, recomendo bastante @koricheva2013 como bibliografia. Esse livro é muito bom, e aborda o tema de ponta-a-ponta, equilibrando a parte teórica com a parte da vida real quando fazemos uma meta-análise. Se você também quiser mais algum material, têm as aulas que eu ministrava sobre _Revisão Sistemática & Meta-Análise_ na pós-graduação, que estão disponíveis no meu [GitHub](https://github.com/nacmarino/maR).
+
+Dúvidas, sugestões ou críticas, é só me procurar pelos canais disponíveis!
+
+# Possíveis Extensões
+
+- Uma outra coisa que pensei em fazer com esses dados seria a de tentar prever a probabilidade de haver um acidente em uma prova. Isso está até no meu backlog e vou tentar desenvolver mais para a frente;  
+- Outra possibilidade seria o de prever a quantidade de acidentes entre provas ou temporadas, não a probabilidade deles ocorrerem;  
+- A base também traz informações da ocorrência de algum tipo de defeito (mecânico, elétrico,...) no carro associado à cada piloto em cada prova. Uma possibilidade então seria prever a probabilidade de ocorrência de cada um destes defeito a partir das informações disponíveis;  
+- Finalmente, fiquei pensando em tentar gerar algum tipo de modelo para tentar prever se um piloto vai concluir ou não uma prova. Existem dados disponíveis na base para isso, também é só organizar.  
