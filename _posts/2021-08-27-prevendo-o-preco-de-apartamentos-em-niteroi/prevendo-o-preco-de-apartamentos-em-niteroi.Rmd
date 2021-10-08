@@ -842,6 +842,7 @@ df %>%
 ```
 
 Sucesso, não? Se quiser ver que apartamentos são esses dos anúncios, basta juntar o número na coluna _id_ com um dos dois links, `www.zapimoveis.com.br/imovel/id-<numero_do_id>/` (funciona na maior parte dos casos) ou `www.zapimoveis.com.br/lancamento/id-<numero_do_id>` (quanto é um apartamento na planta ou em construção), e explorar o anúncio. Todos os apartamentos que apareceram nesse Top 10 aqui são interessantes...só falta mesmo é o dinheiro para poder comprar! 
+
 # Possíveis Extensões
 
 - Utilizamos os intervalos padrão de cada hiperparâmetros para executar a otimização bayesiana. Neste caso, poderíamos utilizar os resultados obtidos aqui para focar em uma região do espaço de hiperparâmetros específico, a fim de tentar obter um modelo ainda melhor;  
