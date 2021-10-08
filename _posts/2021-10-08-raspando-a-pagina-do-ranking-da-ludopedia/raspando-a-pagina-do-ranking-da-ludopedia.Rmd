@@ -1,0 +1,59 @@
+---
+title: "Raspando a Pagina do Ranking da Ludopedia"
+description: |
+  Eu já havia raspado a página do ranking do BoardGameGeek, e agora eu vou repetir a tarefa focando na página da Ludopedia. Meu objetivo com isso é comparar o ranking dos jogos de tabuleiro entre os dois sites, e determinar quão similares são as posições dos mesmos títulos entre eles.
+author:
+  - first_name: Nicholas 
+    last_name: Marino
+    url: https://github.com/nacmarino
+date: 10-08-2021
+categories:
+  - web scraping
+  - boardgames
+output:
+  distill::distill_article:
+    self_contained: false
+    toc: true
+    code_folding: true
+    highlight: rstudio
+draft: true
+---
+
+```{r setup, include=FALSE}
+# setando as opções gerais dos code chunks
+knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, fig.align = 'center')
+
+# presetando o ggplot2
+library(ggplot2)
+
+# setando o tema geral do ggplot2
+theme_set(new = theme_minimal(base_family = 'Roboto'))
+
+# atualizando o tema
+theme_update(
+  plot.title    = element_text(face = 'bold', size = 10),
+  plot.subtitle = element_text(size = 8),
+  plot.caption  = element_text(size = 8),
+  axis.title    = element_text(face = 'bold', size = 8),
+  axis.text     = element_text(color = 'black', size = 8),
+  strip.text    = element_text(face = 'bold', size = 8)
+)
+```
+
+# Motivação
+
+# Identificar
+
+# Navegar
+
+# Replicar
+
+# Parsear
+
+# Validar
+
+# Iterar
+
+# Faxinar
+
+# Conclusões
