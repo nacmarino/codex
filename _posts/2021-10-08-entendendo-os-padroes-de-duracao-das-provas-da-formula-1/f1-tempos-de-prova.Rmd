@@ -1,5 +1,5 @@
 ---
-title: "F1 Tempos de Prova"
+title: "Entendendo os Padroes de Duracao das Provas da Formula 1"
 description: |
   A Fórmula 1 é um dos esportes de velocidade mais famosos do mundo, com provas ocorrendo desde o início da década de 50 até os dias de hoje. Muita coisa mudou nestes 70 anos, especialmente os carros: cada vez mais bonitos, mais seguros e mais rápidos. Mas será que isso também se traduziu em provas cada vez mais curtas também? Neste post eu examino de que forma a duração das provas da Fórmula 1 têm evoluído ao longo das temporadas.
 author:
