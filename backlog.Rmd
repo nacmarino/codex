@@ -21,7 +21,7 @@ O dataset da semana contém uma lista de espécies de pássaros que foram avista
 ### Y2021W37 - Fórmula 1
 Estes dados trazem todo o histórico das corridas de Fórmula 1 desde muito antigo! Têm uma infinidade de perguntas que daria para fazer, mas gostaria de focar em três delas:  
   
-- [On going] O que está associado à ocorrência de acidentes?
+- O que está associado à ocorrência de acidentes?
 
 # Análises
 
@@ -31,6 +31,10 @@ Estes dados trazem todo o histórico das corridas de Fórmula 1 desde muito anti
 - Que fatores estão associados ao sucesso de um jogo de tabuleiro?  
 - Podemos prever se um jogo de tabuleiro lançado no Brasil será um big hit?  
 - Como gerar recomendações de um jogo a partir de suas características?  
+
+# Dúvidas
+
+- [On going] Quão similares são os rankings de jogos de tabuleiro entre a Ludopedia e o BoardGameGeek?
 
 # Testcode
 
