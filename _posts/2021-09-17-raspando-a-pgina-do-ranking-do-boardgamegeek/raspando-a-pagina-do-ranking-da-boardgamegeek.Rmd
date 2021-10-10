@@ -202,7 +202,7 @@ parser_pagina <- function(pagina_raspada){
     xml_find_all(xpath = '//table') %>% 
     rvest::html_table() %>% 
     pluck(1) %>% 
-    mutate(link = links)
+    mutate(link = links_da_pagina)
   
   ## retornando a tabela
   tabela_da_pagina
