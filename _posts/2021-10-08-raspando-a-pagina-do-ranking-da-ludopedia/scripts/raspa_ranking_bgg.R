@@ -20,7 +20,7 @@ base_url <- 'https://boardgamegeek.com/browse/boardgame/page/'
 path_post <- '_posts/2021-10-08-raspando-a-pagina-do-ranking-da-ludopedia/'
 
 ## path para diretorio temporairio para fazer o dump das paginas
-path_temp <- paste0(path_post, 'temp')
+path_temp <- paste0(path_post, 'temp_bgg')
 
 ## path para diretorio onde estarao os dados
 path_data <- paste0(path_post, 'data')
