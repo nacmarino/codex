@@ -113,7 +113,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
   <!--/radix_placeholder_rmarkdown_metadata-->
   
   <script type="text/json" id="radix-resource-manifest">
-  {"type":"character","attributes":{},"value":["raspando-a-pagina-do-ranking-da-ludopedia_files/anchor-4.2.2/anchor.min.js","raspando-a-pagina-do-ranking-da-ludopedia_files/bowser-1.9.3/bowser.min.js","raspando-a-pagina-do-ranking-da-ludopedia_files/distill-2.2.21/template.v2.js","raspando-a-pagina-do-ranking-da-ludopedia_files/header-attrs-2.10/header-attrs.js","raspando-a-pagina-do-ranking-da-ludopedia_files/jquery-1.11.3/jquery.min.js","raspando-a-pagina-do-ranking-da-ludopedia_files/popper-2.6.0/popper.min.js","raspando-a-pagina-do-ranking-da-ludopedia_files/tippy-6.2.7/tippy-bundle.umd.min.js","raspando-a-pagina-do-ranking-da-ludopedia_files/tippy-6.2.7/tippy-light-border.css","raspando-a-pagina-do-ranking-da-ludopedia_files/tippy-6.2.7/tippy.css","raspando-a-pagina-do-ranking-da-ludopedia_files/tippy-6.2.7/tippy.umd.min.js","raspando-a-pagina-do-ranking-da-ludopedia_files/webcomponents-2.0.0/webcomponents.js"]}
+  {"type":"character","attributes":{},"value":["images/imagem_1.jpg","images/imagem_2.jpg","raspando-a-pagina-do-ranking-da-ludopedia_files/anchor-4.2.2/anchor.min.js","raspando-a-pagina-do-ranking-da-ludopedia_files/bowser-1.9.3/bowser.min.js","raspando-a-pagina-do-ranking-da-ludopedia_files/distill-2.2.21/template.v2.js","raspando-a-pagina-do-ranking-da-ludopedia_files/header-attrs-2.10/header-attrs.js","raspando-a-pagina-do-ranking-da-ludopedia_files/jquery-1.11.3/jquery.min.js","raspando-a-pagina-do-ranking-da-ludopedia_files/popper-2.6.0/popper.min.js","raspando-a-pagina-do-ranking-da-ludopedia_files/tippy-6.2.7/tippy-bundle.umd.min.js","raspando-a-pagina-do-ranking-da-ludopedia_files/tippy-6.2.7/tippy-light-border.css","raspando-a-pagina-do-ranking-da-ludopedia_files/tippy-6.2.7/tippy.css","raspando-a-pagina-do-ranking-da-ludopedia_files/tippy-6.2.7/tippy.umd.min.js","raspando-a-pagina-do-ranking-da-ludopedia_files/webcomponents-2.0.0/webcomponents.js"]}
   </script>
   <!--radix_placeholder_navigation_in_header-->
   <!--/radix_placeholder_navigation_in_header-->
@@ -1485,6 +1485,8 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <h3>Contents</h3>
 <ul>
 <li><a href="#motivação">Motivação</a></li>
+<li><a href="#raspando-o-ranking">Raspando o Ranking</a>
+<ul>
 <li><a href="#identificar">Identificar</a></li>
 <li><a href="#navegar">Navegar</a></li>
 <li><a href="#replicar">Replicar</a></li>
@@ -1492,18 +1494,56 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <li><a href="#validar">Validar</a></li>
 <li><a href="#iterar">Iterar</a></li>
 <li><a href="#faxinar">Faxinar</a></li>
+</ul></li>
+<li><a href="#de-igual-para-igual">De igual para igual?</a></li>
 <li><a href="#conclusões">Conclusões</a></li>
 </ul>
 </nav>
 </div>
 <h1 id="motivação">Motivação</h1>
-<h1 id="identificar">Identificar</h1>
-<h1 id="navegar">Navegar</h1>
-<h1 id="replicar">Replicar</h1>
-<h1 id="parsear">Parsear</h1>
-<h1 id="validar">Validar</h1>
-<h1 id="iterar">Iterar</h1>
-<h1 id="faxinar">Faxinar</h1>
+<h1 id="raspando-o-ranking">Raspando o Ranking</h1>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://tidyverse.tidyverse.org'>tidyverse</a></span><span class='op'>)</span> <span class='co'># core</span>
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://httr.r-lib.org/'>httr</a></span><span class='op'>)</span> <span class='co'># web scrapping</span>
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://xml2.r-lib.org/'>xml2</a></span><span class='op'>)</span> <span class='co'># parsear</span>
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='http://fs.r-lib.org'>fs</a></span><span class='op'>)</span> <span class='co'># mexer com paths</span>
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://yihui.org/knitr/'>knitr</a></span><span class='op'>)</span> <span class='co'># ajudar com o markdown</span>
+</code></pre>
+</div>
+</div>
+<h2 id="identificar">Identificar</h2>
+<div class="layout-chunk" data-layout="l-body-outset">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/pkg/knitr/man/include_graphics.html'>include_graphics</a></span><span class='op'>(</span>path <span class='op'>=</span> <span class='st'>'images/imagem_1.jpg'</span><span class='op'>)</span>
+</code></pre>
+</div>
+</details>
+<p><img src="images/imagem_1.jpg" width="1675" style="display: block; margin: auto;" /></p>
+</div>
+<h2 id="navegar">Navegar</h2>
+<div class="layout-chunk" data-layout="l-body-outset">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/pkg/knitr/man/include_graphics.html'>include_graphics</a></span><span class='op'>(</span>path <span class='op'>=</span> <span class='st'>'images/imagem_1.jpg'</span><span class='op'>)</span>
+</code></pre>
+</div>
+</details>
+<p><img src="images/imagem_1.jpg" width="1675" style="display: block; margin: auto;" /></p>
+</div>
+<h2 id="replicar">Replicar</h2>
+<h2 id="parsear">Parsear</h2>
+<h2 id="validar">Validar</h2>
+<h2 id="iterar">Iterar</h2>
+<h2 id="faxinar">Faxinar</h2>
+<h1 id="de-igual-para-igual">De igual para igual?</h1>
 <h1 id="conclusões">Conclusões</h1>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <!--radix_placeholder_article_footer-->

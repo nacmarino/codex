@@ -42,18 +42,38 @@ theme_update(
 
 # Motivação
 
-# Identificar
+# Raspando o Ranking
 
-# Navegar
+```{r carrega_pacotes}
+library(tidyverse) # core
+library(httr) # web scrapping
+library(xml2) # parsear
+library(fs) # mexer com paths
+library(knitr) # ajudar com o markdown
+```
 
-# Replicar
+## Identificar
 
-# Parsear
+```{r imagem_identificar, layout = 'l-body-outset', code_folding = TRUE}
+include_graphics(path = 'images/imagem_1.jpg')
+```
 
-# Validar
+## Navegar
 
-# Iterar
+```{r imagem_navegar, layout = 'l-body-outset', code_folding = TRUE}
+include_graphics(path = 'images/imagem_1.jpg')
+```
 
-# Faxinar
+## Replicar
+
+## Parsear
+
+## Validar
+
+## Iterar
+
+## Faxinar
+
+# De igual para igual?
 
 # Conclusões
