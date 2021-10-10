@@ -1620,16 +1620,16 @@ Show code
 <pre><code># A tibble: 100 × 7
    `Board Game Rank` `Thumbnail imag… Title `Geek Rating` `Avg Rating`
                &lt;int&gt; &lt;lgl&gt;            &lt;chr&gt;         &lt;dbl&gt;        &lt;dbl&gt;
- 1                 1 NA               &quot;Glo…          8.53         8.76
+ 1                 1 NA               &quot;Glo…          8.52         8.76
  2                 2 NA               &quot;Pan…          8.45         8.6 
  3                 3 NA               &quot;Bra…          8.41         8.67
  4                 4 NA               &quot;Ter…          8.28         8.42
- 5                 5 NA               &quot;Glo…          8.26         8.74
- 6                 6 NA               &quot;Twi…          8.26         8.69
- 7                 7 NA               &quot;Gai…          8.18         8.49
+ 5                 5 NA               &quot;Glo…          8.26         8.73
+ 6                 6 NA               &quot;Twi…          8.26         8.68
+ 7                 7 NA               &quot;Gai…          8.18         8.48
  8                 8 NA               &quot;Sta…          8.17         8.43
  9                 9 NA               &quot;Thr…          8.16         8.4 
-10                10 NA               &quot;Gre…          8.13         8.3 
+10                10 NA               &quot;War…          8.13         8.51
 # … with 90 more rows, and 2 more variables: Num Voters &lt;int&gt;,
 #   Shop &lt;chr&gt;</code></pre>
 </div>
@@ -1690,16 +1690,16 @@ Show code
 <pre><code># A tibble: 100 × 8
    `Board Game Rank` `Thumbnail imag… Title `Geek Rating` `Avg Rating`
                &lt;int&gt; &lt;lgl&gt;            &lt;chr&gt;         &lt;dbl&gt;        &lt;dbl&gt;
- 1                 1 NA               &quot;Glo…          8.53         8.76
+ 1                 1 NA               &quot;Glo…          8.52         8.76
  2                 2 NA               &quot;Pan…          8.45         8.6 
  3                 3 NA               &quot;Bra…          8.41         8.67
  4                 4 NA               &quot;Ter…          8.28         8.42
- 5                 5 NA               &quot;Glo…          8.26         8.74
- 6                 6 NA               &quot;Twi…          8.26         8.69
- 7                 7 NA               &quot;Gai…          8.18         8.49
+ 5                 5 NA               &quot;Glo…          8.26         8.73
+ 6                 6 NA               &quot;Twi…          8.26         8.68
+ 7                 7 NA               &quot;Gai…          8.18         8.48
  8                 8 NA               &quot;Sta…          8.17         8.43
  9                 9 NA               &quot;Thr…          8.16         8.4 
-10                10 NA               &quot;Gre…          8.13         8.3 
+10                10 NA               &quot;War…          8.13         8.51
 # … with 90 more rows, and 3 more variables: Num Voters &lt;int&gt;,
 #   Shop &lt;chr&gt;, link &lt;chr&gt;</code></pre>
 </div>
@@ -1730,7 +1730,7 @@ Show code
     <span class='fu'><a href='http://xml2.r-lib.org/reference/xml_find_all.html'>xml_find_all</a></span><span class='op'>(</span>xpath <span class='op'>=</span> <span class='st'>'//table'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
     <span class='fu'>rvest</span><span class='fu'>::</span><span class='fu'><a href='https://rvest.tidyverse.org/reference/html_table.html'>html_table</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
     <span class='fu'>pluck</span><span class='op'>(</span><span class='fl'>1</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
-    <span class='fu'>mutate</span><span class='op'>(</span>link <span class='op'>=</span> <span class='va'>links</span><span class='op'>)</span>
+    <span class='fu'>mutate</span><span class='op'>(</span>link <span class='op'>=</span> <span class='va'>links_da_pagina</span><span class='op'>)</span>
   
   <span class='co'>## retornando a tabela</span>
   <span class='va'>tabela_da_pagina</span>
@@ -1757,14 +1757,14 @@ Show code
                &lt;int&gt; &lt;lgl&gt;            &lt;chr&gt;         &lt;dbl&gt;        &lt;dbl&gt;
  1               101 NA               &quot;Dec…          7.51         7.8 
  2               102 NA               &quot;Dom…          7.50         7.61
- 3               103 NA               &quot;She…          7.50         7.71
- 4               104 NA               &quot;Ini…          7.50         7.81
- 5               105 NA               &quot;Pan…          7.50         7.6 
+ 3               103 NA               &quot;Ini…          7.50         7.81
+ 4               104 NA               &quot;Pan…          7.50         7.6 
+ 5               105 NA               &quot;She…          7.49         7.71
  6               106 NA               &quot;Cla…          7.49         7.85
- 7               107 NA               &quot;Pan…          7.49         7.92
+ 7               107 NA               &quot;Yok…          7.49         7.85
  8               108 NA               &quot;Cha…          7.49         7.76
- 9               109 NA               &quot;Yok…          7.49         7.85
-10               110 NA               &quot;For…          7.48         7.98
+ 9               109 NA               &quot;Pan…          7.49         7.91
+10               110 NA               &quot;For…          7.48         7.97
 # … with 90 more rows, and 3 more variables: Num Voters &lt;int&gt;,
 #   Shop &lt;chr&gt;, link &lt;chr&gt;</code></pre>
 </div>
@@ -1801,16 +1801,16 @@ Show code
 <pre><code># A tibble: 500 × 8
    `Board Game Rank` `Thumbnail imag… Title `Geek Rating` `Avg Rating`
                &lt;int&gt; &lt;lgl&gt;            &lt;chr&gt;         &lt;dbl&gt;        &lt;dbl&gt;
- 1                 1 NA               &quot;Glo…          8.53         8.76
+ 1                 1 NA               &quot;Glo…          8.52         8.76
  2                 2 NA               &quot;Pan…          8.45         8.6 
  3                 3 NA               &quot;Bra…          8.41         8.67
  4                 4 NA               &quot;Ter…          8.28         8.42
- 5                 5 NA               &quot;Glo…          8.26         8.74
- 6                 6 NA               &quot;Twi…          8.26         8.69
- 7                 7 NA               &quot;Gai…          8.18         8.49
+ 5                 5 NA               &quot;Glo…          8.26         8.73
+ 6                 6 NA               &quot;Twi…          8.26         8.68
+ 7                 7 NA               &quot;Gai…          8.18         8.48
  8                 8 NA               &quot;Sta…          8.17         8.43
  9                 9 NA               &quot;Thr…          8.16         8.4 
-10                10 NA               &quot;Gre…          8.13         8.3 
+10                10 NA               &quot;War…          8.13         8.51
 # … with 490 more rows, and 3 more variables: Num Voters &lt;int&gt;,
 #   Shop &lt;chr&gt;, link &lt;chr&gt;</code></pre>
 </div>
@@ -1860,16 +1860,16 @@ Show code
 <pre><code># A tibble: 500 × 10
     rank id     titulo    ano nota_bgg nota_usuarios votos title link 
    &lt;int&gt; &lt;chr&gt;  &lt;chr&gt;   &lt;dbl&gt;    &lt;dbl&gt;         &lt;dbl&gt; &lt;int&gt; &lt;chr&gt; &lt;chr&gt;
- 1     1 174430 Gloomh…  2017     8.53          8.76 45618 Gloo… /boa…
- 2     2 161936 Pandem…  2015     8.45          8.6  43686 Pand… /boa…
- 3     3 224517 Brass:…  2018     8.41          8.67 23075 Bras… /boa…
- 4     4 167791 Terraf…  2016     8.28          8.42 70417 Terr… /boa…
- 5     5 291457 Gloomh…  2020     8.26          8.74 13096 Gloo… /boa…
- 6     6 233078 Twilig…  2017     8.26          8.69 15000 Twil… /boa…
- 7     7 220308 Gaia P…  2017     8.18          8.49 17926 Gaia… /boa…
- 8     8 187645 Star W…  2016     8.17          8.43 24605 Star… /boa…
- 9     9 182028 Throug…  2015     8.16          8.4  24635 Thro… /boa…
-10    10 193738 Great …  2016     8.13          8.3  31595 Grea… /boa…
+ 1     1 174430 Gloomh…  2017     8.52          8.76 45961 Gloo… /boa…
+ 2     2 161936 Pandem…  2015     8.45          8.6  43882 Pand… /boa…
+ 3     3 224517 Brass:…  2018     8.41          8.67 23462 Bras… /boa…
+ 4     4 167791 Terraf…  2016     8.28          8.42 71022 Terr… /boa…
+ 5     5 291457 Gloomh…  2020     8.26          8.73 13573 Gloo… /boa…
+ 6     6 233078 Twilig…  2017     8.26          8.68 15160 Twil… /boa…
+ 7     7 220308 Gaia P…  2017     8.18          8.48 18107 Gaia… /boa…
+ 8     8 187645 Star W…  2016     8.17          8.43 24768 Star… /boa…
+ 9     9 182028 Throug…  2015     8.16          8.4  24778 Thro… /boa…
+10    10 115746 War of…  2012     8.13          8.51 14890 War … /boa…
 # … with 490 more rows, and 1 more variable: descricao &lt;chr&gt;</code></pre>
 </div>
 <p>E só para fechar: uma figura sobre os dados que raspamos né! Vamos tentar visualizar qual a relação entre a nota do BGG, a nota média dada pelos usuários e quantidade de votos recebidos por cada jogo. A figura abaixo mostra que as notas dadas pelos usuários parecem ser maiores do que as notas do ranking final do BGG - fato que ocorre pois o BGG usa uma média bayesiana para montar o seu ranking. Além disso, podemos ver que parece existir uma tendência aos jogos que recebem mais votos também terem maiores notas no ranking do BGG. Por outro lado, parece que os jogos mais votados são aqueles com menores notas dadas pelos usuários. Curioso, não?</p>
@@ -1901,7 +1901,7 @@ Show code
 <span class='va'>ultima_pagina</span>
 </code></pre>
 </div>
-<pre><code>[1] 1304</code></pre>
+<pre><code>[1] 1310</code></pre>
 </div>
 <p>Dúvidas ou sugestões? É só me procurar que a gente conversa!</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
