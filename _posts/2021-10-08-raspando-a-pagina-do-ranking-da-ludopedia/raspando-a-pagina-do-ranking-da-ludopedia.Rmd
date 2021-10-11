@@ -61,10 +61,14 @@ include_graphics(path = 'images/imagem_1.jpg')
 ## Navegar
 
 ```{r imagem_navegar, layout = 'l-body-outset', code_folding = TRUE}
-include_graphics(path = 'images/imagem_1.jpg')
+include_graphics(path = 'images/imagem_2.jpg')
 ```
 
 ## Replicar
+
+```{r imagem_replicar, layout = 'l-body-outset', code_folding = TRUE}
+include_graphics(path = 'images/imagem_3.jpg')
+```
 
 ## Parsear
 
