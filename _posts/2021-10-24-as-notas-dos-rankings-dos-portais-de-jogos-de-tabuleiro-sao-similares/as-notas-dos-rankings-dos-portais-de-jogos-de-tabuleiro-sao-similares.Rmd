@@ -1,0 +1,625 @@
+---
+title: "As notas dos rankings dos portais de jogos de tabuleiro sao similares?"
+description: |
+  A short description of the post.
+author:
+  - first_name: Nicholas 
+    last_name: Marino
+    url: https://github.com/nacmarino
+date: 10-08-2021
+categories:
+  - web scraping
+  - boardgames
+  - infer
+output:
+  distill::distill_article:
+    self_contained: false
+    toc: true
+    code_folding: true
+    highlight: rstudio
+draft: true
+---
+
+```{r setup, include=FALSE}
+# setando as opções gerais dos code chunks
+knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, fig.align = 'center')
+
+# presetando o ggplot2
+library(ggplot2)
+
+# setando o tema geral do ggplot2
+theme_set(new = theme_minimal(base_family = 'IBM Plex Sans'))
+
+# atualizando o tema
+theme_update(
+  plot.title    = element_text(face = 'bold', size = 10),
+  plot.subtitle = element_text(size = 8),
+  plot.caption  = element_text(size = 8),
+  axis.title    = element_text(face = 'bold', size = 8),
+  axis.text     = element_text(color = 'black', size = 8),
+  strip.text    = element_text(face = 'bold', size = 8)
+)
+```
+
+# Motivação
+
+Há algum tempo atrás eu explorei o caminho para raspar os dados do ranking do _BoardGameGeek_^[BGG daqui para a frente], e consolidei o passo-a-passo nesse [post](https://nacmarino.github.io/codex/posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/) e [script](https://github.com/nacmarino/codex/blob/master/_posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/scripts/raspa_ranking_bgg.R). Meu principal interesse naquele momento era que eu precisava obter o código numérico identificador de cada título a fim de poder usar esse valor quando fosse interagir com a API XML do BGG. Como o único lugar em que encontrei essa informação foi no hyperlink para a página de cada título na tabela do ranking, resolvi criar aquele _scrapper_.
+
+Uma outra fonte de informação sobre jogos de tabuleiro é o site brasileiro da [Ludopedia](www.ludopedia.com.br). Este portal tem muita coisa em comum com o BGG, inclusive uma API e uma página de ranking. Todavia, diferente do equivalente gringo, a Ludopedia oferece (1) uma REST API e (2) um meio mais fácil de obter o código identificador de cada título a partir da própria API. De toda forma, no momento em que escrevo este post, ainda não é possível obter as informações da página do ranking diretamente pela API. Desta forma, aqui também existe a possibilidade de exercitar um pouco o _web scrapping_ para a extração dessa informação.
+
+Mas criar um _scrapper_ por criar não é muito a minha praia. Na realidade, resolvi mostrar como raspar a página do ranking da Ludopedia a fim de responder a uma pergunta: será que existe alguma diferença entre as notas associadas à uma mesma posição entre os rankings dos dois portais? Isto é, será que as notas para aparecer numa dada posição do ranking precisam ser maiores em um dos portais do que no outro? Caso positivo, isto pode representar um caso no qual o público atendido por um portal é mais 'exigente' do que o do outro ou, ainda, que a régua é mais alta em um portal que no outro para uma mesma posição do ranking. Em contraste, caso as notas sejam similares, é possível que isto esteja relacionado ao fato de que o comportamento de avaliação dos jogos no ranking não depende do público atendido por cada portal. Podem haver outras explicações, claro, e é extremamente provável que eu não chegue à nenhuma delas. Mas ficam aí alguns aspectos do que as respostas àquela pergunta podem representar.
+
+Finalmente, gostaria de aproveitar a oportunidade para continuar construindo uma trilha a partir da qual poderemos responder muitas outras perguntas interessantes, e aplicar técnicas bastante legais de Machine Learning. Falo mais sobre essas idéias ao final desse post.
+
+# Raspando o Ranking
+
+Para começar a nossa tarefa, vamos importar o combo de pacotes tradicionais para fazer o _scrapper_, o _parser_ e tratar os dados.
+
+```{r carrega_pacotes}
+library(tidyverse) # core
+library(httr) # web scrapping
+library(xml2) # parsear
+library(fs) # mexer com paths
+library(knitr) # para embbedar as figuras
+```
+
+A seguir, vamos racionalizar o _web scrapping_ usando aquele mesmo [fluxo](https://blog.curso-r.com/posts/2018-02-18-fluxo-scraping/) que o pessoal da Curso-R sugere: (1) identificar, (2) navegar, (3) replicar, (4) _parsear_, (5) validar e (6) iterar. Para arrematar, vamos adicionar uma etapa de (7) faxinar os dados, antes que possamos (8) testar a hipótese apresentada neste post.
+
+## Identificar
+
+A primeira coisa aqui é navegar até a página-alvo e entender como funciona a sua paginação e onde está o conteúdo que queremos raspar. A figura abaixo mostra um _print_ da primeira página do ranking, onde podemos ver a _url_ que precisaremos visitar bem como constatar que a paginação funciona incrementando a contagem da página (_i.e._, `pagina=1`, `pagina=2`,...)^[Essa paginação não estará evidente na primeira vez que você visitar essa página. Entretanto, se você avançar para a próxima página e depois voltar, verá que ela aparecerá na _url_].
+
+Outro ponto importante é que podemos ver que as informação que queremos _parecem_ estar em uma tabela, como foi no caso do BGG. Além disso, cada página contém 50 jogos ordenados de forma sequencial de acordo com a sua posição no ranking.
+
+```{r imagem_identificar, layout = 'l-body-outset', code_folding = TRUE}
+include_graphics(path = 'images/imagem_1.jpg')
+```
+
+## Navegar
+
+O próximo passo é olhar o fluxo de informação da página a partir da aba `Network`, acessível através da ferramenta `Inspecionar` do navegador. Podemos ver que o conteúdo que queremos raspar não é produzido a partir de nenhuma API nem nada parecido, mas totalmente disponível a partir do código HTML mesmo. Além disso, podemos ver que o conteúdo não está organizado dentro de _tags_ de tabela do HTML, mas sim dentro de várias _tags_ `div` associadas à classe `pad-top`. Isto já torna o _parser_ deste _scrapper_ diferente daquele do BGG, onde foi bastante simples tabular as informações a partir do código HTML.
+
+```{r imagem_navegar, layout = 'l-body-outset', code_folding = TRUE}
+include_graphics(path = 'images/imagem_2.jpg')
+```
+
+## Replicar
+
+Vamos então tentar fazer um _request_ da primeira página do ranking e ver o que conseguimos. Vamos fazer isso de forma bem simples, passando apenas a _url_ base para acessar a página e deixando o valor correspondente à página em si como algo a ser determinado separadamente. Faremos isso usando a função `GET` do pacote `httr`. 
+
+```{r replicar}
+## url base do ranking
+base_url <- 'https://www.ludopedia.com.br/ranking?pagina='
+
+# fazendo o GET
+resultado <- GET(url = str_glue(base_url, 1))
+resultado
+```
+
+Apesar da forma como o conteúdo está disponível nesta página ser diferente daquele do BGG, o _request_ em si parace também ser bem simples!
+
+## Parsear
+
+Como vimos anteriormente, as informações que queremos não estão formatadas e organizadas dentro de _tags_ de tabela em HTML. Portanto, precisaremos identificar e _parsear_ cada uma das informações que queremos usando os respectivos `xpath`. Para começar, podemos ver que temos acesso ao hyperlink que contém a imagem da capa do jogo se extrairmos o atributo `src` a partir da classe `img-capa` dentro da tag `img`. Isto pode ser uma informação legal se, depois, _e.g._ quisermos plotar essa imagem como uma célula dentro de uma tabela do `reactable`.
+
+```{r parser_capa, fig.width=6}
+resultado %>% 
+  # pegando o conteudo
+  content() %>% 
+  # pegando a imagem da capa
+  xml_find_all(xpath = '//img[@class="img-capa"]') %>% 
+  # pegando o url
+  xml_attr(attr = 'src') %>% 
+  # pegando a primeira observação
+  head(1) %>% 
+  # plotando a imagem de uma capa
+  magick::image_read() %>% 
+  # aumentando a resolução da imagem
+  magick::image_scale(geometry = '300')
+```
+
+Outra informação legal de buscar é o hyperlink para a página de cada jogo no domínio da Ludopedia. Esta informação esta dentro da _tag_ que contém o nome do título (_i.e._, classe `media-heading` dentro do header `h4`), e pode ser obtida extraindo o atributo `href` de dentro da tag `a`. Como já conheço a API REST da Ludopedia, sei que essa informação pode ser útil para _e.g._ raspar o campo de descrição completa do jogo, a fim de utilizar esse texto em alguma análise.
+
+```{r parser_link_jogo}
+resultado %>% 
+  # pegando o conteudo
+  content() %>% 
+  # pegando o conteudo do titulo do mini-box
+  xml_find_all(xpath = '//h4[@class="media-heading"]') %>% 
+  # pegando todos os links
+  xml_find_all(xpath = 'a') %>% 
+  # extraindo o atributo dos hiperlinks
+  xml_attr(attr = 'href') %>% 
+  # pegando algumas instancias apenas
+  head()
+```
+
+A posição do ranking também pode ser extraída a partir da classe `media-heading` dentro do header `h4`, olhando a classe `rank` dentro da _tag_ `span`...
+
+```{r parser_ranking}
+resultado %>% 
+  # pegando o conteudo
+  content() %>% 
+  # pegando o conteudo do titulo do mini-box
+  xml_find_all(xpath = '//h4[@class="media-heading"]') %>% 
+  # pegando o ranking
+  xml_find_all(xpath = 'span[@class="rank"]') %>% 
+  # pegando o texto
+  xml_text() %>% 
+  # pegando algumas instancias apenas
+  head()
+```
+
+...enquanto o nome do jogo pode ser extraído a partir do atributo `title` dentro da _tag_ `a`...
+
+```{r parser_nome}
+resultado %>% 
+  # pegando o conteudo
+  content() %>% 
+  # pegando o conteudo do titulo do mini-box
+  xml_find_all(xpath = '//h4[@class="media-heading"]') %>% 
+  # pegando o nome do jogo
+  xml_find_all(xpath = 'a[@title]') %>% 
+  # pegando o texto
+  xml_text() %>% 
+  # pegando algumas instancias apenas
+  head()
+```
+
+...o ano de lançamento de cada título vêm do atributo `small`...
+
+```{r parser_ano}
+resultado %>% 
+  # pegando o conteudo
+  content() %>% 
+  # pegando o conteudo do titulo do mini-box
+  xml_find_all(xpath = '//h4[@class="media-heading"]') %>% 
+  # pegando o ano de lançamento do jogo
+  xml_find_all(xpath = 'small') %>% 
+  # pegando o texto
+  xml_text() %>% 
+  # pegando algumas instancias apenas
+  head()
+```
+
+...enquanto, finalmente, todas as informações relacionadas às notas podem ser extraídas a partir da classe `rank-info` dentro da tag `div`.
+
+```{r parser_notas}
+resultado %>% 
+  # pegando o conteudo
+  content() %>% 
+  # pegando o conteudo do titulo do mini-box
+  xml_find_all(xpath = '//h4[@class="media-heading"]') %>% 
+  # pegando as notas do jogo
+  xml_find_all(xpath = '//div[@class="rank-info"]') %>% 
+  # pegando o texto
+  xml_text() %>% 
+  # pegando algumas instancias apenas
+  head() %>% 
+  # tirando um pouco o excesso de whitespace
+  str_squish()
+```
+
+Com isso, temos um sashimi de _parsers_ para pegar todas as informações que queremos a partir da página do ranking. Vamos agora consolidar esse entendimento e validá-lo na segunda página.
+
+## Validar
+
+Para auxiliar na tarefa de raspar e _parsear_ a segunda página do ranking, vamos definir duas funções abaixo - uma para cada tarefa. A função `pega_pagina` recebe a _url_ base do ranking, o número da página que queremos raspar e um _path_ para um diretório, fazendo então o _request_ da página e salvando o HTML resultante em disco. A outra função, `parser_pagina`, recebe como único argumento o _path_ para o arquivo HTML que a função `pega_pagina` salvou, e faz o que o próprio nome da função já diz. Ela está bem verbosa, mas o objetivo é mesmo deixar claro o que estamos fazendo.
+
+```{r funcoes_validar}
+# função para fazer o GET
+pega_pagina <- function(url_base, pagina, save_dir) {
+  ## junta a base url com o numero da pagina e salva no diretorio alvo
+  GET(url = str_glue(url_base, pagina), 
+      write_disk(path = sprintf(fmt = '%s/pagina_%03d.html', save_dir, pagina), 
+                 overwrite = TRUE)
+  )
+  
+  # esperanando antes de prosseguir
+  Sys.sleep(runif(n = 1, min = 1, max = 5))
+}
+
+# função para parsear uma pagina
+parser_pagina <- function(path_to_html){
+  
+  ## lendo a pagina raspada
+  pagina_raspada <- read_html(x = path_to_html)
+  
+  ## infos do heading
+  media_head <- pagina_raspada %>% 
+    xml_find_all(xpath = '//h4[@class="media-heading"]')
+  
+  ## link para a imagem da capa
+  links_da_capa <- pagina_raspada %>% 
+    xml_find_all(xpath = '//img[@class="img-capa"]') %>% 
+    xml_attr(attr = 'src')
+  
+  ## link para a pagina do jogo
+  link_jogo <- media_head %>% 
+    xml_find_all(xpath = 'a') %>% 
+    xml_attr(attr = 'href')
+  
+  ## posicao do ranking de cada titulo
+  posicao_ranking <- media_head %>% 
+    xml_find_all(xpath = 'span[@class="rank"]') %>% 
+    xml_text()
+  
+  ## nome do jogo
+  titulo_jogo <- media_head %>% 
+    xml_find_all(xpath = 'a[@title]') %>% 
+    xml_text()
+  
+  ## ano de lancamento do jogo
+  ano_jogo <- media_head %>% 
+    xml_find_all(xpath = 'small') %>% 
+    xml_text()
+  
+  ## informacoes gerais das notas
+  notas_jogo <- pagina_raspada %>% 
+    xml_find_all(xpath = '//div[@class="rank-info"]') %>% 
+    xml_text()
+  
+  ## colocando rsultados numa tibble
+  tibble(
+    ranking   = posicao_ranking, 
+    titulo    = titulo_jogo, 
+    ano       = ano_jogo, # 
+    notas     = notas_jogo,
+    link_capa = links_da_capa,
+    link_jogo = link_jogo
+  )
+}
+```
+
+Com as funções definidas, agora é hora de utilizá-las! Primeiro, vamos pegar a segunda página e salvá-la em disco...
+
+```{r validar_pagina_2}
+# pegando a segunda pagina do ranking
+pega_pagina(url_base = base_url, pagina = 2, save_dir = 'data/')
+
+# checando para ver se o html foi baixado
+dir_ls(path = 'data/', regexp = '.html')
+```
+
+...agora vamos _parsear_ a página a partir do path para o arquivo salvo em disco!
+
+```{r parser_pagina_2}
+parser_pagina(path_to_html = dir_ls(path = 'data/', regexp = '.html'))
+```
+
+Parece que está tudo ok!
+
+## Iterar
+
+A ideia aqui agora seria repetir o processo acima, da página 1 até a última página disponível no ranking. Lá no post sobre a raspagem do ranking do BGG vimos que poderíamos descobrir qual o número da última página a partir do próprio código HTML que era raspado^[Essa informação estava dentro de um atributo chamado `Last Page` em uma _tag_ `div`, tornando a extração da informação bem fácil]. Faremos algo bem parecido aqui, embora a informação que buscamos não esteja disponível de forma tão clara. Se inspecionarmos o código HTML da página, podemos ver que podemos extrair o número da última página através da _url_ disponível em um dos atributos da classe `pagination` de uma _tag_ `ul`.
+
+```{r imagem_iterar, layout = 'l-body-outset', code_folding = TRUE}
+include_graphics(path = 'images/imagem_3.jpg')
+```
+
+Para facilitar nosso trabalho de extração dessa informação aqui, vamos criar e usar a função `pega_max_paginas`: ela vai olhar dentro daquela classe e extrair o `href` do atributo `title` da _tag_ `a`; a partir daí vamos ter que usar um pouquinho de _regex_ para extrair o número da página em si, uma vez que o resultado original é uma _string_ e o que desejamos são os números que estão após o padrão `pagina=`.  
+
+```{r funcao_ultima_pagina}
+# função para definir o número máximo de páginas para raspar
+pega_max_paginas <- function(url_base) {
+  GET(url = str_glue(url_base, 1)) %>% 
+    # pegando o conteudo do GET
+    content() %>% 
+    # pegando o xpath da paginacao
+    xml_find_all(xpath = '//ul[@class="pagination"]//a[@title="Última Página"]') %>% 
+    # pegando o link que contem o numero da pagina maxima
+    xml_attr('href') %>% 
+    # pegando o numero da pagina
+    str_extract(pattern = '(?<=pagina=)([0-9]+)') %>% 
+    # parseando para numero
+    parse_number()
+}
+
+## definindo qual o numero maximo de paginas para pegar
+ultima_pagina <- pega_max_paginas(url_base = base_url)
+ultima_pagina
+```
+
+Como vimos, temos `r ultima_pagina` para raspar, o que demora um pouquinho. No entanto, como a ideia aqui é ser apenas ilustrativo, vou raspar apenas as 5 primeiras páginas e deixarei uma linha comentada com o que deveria ser passado para a função `walk` caso quiséssemos tudo.
+
+```{r itera_exemplo}
+## pegando as paginas
+walk(
+  .x = 1:5,
+  # .x = 1:ultima_pagina, # descomentar essa linha se for para raspar tudo
+  .f = pega_pagina,
+  url_base = base_url, save_dir = 'data/'
+)
+```
+
+## Faxinar
+
+Com o HTML das páginas, agora devemos organizar e tratar os dados. Para tal, vou extrair o _path_ de todos os arquivos HTML baixados e passá-los para a função `map_dfr`. Esta função vai se encarregar de aplicar a função `parser_pagina` à cada _path_ e retornar um único `tibble` com todos os resultados _parseados_.
+
+```{r parser_paginas_todas, layout = 'l-page'}
+## pegando o path para as paginas
+path_das_paginas <- dir_ls(path = 'data/', regexp = 'html')
+
+## colocando todas as tabelas em um dataframe so
+df <- map_dfr(.x = path_das_paginas, .f = parser_pagina)
+rmarkdown::paged_table(x = df)
+```
+
+Já temos os dados tabulados. Vamos aplicar alguns ajustes a eles: remover o excesso de espaço em branco nas strings, separar as informações sobre as notas em diversas colunas e passar o que for numérico para tal. O código abaixo dá conta disso e nos retorna os dados do ranking tratados.
+
+```{r faxina_paginas, layout = 'l-page'}
+df <- df %>% 
+  mutate(
+    # parseando o ranking para numerico
+    ranking = parse_number(ranking),
+    # tratando o string titulo do jogo
+    titulo  = str_squish(string = titulo),
+    # parseando o ano para numerico
+    ano     = parse_number(ano),
+    # ajustando a string do campo de nota
+    notas   = str_squish(string = notas),
+  ) %>% 
+  # separando a coluna com as informacoes de nota atraves do padrao da barra
+  separate(col = notas, into = c('nota_rank', 'nota_media', 'notas', 'leftover'), sep = '\\|') %>% 
+  # tratando as informacoes da coluna separada
+  mutate(
+    # nota do ranking
+    nota_rank  = parse_number(nota_rank),
+    # nota dos usuarios
+    nota_media = parse_number(nota_media),
+    # quantidade de notas
+    notas      = parse_number(notas) 
+  ) %>% 
+  # removendo colunas que nao serao mais necessarias
+  select(-leftover)
+rmarkdown::paged_table(x = df)
+```
+
+# As notas são similares entre portais?
+
+Uma vez que o _scrapping_ da página do ranking da Ludopedia demora um pouquinho, já deixei preparada uma base com estes dados conforme disponíveis no dia 15 de outubro de 2021. Podemos visualizar o conteúdo do ranking naquela data através da tabela abaixo.
+
+```{r df_ludopedia, layout = 'l-page'}
+## lendo os dados raspados da ludopedia
+ludopedia <- read_rds(file = 'data/ranking_ludopedia.rds')
+rmarkdown::paged_table(x = ludopedia)
+```
+
+De forma similar, trago abaixo a tabela com as informações do ranking do BGG, obtidas também no dia 15 de outubro.
+
+```{r df_bgg, layout = 'l-page'}
+## lendo os dados raspados da ludopedia
+bgg <- read_rds(file = 'data/ranking_bgg.rds')
+rmarkdown::paged_table(x = bgg)
+```
+
+Como podemos ver, existem muitas similaridades entre os dois conjuntos de dados (_e.g._, título, ano de lançamentos, nota do ranking, quantidade de notas,...). Todavia, as informações que precisamos para endereçar a nossa hipótese são apenas duas: a informação da posição do ranking e uma medida relacionada à nota dada àquela posição. Neste contexto, gostaria de fazer três observações.
+
+A primeira delas é que a nossa hipótese está relacionada à _diferença na nota para cada posição do ranking entre os dois portais_, e não à diferença na notas de um mesmo título entre os portais. Caso esta última fosse a nossa hipótese de trabalho, precisaríamos juntar as bases título a título - algo que não conseguíriamos fazer bem aqui, uma vez que o nome de alguns títulos mudam um pouquinho do inglês para o português (_e.g._, Projeto Gaia _vs_ Gaia Project). Até existem jeitos de fazer isso, como através das funções dos pacotes `fuzzywuzzyR` - muito parecido com a _lib_ `fuzzywuzzy` do Python - e `stringdist`, mas de fato não é esse o intuito aqui. Além disso, qualquer comparação de notas ao nível do título _per se_ poderia estar confundida com o fato de que alguns deles ou ainda não foram lançados no Brasil ou o foram há muito pouco tempo. Neste caso, poderia ser o caso que a diferença nas notas título a título entre portais estivesse relacionada ao tempo que eles estão circulando nos respectivos mercado, e não necessariamente a uma melhor avaliação.
+
+O segundo ponto está relacionado à medida de nota que vamos usar: a nota do ranking, a nota do usuário ou a quantidade de votos. Seguindo o mesmo raciocínio que no parágrafo anterior, a quantidade de notas deve estar relacionada não só à popularidade do título, mas também à quantidade de tempo que ele esteve ali no portal para ser votado; logo, esta não é uma medida muito interessante para endereçar nossa hipótese (além de não falar de forma direta com ela, né). A outra medida é a nota do ranking, que é a nota que posiciona cada título no ranking. Esta nota é uma média bayesiana^[Existe uma excelente explicação sobre a média bayesiana, sua utilização para rankear itens e implementação em código em: https://www.algolia.com/doc/guides/solutions/ecommerce/relevance-optimization/tutorials/bayesian-average/], calculada a partir da média aritmética das notas, da quantidade de votos e um fator de ajuste associado aos quantis de distribuição de votos entre os títulos. Com isto, esta estimativa ajuda _e.g._ a remover potenciais viéses associados à títulos que recebem pouquíssimos votos, mas notas altas - esta é uma das propriedades que torna este tipo de média atrativa para rankear itens. Assim, como esta medida leva em consideração a quantidade de votos, de títulos e a interação entre estes dois, também não é a medida que estamos buscando. Com isto, chegamos à medida que de fato queremos e vamos utilizar: a nota média dada pelos usuários.
+
+A última coisa que é importante pontuar é que apesar da base de dados do ranking do BGG conter `r format(x = nrow(bgg), big.mark = '.', decimal.mark = ',')` títulos, apenas `r format(x = bgg %>% drop_na(rank, nota_usuarios) %>% nrow(), big.mark = '.', decimal.mark = ',')` deles têm a informação de notas. Além disso, este número ainda é muito maior do que o de títulos na base de dados da Ludopedia - `r format(x = nrow(ludopedia), big.mark = '.', decimal.mark = ',')` jogos. Isto ocorre por que o ranking do BGG parece trazer __todos__ os jogos cadastrados no banco de dados deles, enquanto o da Ludopedia apenas aqueles que foram rankeados. Neste contexto, vamos precisar focar apenas nas posições do ranking em comum entre as duas bases de dados.
+
+Com isto em mente, vamos separar os dados que precisamos. O código abaixo cuida de juntar as duas bases usando a posição do ranking como chave primária, além de selecionar apenas a coluna de nota média, renomeá-la de acordo com a fonte de dados e remover as linhas com `NA` dos dados do ranking do BGG antes de juntá-las. Note que juntaremos as duas bases usando um `inner_join`, com os dados da Ludopedia no `left` e do BGG no `right`, a fim de que tenhamos uma base com as posições do ranking que ocorrem no primeiro __e__ no segundo `tibble`.
+
+```{r junta_ranks}
+# usando um inner_join para juntar as posicoes que existem na pagina da ludopedia
+ranks <- inner_join(
+  # ludopedia no left
+  x = ludopedia %>% 
+    # selecionando e renomeando colunas
+    select(ranking, ludopedia = nota_media),
+  # bgg no right
+  y = bgg %>% 
+    # selecionando e renomeando colunas
+    select(rank, bgg = nota_usuarios) %>% 
+    # dropando os NAs
+    drop_na(),
+  # juntando pela coluna de ranking em cada base
+  by = c('ranking' = 'rank')
+)
+ranks
+```
+
+Uma vez que tenhamos as duas informações juntas, podemos começar a entender os dados com o foco na hipótese que queremos testar. A primeira coisa que podemos ver abaixo é que parece existir uma relação entre entre as notas dos dois portais, de forma que as notas do ranking no portal da Ludopedia parecem ser consistentemente maiores do que àquelas no BGG (_i.e._, os pontos na figura parecem estar majoritamente acima da linha vermelha de 1:1). Outro ponto importante nesta figura é que parece existir uma diferença na distribuição das notas entre os dois portais: (a) as notas seguem uma distribuição bem mais próxima de uma normal no BGG do que na Ludopedia e (b) a distribuição das notas da Ludopedia tem um _skew_ negativo (_i.e._, muitas notas altas e algumas poucas notas baixas - mediana maior que a média da distribuição), enquanto o do BGG é um pouco mais positivo.
+
+```{r figura_relacao, layout = 'l-body-outset', dpi=200, fig.height=5, code_folding = TRUE}
+library(ggside) # para colocar o density plot ao lado
+
+## criando a figura da relação entre as notas nos dois portais
+ggplot(data = ranks, mapping = aes(x = bgg, y = ludopedia)) +
+  geom_point(alpha = 0.4, size = 1.5, color = 'black') +
+  geom_abline(slope = 1, intercept = 0, size = 0.8, color = 'tomato') +
+  geom_xsidehistogram(color = 'black', fill = 'dodgerblue') +
+  geom_ysidehistogram(color = 'black', fill = 'mediumseagreen') +
+  scale_x_continuous(breaks = seq(from = 3, to = 9.5, by = 0.5)) +
+  scale_xsidey_continuous(breaks = NULL) +
+  scale_y_continuous(breaks = seq(from = 3, to = 9.5, by = 1)) +
+  scale_ysidex_continuous(breaks = NULL) +
+  labs(
+    title    = 'Relação entre a nota média para uma mesma posição do ranking entre os dois portais',
+    subtitle = 'A linha vermelha representa a relação 1:1 entre as notas. Pontos acima da curva representam notas que tendem a ser 
+maiores na Ludopedia do que no BGG - e o contrário para os pontos abaixo da curva. Os histogramas nas laterais da figura 
+representam a distribuição dos valores das notas para os dados da Ludopedia (em verde) e BGG (em azul).',
+    x        = 'BoardGameGeek',
+    y        = 'Ludopedia'
+  )
+```
+
+Um outro padrão interessante é que a diferença nas notas entre os portais parece variar ao longo do ranking: (a) os jogos posicionados até o Top 200 parecem receber consistentemente notas maiores na Ludopedia do que no BGG, (b) aqueles entre o Top 200 e o Top 2100 tendem à receber notas maiores na Ludopedia também (embora hajam muitas exceções) e (c) os jogos posicionados mais ao final do ranking recebem notas consistentemente piores na Ludopedia do que no BGG. Parece que quando o jogo não é bem avaliado, os ~brasileiros~ usuários do portal da Ludopedia tendem à avaliá-los muito mal mesmo. De uma forma ou de outra, podemos ver que a distribuição da diferença entre notas tende a ficar majoritamente acima do valor 0, o que reforça o padrão observado até aqui de que as notas dadas aos jogos que acabam estando no ranking na Ludopedia tendem a ser maiores do que no BGG.
+
+```{r figura_posicao_ranking, layout = 'l-body-outset', dpi=200, fig.height=4, code_folding = TRUE}
+# criando a figura para mostrar a variação na diferença entre notas de acordo com o ranking
+ranks %>% 
+  # calculando a coluna de diferenca
+  mutate(
+    diferenca = ludopedia - bgg
+  ) %>% 
+  # calculando a figura da diferenca pela posicao no ranking
+  ggplot(mapping = aes(x = ranking, y = diferenca)) +
+  geom_line(color = 'grey30') +
+  geom_hline(yintercept = 0, size = 1, color = 'tomato') +
+  scale_x_continuous(breaks = seq(from = 0, to = nrow(ranks), by = 300)) +
+  scale_y_continuous(breaks = seq(from = -4, to = 3, by = 1)) +
+  labs(
+    title    = 'Diferença entre as notas de acordo com a posição no ranking',
+    subtitle = 'Valores positivos indicam que a nota para àquela posição do ranking no portal da Ludopedia é maior que àquela no BGG, 
+e o contrário para valores negativos. A linha vermelha marca o valor onde esta diferença é zero.',
+    x        = 'Posição no Ranking',
+    y        = 'Diferença entre notas (Ludopedia - BGG)'
+  )
+```
+
+Finalmente, olhando a distribuição da diferença entre as notas, também podemos ver que existe uma tendência de que as notas da Ludopedia sejam maiores do que àquelas do BGG - ainda que hajam algumas exceções. Dado os padrões observados até aqui, é muito claro que existe uma diferença entre os dois portais quanto às notas para uma mesma posição do ranking, com as notas na Ludopedia normalmente sendo maiores que as do BGG. Apesar de não precisamos usar nenhuma análise estatística para constatar isto, vou fazer o exercício aqui usando as funções do pacote `infer` e, só para servir de _benchmark_, as funções equivalentes no pacote `stats` do R.
+
+```{r figura_distribuicao, layout = 'l-body-outset', dpi=200, fig.height=4, code_folding = TRUE}
+# criando figura para mostrar o histograma de distribuição da diferença entre as notas
+ranks %>% 
+  # calculando a coluna de diferenca
+  mutate(diferenca = ludopedia - bgg) %>% 
+  # criando o histograma de distribuição da diferença de notas
+  ggplot(mapping = aes(x = diferenca)) +
+  geom_histogram(color = 'black', fill = 'grey60') +
+  scale_x_continuous(breaks = seq(from = -4, to = 3, by = 1)) +
+  labs(
+    title    = 'Distribuição da diferença entre notas para uma mesma posição do ranking',
+    subtitle = 'Valores positivos indicam que a nota para àquela posição do ranking no portal da Ludopedia é maior que àquela no BGG, 
+e o contrário para valores negativos.',
+    x        = 'Diferença entre notas (Ludopedia - BGG)',
+    y        = 'Observações'
+  )
+```
+
+## `stats`
+
+A pergunta principal que propus foi se existiria alguma diferença entre as notas associadas à uma mesma posição entre os rankings da Ludopedia e do BGG. A hipótese estatística aqui seria a de que a diferença média entre as duas notas seria igual a zero; posto de outra forma, a diferença entre cada par de notas associada à cada uma das posições do ranking de _i_ à `r nrow(ranks)` tenderia à zero. Vou tomar isso como a hipótese nula, e considerar como hipótese alternativa que a diferença média entre as notas não é zero. Finalmente, precisamos levar em consideração o fato de que a variância entre as notas na Ludopedia é diferente daquela no BGG também (`r round(x = var(ranks$ludopedia), digits = 4)` _vs_ `r round(x = var(ranks$bgg), digits = 4)`, respectivamente). Com isto em mente, a análise estatística que vamos utilizar é um teste-t pareado bicaudal com variâncias diferentes - implementando abaixo usando a função `stats::t.test`.
+
+```{r test_t_base_r}
+# teste-t pareado com variancias diferentes conforme disponivel no base R
+t_test_stats <- t.test(x = ranks$ludopedia, y = ranks$bgg, 
+                       alternative = 'two.sided', paired = TRUE, var.equal = FALSE)
+t_test_stats
+```
+
+O resultado desta análise sugere que devemos rejeitar a hipótese nula, sugerindo que a diferença média entre as notas da Ludopedia e do BGG para uma mesma posição do ranking não tende à zero. Na realidade, podemos ver que a estimativa da diferença média estimada entre as notas é de `r round(x = t_test_stats$estimate[[1]], digits = 3)`, com um intervalo de confiança de 95% de `r round(x = t_test_stats$conf.int[[1]], digits = 3)` à `r round(x = t_test_stats$conf.int[[2]], digits = 3)`. Isto seria o tanto que as notas do ranking da Ludopedia superam àquelas do BGG, em média. Vamos agora examinar o que o pacote `infer` nos oferece.
+
+## `infer`
+
+De acordo com o próprio site^[https://infer.netlify.app/index.html], o `infer` tem por objetivo implementar a inferência estatística utilizando uma gramática estatística expressiva que seja coerente com o framework existente no `tidyverse`. Esse pacote traz algumas funções para atingir este objetivo e, através de sua documentação, podemos ver que a análise acaba ficando bastante verbosa - mas bem aderente às idéia e conceitos da estatística inferencial. Assim, vamos reproduzir o teste-t acima usando os equivalentes existentes dentro do `infer`.
+
+Vamos iniciar a análise carregando o pacote e, então, adicionando uma coluna no `tibble` original com a diferença par a par entre as notas já calculada. Precisamos fazer isso pois o `infer` não possui uma implementação explícita do test-t pareado, de forma que, dentro deste framework, ele se torna equivalente a um teste-t univariado sobre as diferenças entre pares de valores. Uma vez que tenhamos esta diferença calculada, usamos os verbos do `infer`  para especificar (`specify`) a variável resposta e calcular a estatística de teste que vamos usar (`calculate`). Nesta hora é que deveríamos especificar que a estatística que vamos usar é a distribuição t, e definir que a hipótese nula é de que as diferença média é igual a zero. No entanto, vou fugir um pouco de focar no teste-t _per se_ e usar uma outra funcionalidade do pacote: a facilidade com a qual podemos fazer inferências utilizando técnicas de reamostragem para testar uma hipótese nula.
+
+Técnicas de reamostragem são uma ferramenta muito útil em diversas situações, especialmente quando não sabemos a que família de distribuição estatística a variável resposta e/ou seus resíduos pertencem e precisamos fazer uma inferência ou estimar intervalos de confiança. Também existem outros casos para a sua aplicação, como quando temos uma hipótese específica sobre o processo gerador dos dados e queremos testá-lo explicitamente ou realizar comparações entre duas populações e temos um número diferente de amostras entre elas. Vou seguir o padrão aqui, e utilizar esta técnica para fazer a inferência sobre a diferença média entre as notas e estimar o intervalo de confiança desta diferença. Para tal, utilizei o _bootstrap_, que é uma implementação da reamostragem através da qual criamos _n_ conjuntos de dados, cada um dos quais criado através de amostras tomadas com substituição a partir do conjunto de dados original (_i.e._, uma mesma observação pode aparecer mais de uma vez em um mesmo conjunto de dados). A partir dos conjunto de dados reamostrados calculamos alguma estatística de interesse para chegar ao nosso objetivo.
+
+Para implementar esta reamostragem, vou então extrair a diferença média entre as notas no nosso conjunto de dados original. Para isso, passaremos o a string `mean` para o argumento `stat` da função `infer::calculate`, e usar um `purrr::pull` para extrair o valor da estatística de interesse como um vetor com um elemento.
+
+```{r obs_moment}
+library(infer) # para fazer o teste de hipótese
+
+# colocando a diferenca no tibble
+ranks <- ranks %>% 
+  # calculando a coluna de diferenca
+  mutate(
+    diferenca = ludopedia - bgg
+  )
+
+# rodando um teste-t pareado original
+obs_statistic <- ranks %>% 
+  # especificando a variável analisada para o infer
+  specify(
+    response = diferenca
+  ) %>% 
+  # calculando estatistica de teste
+  calculate(stat = 'mean') %>% 
+  # extraindo a coluna com a estatistica
+  pull(stat)
+obs_statistic
+```
+
+A próxima coisa que farei será calcular o intervalo de confiança para àquela estimativa. Para tal, vamos gerar 1000 conjuntos de dados reamostrados com substituição (através do verbo `generate`) e calcular o valor da média de cada um deles. Com isso, vamos construir uma distribuição de frequência das médias obtidas através da reamostragem e extrair os valores que estejam nos extremos do percentil de 95% desta distribuição (através da função `infer::get_confidence_interval`). Como podemos ver, tanto a estimativa quanto o intervalo de confiança que obtivemos são similares aqueles reportados pelo `stats::t.test`.
+
+```{r bootstrap_ci, dpi = 200}
+## criando reamostragem para estimar o intervalo de confiança
+boot_ci_tbl <- ranks %>% 
+  # especificando a variável analisada para o infer
+  specify(
+    response = diferenca
+  ) %>% 
+  # gerando bootstrap
+  generate(reps = 1000, type = 'bootstrap') %>% 
+  # calculando estatistica do bootstrap
+  calculate(stat = 'mean')
+
+## criando o histograma de distribuição de frequência da médias
+ggplot(data = boot_ci_tbl, mapping = aes(x = stat)) +
+  geom_histogram(color = 'black', fill = 'grey60') +
+  scale_x_continuous(n.breaks = 8) +
+  labs(
+    title = 'Distribuição de frequência da diferença média entre notas nos dados reamostrados',
+    x     = 'Diferença média entre as notas (Ludopedia - BGG)',
+    y     = 'Frequência'
+  )
+
+## calculando o intervalo de confiança
+boot_ci <- boot_ci_tbl %>% 
+  # pegando o intervalo de confianca
+  get_confidence_interval(type = 'percentile')
+boot_ci
+```
+
+Também podemos calcular a distribuição nula da diferença média entre notas através do _bootstrap_. `hypothesize`
+
+```{r null_moment}
+## calculando a distribuicao da estatistica de teste com o bootstrap
+null_statistic <- ranks %>% 
+  # especificando a variável analisada para o infer
+  specify(
+    response = diferenca
+  ) %>% 
+  # especificando a hipotese nula que queremos testar
+  # não existe diferença entre as notas medias para uma mesma posicao entre rankins
+  hypothesize(null = 'point', mu = 0) %>%
+  # gerando bootstrap
+  generate(reps = 1000, type = 'bootstrap') %>% 
+  # calculando estatistica do bootstrap
+  calculate(stat = 'mean')
+null_statistic
+```
+
+`visualize`, `shade_confidence_interval`, `shade_p_value`
+
+```{r visualiza_infer, layout = 'l-body-outset', fig.height=3, dpi = 200, code_folding = TRUE}
+null_statistic %>% 
+  # criando a visualização
+  visualize() +
+  # sombreando o intervalo de confianca
+  shade_confidence_interval(endpoints = boot_ci, color = 'white', fill = 'tomato') +
+  # colocar uma linha para a estimativa
+  shade_p_value(obs_stat = obs_statistic, direction = 'two-sided', color = 'tomato', size = 1) +
+  # ediitando a figura
+  scale_x_continuous(breaks = seq(from = -0.05, to = 0.4, by = 0.05)) +
+  labs(
+    title    = 'Distribuição dos valores nulos e observados',
+    subtitle = 'O histograma representa a distribuição dos valores da diferença entre médias de acordo com a hipótese nula. A linha
+vertical vermelha indica a estimativa da diferença média entre as notas, enquanto a barra vertical o intervalo de
+confiança 95%. Como não há sobreposição entre a distribuição dos dados de acordo com a hipótese nula e o intervalo de
+confiança, devemos rejeitar a hipótese nula.',
+    caption  = 'Utilizamos o método de reamostragem por bootstrap para a estimativa do intervalo de confiança, onde o calculamos através do percentil de distribuição das médias reamostradas.',
+    x        = 'Diferença entre médias (Ludopedia - BGG)',
+    y        = 'Frequência'
+  )
+```
+
+# Conclusões
+
++ Scrapping
++ Notas
++ infer é verboso
++ infer poderia ter melhorias
+
+# Possíveis Extensões
+
++ Comparação com melhorias
++ Usar infos para enriquecer REST API
++ Uar infos para comparar através do nome do jogo
