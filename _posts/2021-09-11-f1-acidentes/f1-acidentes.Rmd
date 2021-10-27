@@ -27,7 +27,7 @@ knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, fig.align = 'center')
 library(ggplot2)
 
 # setando o tema geral do ggplot2
-theme_set(new = theme_minimal(base_family = 'Roboto'))
+theme_set(new = theme_minimal(base_family = 'IBM Plex Sans'))
 
 # atualizando o tema
 theme_update(
@@ -42,20 +42,23 @@ theme_update(
 
 # Motivação
 
-# Preparação dos Dados
-
-## Carregando os Dados
-
-blablabla
-
-```{r carrega_dados}
+```{r}
 # carregando os pacotes necessários
 library(tidyverse) # core
 # library(tidytuesdayR) # ler os arquivos do tidytuesday
 library(fs) # manipular paths
 library(lubridate) # trablhar com datas
 library(readxl) # carregar dados de excel
+library(skimr) # descricao do dataframe
 
+# carregando os dados de dispositivos de segurança na F1
+safety <- read_excel(path = 'data/f1_safety.xlsx', skip = 1)
+# safety <- read_excel(path = '_posts/2021-09-11-f1-acidentes/data/f1_safety.xlsx', skip = 1)
+```
+
+blablabla
+
+```{r carrega_dados}
 # carregando todos os dados a partir do github do tidytuesday
 # tt_dataset <- tt_load(x = 2021, week = 37) # se você quiser baixar os dados direto da fonte
 
@@ -74,13 +77,7 @@ tt_dataset <- map(.x = paths_copias_locais, .f = read_rds)
 
 ## renomeando os elementos da lista
 names(tt_dataset) <- nomes_arquivos
-
-# carregando os dados de dispositivos de segurança na F1
-safety <- read_excel(path = 'data/f1_safety.xlsx', skip = 1)
-# safety <- read_excel(path = '_posts/2021-09-11-f1-acidentes/data/f1_safety.xlsx', skip = 1)
 ```
-
-## Variável Resposta
 
 blablabla
 
@@ -96,8 +93,9 @@ blablabla
 
 ```{r base_variavel_resposta}
 ## vetor com as categorias que vou usar como acidente
-categorias_acidente <- c('Accident', 'Collision', 'Spun off', 'Injured', 'Injury', 
-                         'Fatal accident', 'Eye injury', 'Collision damage', 'Damage')
+# categorias_acidente <- c('Accident', 'Collision', 'Spun off', 'Injured', 'Injury', 
+#                          'Fatal accident', 'Eye injury', 'Collision damage', 'Damage')
+categorias_acidente <- c('Accident', 'Collision', 'Injured', 'Injury', 'Fatal accident', 'Eye injury')
 
 ## juntando padrao de regex para os acidentes
 regex_acidentes <- paste0(categorias_acidente, collapse = '|')
@@ -126,7 +124,7 @@ acidentes_por_prova <- resultados %>%
 acidentes_por_prova
 ```
 
-## Feature Engineering
+# Preparação dos Dados
 
 blablabla
 
@@ -176,16 +174,6 @@ voltas_por_prova <- resultados %>%
   group_by(raceId) %>% 
   summarise(laps = max(laps))
 
-## calculando a velocidade maxima registrada em cada prova
-velocidade_por_prova <- resultados %>% 
-  # parseando a coluna para numerico
-  mutate(
-    fastestLapSpeed = parse_number(fastestLapSpeed)
-  ) %>% 
-  # calculando a velocidade maxima registrada em cada prova
-  group_by(raceId) %>% 
-  summarise(top_speed = max(fastestLapSpeed, na.rm = TRUE))
-
 ## mapeando cada circuito à uma prova
 provas <- left_join(x = tt_dataset$races,
                     y = tt_dataset$circuits,
@@ -196,16 +184,24 @@ provas <- left_join(x = tt_dataset$races,
   rename(gp = name.x, circuit = name.y) %>% 
   # levantando informacoes de data
   mutate(
-    data = paste(date, time),
-    data = as_datetime(data),
-    mes = month(data),
-    semana = isoweek(x = data),
-    turno_pm = pm(data)
+    data     = paste(date, time),
+    data     = as_datetime(data),
+    mes      = month(data),
+    semana   = isoweek(x = data),
+    turno_pm = pm(data),
+    decada   = (year %/% 10) * 10
   ) %>% 
   select(-date, -time)
 ```
 
-## Base Analítica
+```{r}
+left_join(x = tt_dataset$driver_standings,
+          y = select(tt_dataset$races, raceId, year, round),
+          by = 'raceId') %>% 
+  arrange(year, driverId, round) %>% 
+  group_by(year, driverId) %>% 
+  filter(year == 2008, driverId %in% c(1, 2)) %>% View()
+```
 
 blablabla
 
@@ -216,9 +212,6 @@ features_por_prova <- left_join(x = provas,
                              by = 'raceId') %>% 
   ## juntando de voltas por prova
   left_join(y = voltas_por_prova,
-            by = 'raceId') %>% 
-  # juntando velocidade maxima registrada em cada prova
-  left_join(y = velocidade_por_prova,
             by = 'raceId') %>% 
   # juntando informacoes dos dispositivos de seguranca disponiveis por ano
   left_join(y = dispositivos_seguranca, by = c('year' = 'Year')) %>% 
@@ -237,6 +230,138 @@ df
 ```
 
 # Análise Exploratória
+
+blablabla
+
+```{r skim_da_base_analitica, layout = 'l-body-outset'}
+skim(data = df)
+```
+
+blablabla
+
+```{r target_por_decada, layout = 'l-body-outset', dpi = 200, fig.height=4, fig.width=8}
+df %>% 
+  # agrupando por decada
+  group_by(decada) %>% 
+  # calculando a proporcao de provas com acidente
+  summarise(
+    proporcao = mean(tem_acidente), 
+    .groups = 'drop'
+  ) %>% 
+  # reordenando a coluna de decada para o fill
+  mutate(
+    decada_fill = fct_reorder(.f = as.factor(decada),
+                              .x = proporcao, .desc = TRUE)
+  ) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = decada, y = proporcao, fill = decada_fill)) +
+  geom_col(color = 'black') +
+  scale_x_continuous(breaks = seq(from = 1950, to = 2020, by = 10)) +
+  scale_y_continuous(breaks = seq(from = 0, to = 1, by = 0.2), limits = c(0, 1)) +
+  scale_fill_brewer(type = 'div', palette = 'RdBu') +
+  labs(
+    title    = 'Proporção de provas com acidente por década',
+    subtitle = 'A frequência de acidentes foi muito alta entre as décadas de 70 e 80, mas voltou a cair logo na década de 90.',
+    caption  = 'Quanto mais fria a cor do preenchimento, mais desejado é aquele comportamento para a variável analisada.',
+    x        = 'Década',
+    y        = 'Proporção de provas com acidente'
+  ) +
+  theme(legend.position = 'none')
+```
+
+blablabla
+
+```{r seguranca_por_decada, layout = 'l-body-outset', dpi = 200, fig.height=4, fig.width=8}
+# criando figura da quantidade de intervenções por decada
+safety %>% 
+  # convertendo os anos em decadas
+  mutate(decada = (Year %/% 10) * 10) %>% 
+  # contando quantidade de intervencoes de seguranca por decada
+  count(decada, name = 'intervencoes') %>% 
+  # adicionando linha para a decada de 2020 que esta faltando
+  add_row(decada = 2020, intervencoes = 0) %>% 
+  # reordenando a coluna de decada para o fill
+  mutate(
+    decada_fill = fct_reorder(.f = as.factor(decada),
+                              .x = intervencoes, .desc = TRUE)
+  ) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = decada, y = intervencoes, fill = decada_fill)) +
+  geom_col(color = 'black') +
+  scale_x_continuous(breaks = seq(from = 1950, to = 2020, by = 10)) +
+  scale_fill_brewer(type = 'div', palette = 'RdBu', direction = -1) +
+  labs(
+    title    = 'Quantidade de intervenções relacionadas à segurança dos pilotos entre as décadas',
+    subtitle = 'Houve um aumento na quantidade de intervenções relacionadas à segurança entre as décadas de 90 e o início dos anos 2000.',
+    caption  = 'Quanto mais fria a cor do preenchimento, mais desejado é aquele comportamento para a variável analisada.',
+    x        = 'Década',
+    y        = 'Intervenções relacionadas à segurança'
+  ) +
+  theme(legend.position = 'none')
+```
+
+blablabla
+
+```{r acidentes_por_circuito, layout = 'l-body-outset', dpi = 200, fig.height=8, fig.width = 9}
+df %>% 
+  # codificando circuitos infrequentes como classe a parte
+  mutate(circuit = fct_lump_min(f = circuit, min = 4)) %>%
+  # agrupando no circuito
+  group_by(circuit) %>% 
+  # calculando a proporcao de provas com acidente
+  summarise(
+    proporcao = mean(tem_acidente), 
+    obs       = n(),
+    .groups = 'drop'
+  ) %>% 
+  # reordenando os niveis do circuito
+  mutate(
+    circuit = fct_reorder(.f = circuit, .x = proporcao)
+  ) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = proporcao, y = circuit, fill = proporcao)) +
+  geom_col(color = 'black') +
+  scale_x_continuous(breaks = seq(from = 0, to = 1, by = 0.2), limits = c(0, 1)) +
+  scale_fill_distiller(type = 'div', palette = 'RdBu') +
+  labs(
+    title    = 'Proporção de acidentes por prova no registro histórico',
+    subtitle = 'Existem registros de acidentes em todas as provas que ocorreram em alguns circuitos.',
+    caption  = 'Quanto mais fria a cor do preenchimento, mais desejado é aquele comportamento para a variável analisada.',
+    x        = 'Proporção de provas com acidente'
+  ) +
+  theme(
+    legend.position = 'none',
+    axis.title.y = element_blank()
+  )
+```
+
+blablabla
+
+```{r acidentes_por_mes, layout = 'l-body-outset', dpi = 200, fig.height = 5, fig.width = 5}
+# criando a figura da propoção de provas com acidentes por mes
+df %>% 
+  # criando coluna com o mes por extenso em portugues
+  mutate(mes_str = month(x = data, label = TRUE, locale = 'pt_BR', abbr = FALSE)) %>% 
+  # agrupando pelo mes
+  group_by(mes_str) %>% 
+  # calculando a proporcao de provas com acidentes por mes
+  summarise(proporcao = mean(tem_acidente)) %>% 
+  # plotando a figura
+  ggplot(mapping = aes(x = mes_str, y = proporcao, fill = proporcao)) +
+  geom_col() +
+  geom_text(mapping = aes(label = round(x = proporcao, digits = 2)), nudge_y = 0.06) +
+  scale_fill_fermenter(type = 'div', palette = 'RdBu', direction = -1) +
+  coord_polar() +
+  labs(
+    title = 'Proporção de provas com acidente por mês entre todos os anos no histórico',
+    caption  = 'Quanto mais fria a cor do preenchimento, mais desejado é aquele comportamento para a variável analisada.'
+    ) +
+  theme(
+    legend.position = 'none',
+    axis.text.y     = element_blank(),
+    axis.title      = element_blank()
+    )
+```
 
 # Análise dos Dados
 
