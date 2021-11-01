@@ -42,7 +42,11 @@ theme_update(
 
 # Motivação
 
-```{r}
+Contentualizar o desejo de responder a pergunta.
+
+Mostrar que existe um aumento na quantidade de intervenções de segurança.
+
+```{r motivacao_safety_measures, layout = 'l-body-outset', dpi = 200, fig.height=5, fig.width=8}
 # carregando os pacotes necessários
 library(tidyverse) # core
 # library(tidytuesdayR) # ler os arquivos do tidytuesday
@@ -50,15 +54,42 @@ library(fs) # manipular paths
 library(lubridate) # trablhar com datas
 library(readxl) # carregar dados de excel
 library(skimr) # descricao do dataframe
+library(patchwork) # para compor figuras do ggplot2
 
 # carregando os dados de dispositivos de segurança na F1
 safety <- read_excel(path = 'data/f1_safety.xlsx', skip = 1)
 # safety <- read_excel(path = '_posts/2021-09-11-f1-acidentes/data/f1_safety.xlsx', skip = 1)
+
+# criando a figura principal
+safety %>% 
+  # prepaarando os dados para criar a figura
+  mutate(
+    # imputando o ano atual
+    Now = year(today()),
+    # ordenando as intervencoes po rano
+    Intervention = fct_reorder(.f = Intervention, .x = Year, .fun = min, .desc = TRUE)
+  ) %>% 
+  # criando a figura do ano a partir do qual as intervenções foram implementadas
+  ggplot(mapping = aes(x = Year, xend = Now, y = Intervention, yend = Intervention)) +
+  geom_segment() +
+  geom_point(mapping = aes(x = Year), size = 3) +
+  geom_text(mapping = aes(x = Year, label = Year), nudge_x = -4, size = 3) +
+  scale_x_continuous(breaks = seq(from = 1950, to = 2020, by = 10)) +
+  labs(
+    title    = 'Principais intervenções associadas à segurança dos pilotos ao longo dos anos',
+    subtitle = 'Houve um aumento na quantidade de intervenções relacionadas à segurança entre as décadas de 90
+e o início dos anos 2000.',
+    caption  = 'Fonte: https://f1-insider.com/en/history-of-formula-1-safety/',
+    x        = 'Ano'
+  ) +
+  theme(
+    axis.title.y = element_blank()
+  )
 ```
 
-blablabla
+Vamos carregar o dataset do tidytuesday para analisar os acidentes.
 
-```{r carrega_dados}
+```{r motivacao_carrega_dados}
 # carregando todos os dados a partir do github do tidytuesday
 # tt_dataset <- tt_load(x = 2021, week = 37) # se você quiser baixar os dados direto da fonte
 
@@ -79,79 +110,106 @@ tt_dataset <- map(.x = paths_copias_locais, .f = read_rds)
 names(tt_dataset) <- nomes_arquivos
 ```
 
-blablabla
+Precisamos juntar os resultados de cada piloto com o de-para de status para saber quantas ocorrências de acidentes têm por prova. Vou considerar 6 tipos de status para dizer que houve um acidente.
 
-```{r de_para_status}
+```{r motivacao_contagem_acidentes}
 ## adicionando o dicionario de resultados
 resultados <- left_join(x = tt_dataset$results,
                         y = tt_dataset$status,
                         by = 'statusId')
-resultados
-```
 
-blablabla
-
-```{r base_variavel_resposta}
 ## vetor com as categorias que vou usar como acidente
-# categorias_acidente <- c('Accident', 'Collision', 'Spun off', 'Injured', 'Injury', 
-#                          'Fatal accident', 'Eye injury', 'Collision damage', 'Damage')
-categorias_acidente <- c('Accident', 'Collision', 'Injured', 'Injury', 'Fatal accident', 'Eye injury')
+categorias_acidente <- c('Accident', 'Collision', 'Injured', 'Injury', 
+                         'Fatal accident', 'Eye injury')
 
 ## juntando padrao de regex para os acidentes
 regex_acidentes <- paste0(categorias_acidente, collapse = '|')
 
+## mostrando a quantidade de vezes que estes padrões de acidente aparecem no texto
+resultados %>% 
+  filter(str_detect(string = status, pattern = regex_acidentes)) %>% 
+  count(status, name = 'registros', sort = TRUE)
+
+## mostrando a quantidade de vezes que estes padrões de acidente aparecem no texto
+resultados %>% 
+  filter(str_detect(string = status, pattern = regex_acidentes)) %>% 
+  count(status, name = 'registros', sort = TRUE) %>% 
+  rmarkdown::paged_table()
+```
+
+Revisitar a pergunta e dizer que vou trabalhar com ocorrência ou não de acidente ao nível de cada prova. Objetivo é ser capaz de dizer quando há maior chance de haver um acidente antes da prova.
+
+```{r base_variavel_resposta}
 ## mapeando os acidentes por prova
 acidentes_por_prova <- resultados %>% 
-  # selecionando as colunas de interesse
-  select(raceId, driverId, constructorId, status) %>% 
-  # agrupando pela prova, piloto e construtor
-  group_by(raceId, driverId, constructorId) %>% 
-  # juntando o status do piloto em cada prova em uma só string
-  summarise(status = paste(status, collapse = ', '), .groups = 'drop') %>% 
-  # codificando a ocorrencia de um acidente
-  mutate(
-    acidente = str_detect(string = status, pattern = regex_acidentes)
-  ) %>% 
-  # agrupando por prova
+  # testando se aquele padrão de regex ocorre em cada linha
+  mutate(tem_acidente = str_detect(string = status, pattern = regex_acidentes)) %>% 
+  # agrupando as observações pelo identificador da prova
   group_by(raceId) %>% 
-  # sumarizando a base
-  summarise(
-    # calculando a quantidade de acidentes por prova
-    n_acidentes = sum(acidente),
-    # criando flag para a ocorrencia de acidentes na prova
-    tem_acidente = n_acidentes > 0
-  )
-acidentes_por_prova
+  # testando se existe qualquer linha onde existe algum TRUE
+  summarise(tem_acidente = any(tem_acidente)) 
+count(acidentes_por_prova, tem_acidente, name = 'ocorrencias')
 ```
 
 # Preparação dos Dados
 
-blablabla
+Explicar que preciso levantar as informações ao nível de cada prova, considerando informações que saberemos de antemão. Falar que as variáveis que vou utilizar são baseadas em algumas hipóteses que tenho, e que apresento enquanto explicar.
 
-```{r fe_dispositivos_de_seguranca}
-## dispositivos de seguranca disponiveis ano a ano e total
-dispositivos_seguranca <- safety %>%
-  # expandindo a coluna de ano para conter todos os anos do inicio ao atual
-  mutate(
-    Year = map(.x = Year, .f = seq, to = year(Sys.Date()), by = 1)
-  ) %>% 
-  # desaninhando a list column
-  unnest(cols = Year) %>% 
-  # removendo o nome original da intevenção
-  select(-Intervention) %>% 
-  # passando a tabela para o formato largo
-  pivot_wider(id_cols = Year, names_from = ID, values_from = ID, values_fn = length, values_fill = 0) %>% 
-  group_by(Year) %>% 
-  rowwise() %>% 
-  mutate(
-    n_safety = sum(c_across(I001:I025))
-  )
-dispositivos_seguranca
+Começar por um combo de três hipóteses: tempo durante a prova, o tipo de circuito e a extensão do circuito. 
+
+Falar que consegui as informações raspando a wikipedia através de informações disponíveis nos próprios dados. Aproveitar para exemplificar o caso em que não dá para usar informação _a posteriori_ usando a variável de distancia.
+
+```{r fe_weather, code_folding = FALSE}
+tempo_durante_prova <- select(tt_dataset$weather_and_other, -voltas)
+rmarkdown::paged_table(x = tempo_durante_prova)
 ```
 
-blablabla
+Hipótese seguinte tem haver com o estado da disputa entre os pilotos.
 
-```{r outras_features, code_folding = TRUE}
+```{r fe_points, code_folding = FALSE}
+## juntando as informacoes das provas com a pontuacao por piloto por prova, round e temporada
+disputa_por_prova <- left_join(x = tt_dataset$driver_standings,
+                               y = select(tt_dataset$races, raceId, year, round),
+                               by = 'raceId') %>% 
+  # organizando pontuação por ano e prova em ordem decrescente, da primeira à última prova
+  arrange(year, round, desc(points)) %>% 
+  # agrupando por ano e prova
+  group_by(year, raceId) %>% 
+  # criando uma mascara para nos ajuda a calcular as metricas apenas considerando a pontuacao
+  # dos pilotos no topo do ranking da temporada por prova e ano
+  mutate(
+    mask_positions = ifelse(test = row_number() <= 5, yes = 1, no = NA)
+  ) %>%
+  # sumarizando metricas para representar força da disputa à cada prova e ano
+  summarise(
+    # coeficiente de variação da pontuação dos cinco pilotos com mais pontos à cada prova 
+    # concluída em cada temporada
+    cv_top_pilots = sd(points * mask_positions, na.rm = TRUE) / mean(points * mask_positions, na.rm = TRUE),
+    # coeficiente de variação da pontuação de todos os pilotos à cada prova concluída em cada temporada
+    cv_all_pilots = sd(points) / mean(points), 
+    .groups = 'drop'
+  ) %>% 
+  # garantindo ordenamento por ano e prova
+  arrange(year, raceId) %>% 
+  # agrupando por ano
+  group_by(year) %>% 
+  # imputando o coeficiente de variacao das metricas da corrida prova anterior para prever o resultado
+  # da corrida atual - não dá para usar o dado de uma informação obtida após a prova para prever o que 
+  # acontecerá durante a prova
+  mutate(cvl_top_pilots = lag(cv_top_pilots), cvl_all_pilots = lag(cv_all_pilots)) %>% 
+  # dropando o grupo
+  ungroup %>% 
+  # substituindo os NAs por zero - no inicio de cada temporada não houve nenhuma prova anterior e, 
+  # portanto vamos assumir que não há uma competição intensa neste momento
+  replace_na(replace = list(cvl_top_pilots = 0, cvl_all_pilots = 0)) %>% 
+  # dropando a coluna de ano
+  select(-year)
+rmarkdown::paged_table(x = disputa_por_prova)
+```
+
+Outras hipóteses que temos: quantidade de competidores, quantidade de voltas e informações de calendário.
+
+```{r fe_outras_features, code_folding = FALSE}
 ## quantidade de pilotos e construtores por prova
 participantes_por_prova <- resultados %>% 
   # pegando os valores unicos das chaves primarias por prova
@@ -194,52 +252,49 @@ provas <- left_join(x = tt_dataset$races,
   select(-date, -time)
 ```
 
-```{r}
-left_join(x = tt_dataset$driver_standings,
-          y = select(tt_dataset$races, raceId, year, round),
-          by = 'raceId') %>% 
-  arrange(year, driverId, round) %>% 
-  group_by(year, driverId) %>% 
-  filter(year == 2008, driverId %in% c(1, 2)) %>% View()
-```
+Features calculadas, vamos consolidar elas em uma base só.
 
-blablabla
-
-```{r junta_features_por_prova}
+```{r junta_features_por_prova, code_folding = FALSE}
 ## juntando informacoes das provas com a quantidade de participantes e construtores
 features_por_prova <- left_join(x = provas,
                              y = participantes_por_prova,
                              by = 'raceId') %>% 
   ## juntando de voltas por prova
-  left_join(y = voltas_por_prova,
-            by = 'raceId') %>% 
-  # juntando informacoes dos dispositivos de seguranca disponiveis por ano
-  left_join(y = dispositivos_seguranca, by = c('year' = 'Year')) %>% 
-  # substituindo os valores NA por 0
-  mutate(
-    across(I001:n_safety, replace_na, 0)
-  )
-features_por_prova
+  left_join(y = voltas_por_prova, by = 'raceId') %>% 
+  ## juntando informacoes da intensidade da disputa
+  left_join(y = disputa_por_prova, by = 'raceId') %>% 
+  ## juntando informacoes do tempo em cada prova
+  left_join(y = tempo_durante_prova, by = 'raceId')
+rmarkdown::paged_table(x = features_por_prova)
 ```
 
-blablabla
+Consolidando a base analítica.
 
-```{r cria_base_analitica}
+```{r cria_base_analitica, code_folding = FALSE}
 df <- left_join(x = acidentes_por_prova, y = features_por_prova, by = 'raceId')
-df
+rmarkdown::paged_table(x = df)
 ```
 
 # Análise Exploratória
 
-blablabla
+Visão geral dos dados que temos no dataframe.
 
 ```{r skim_da_base_analitica, layout = 'l-body-outset'}
 skim(data = df)
 ```
 
+Valores missing que sabemos quais são.
+
+```{r imputa_missing}
+df <- df %>% 
+  # as instancias que faltam a informacao do tipo de circuito sao todos de autodromos oficiais
+  # que nao estao sendo mais usados pela F1
+  replace_na(replace = list(permanent_circuit = 1, street_circuit = 0, temporary_circuit = 0))
+```
+
 blablabla
 
-```{r target_por_decada, layout = 'l-body-outset', dpi = 200, fig.height=4, fig.width=8}
+```{r target_por_decada, layout = 'l-body-outset', dpi = 200, fig.height=4, fig.width=8, code_folding = TRUE}
 df %>% 
   # agrupando por decada
   group_by(decada) %>% 
@@ -271,38 +326,35 @@ df %>%
 
 blablabla
 
-```{r seguranca_por_decada, layout = 'l-body-outset', dpi = 200, fig.height=4, fig.width=8}
-# criando figura da quantidade de intervenções por decada
-safety %>% 
-  # convertendo os anos em decadas
-  mutate(decada = (Year %/% 10) * 10) %>% 
-  # contando quantidade de intervencoes de seguranca por decada
-  count(decada, name = 'intervencoes') %>% 
-  # adicionando linha para a decada de 2020 que esta faltando
-  add_row(decada = 2020, intervencoes = 0) %>% 
-  # reordenando a coluna de decada para o fill
-  mutate(
-    decada_fill = fct_reorder(.f = as.factor(decada),
-                              .x = intervencoes, .desc = TRUE)
-  ) %>% 
-  # criando a figura
-  ggplot(mapping = aes(x = decada, y = intervencoes, fill = decada_fill)) +
-  geom_col(color = 'black') +
-  scale_x_continuous(breaks = seq(from = 1950, to = 2020, by = 10)) +
-  scale_fill_brewer(type = 'div', palette = 'RdBu', direction = -1) +
+```{r acidentes_por_mes, layout = 'l-body-outset', dpi = 200, fig.height = 7, fig.width = 7, code_folding = TRUE}
+# criando a figura da propoção de provas com acidentes por mes
+df %>% 
+  # criando coluna com o mes por extenso em portugues
+  mutate(mes_str = month(x = data, label = TRUE, locale = 'pt_BR', abbr = FALSE)) %>% 
+  # agrupando pelo mes
+  group_by(mes_str) %>% 
+  # calculando a proporcao de provas com acidentes por mes
+  summarise(proporcao = mean(tem_acidente)) %>% 
+  # plotando a figura
+  ggplot(mapping = aes(x = mes_str, y = proporcao, fill = proporcao)) +
+  geom_col() +
+  geom_text(mapping = aes(label = round(x = proporcao, digits = 2)), nudge_y = 0.06) +
+  scale_fill_fermenter(type = 'div', palette = 'RdBu', direction = -1) +
+  coord_polar() +
   labs(
-    title    = 'Quantidade de intervenções relacionadas à segurança dos pilotos entre as décadas',
-    subtitle = 'Houve um aumento na quantidade de intervenções relacionadas à segurança entre as décadas de 90 e o início dos anos 2000.',
-    caption  = 'Quanto mais fria a cor do preenchimento, mais desejado é aquele comportamento para a variável analisada.',
-    x        = 'Década',
-    y        = 'Intervenções relacionadas à segurança'
-  ) +
-  theme(legend.position = 'none')
+    title = 'Proporção de provas com acidente por mês entre todos os anos no histórico',
+    caption  = 'Quanto mais fria a cor do preenchimento, mais desejado é aquele comportamento para a variável analisada.'
+    ) +
+  theme(
+    legend.position = 'none',
+    axis.text.y     = element_blank(),
+    axis.title      = element_blank()
+    )
 ```
 
 blablabla
 
-```{r acidentes_por_circuito, layout = 'l-body-outset', dpi = 200, fig.height=8, fig.width = 9}
+```{r acidentes_por_circuito, layout = 'l-body-outset', dpi = 200, fig.height=8, fig.width = 9, code_folding = TRUE}
 df %>% 
   # codificando circuitos infrequentes como classe a parte
   mutate(circuit = fct_lump_min(f = circuit, min = 4)) %>%
@@ -337,32 +389,79 @@ df %>%
 
 blablabla
 
-```{r acidentes_por_mes, layout = 'l-body-outset', dpi = 200, fig.height = 5, fig.width = 5}
-# criando a figura da propoção de provas com acidentes por mes
+```{r acidente_por_tipo_circuito, layout = 'l-body-outset', dpi = 200, fig.height=4, fig.width=8, code_folding = TRUE}
 df %>% 
-  # criando coluna com o mes por extenso em portugues
-  mutate(mes_str = month(x = data, label = TRUE, locale = 'pt_BR', abbr = FALSE)) %>% 
-  # agrupando pelo mes
-  group_by(mes_str) %>% 
-  # calculando a proporcao de provas com acidentes por mes
-  summarise(proporcao = mean(tem_acidente)) %>% 
-  # plotando a figura
-  ggplot(mapping = aes(x = mes_str, y = proporcao, fill = proporcao)) +
-  geom_col() +
-  geom_text(mapping = aes(label = round(x = proporcao, digits = 2)), nudge_y = 0.06) +
-  scale_fill_fermenter(type = 'div', palette = 'RdBu', direction = -1) +
-  coord_polar() +
+  # pegando apenas o target e o tipo de circuito
+  select(tem_acidente, raceId, ends_with('_circuit')) %>% 
+  # passando a base para o formato longo, de forma a facilitar a criacao da figura
+  pivot_longer(names_to = 'tipo_circuito', values_to = 'valor', cols = contains('circuit')) %>%
+  # removendo os casos negativos
+  filter(valor != 0) %>% 
+  # recodificando o tipo de circuito por corrida
+  group_by(raceId) %>% 
+  summarise(
+    # juntando a string de diferentes tipos de circuito para uma mesma corrida
+    tipo_circuito = paste0(tipo_circuito, collapse = "_"),
+    # ajustando a string
+    tipo_circuito = case_when(
+      tipo_circuito == 'street_circuit_temporary_circuit' ~ 'Temporary Street Circuit',
+      TRUE ~ str_to_title(string = str_replace(string = tipo_circuito, pattern = '_', replacement = ' '))
+    ),
+    # pegando uma unica ocorrencia do target
+    tem_acidente = any(tem_acidente)) %>% 
+  # agrupando pelo tipo de circuito
+  group_by(tipo_circuito) %>% 
+  # calculando a proporcao de acidentes
+  summarise(proporcao = mean(tem_acidente), .groups = 'drop') %>% 
+  # reordenando os niveis do tipo de circuito
+  mutate(tipo_circuito = fct_reorder(.f = tipo_circuito, .x = proporcao, .desc = TRUE)) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = tipo_circuito, y = proporcao, fill = proporcao)) +
+  geom_col(color = 'black', width = 0.8) + 
+  geom_text(mapping = aes(label = round(x = proporcao, digits = 3)), size = 3, nudge_y = 0.03) +
+  scale_fill_distiller(type = 'div', palette = 'RdBu') +
+  scale_y_continuous(breaks = seq(from = 0, to = 1, by = 0.2), limits = c(0, 1.01)) +
   labs(
-    title = 'Proporção de provas com acidente por mês entre todos os anos no histórico',
-    caption  = 'Quanto mais fria a cor do preenchimento, mais desejado é aquele comportamento para a variável analisada.'
-    ) +
+    title    = 'Proporção de acidentes registrados por tipo de circuito',
+    subtitle = 'Uma menor proporção de acidentes ocorreu em provas em autódromos quando comparado àquelas em circuitos temporários e/ou de rua.',
+    x        = 'Tipo de circuito',
+    y        = 'Proporção de acidentes registados'
+  ) +
   theme(
-    legend.position = 'none',
-    axis.text.y     = element_blank(),
-    axis.title      = element_blank()
-    )
+    legend.position = 'none'
+  )
+```
+
+blablabla
+
+```{r acidentes_por_forca_competicao, layout = 'l-paged', dpi = 200, fig.height=5, fig.width=7, code_folding = TRUE}
+df %>% 
+  # parseando o vetor logico do target para numerico
+  mutate(tem_acidente = as.numeric(tem_acidente)) %>% 
+  # removendo as observacoes do inicio da temporada - aquelas com o lag das metricas igual a 0
+  filter(cvl_top_pilots > 0) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = cvl_top_pilots, y = cvl_all_pilots, color = tem_acidente)) +
+  stat_bin_2d(bins = 20) +
+  scale_fill_distiller(type = 'div', palette = 'RdBu') +
+  scale_y_continuous(breaks = seq(from = 0, to = 3.5, by = 0.25)) +
+  labs(
+    title    = 'Intensidade da disputa e ocorrência de acidentes',
+    subtitle = 'Um coeficiente de variação menor que 1 sugere que a diferença na pontuação dos pilotos é pequena e, portanto, seria indicativa 
+de uma maior intensidade da disputa pelo campeonato.',
+    x        = 'Coeficiente de variação na pontuação dos cinco pilotos no topo do ranking',
+    y        = 'Coeficiente de variação na pontuação de todos os pilotos'
+  )
+```
+
+Clima durante a prova.
+
+```{r}
+library(ggupset)
 ```
 
 # Análise dos Dados
 
 # Conclusão
+
+# Possíveis Extensões
