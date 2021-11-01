@@ -136,9 +136,7 @@ df <- df %>%
   # removendo a coluna de texto do tempo
   select(-Weather) %>% 
   # parseando os logicos para numericos
-  mutate(across(where(is.logical), as.numeric)) %>% 
-  # preenchendo os NAs
-  mutate(across(everything(), replace_na, 0))
+  mutate(across(where(is.logical), as.numeric)) 
 
 # exportando os dados ---------------------------------------------------------------
 
