@@ -21,7 +21,7 @@ draft: true
 
 ```{r setup, include=FALSE}
 # setando as opções gerais dos code chunks
-knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, fig.align = 'center')
+knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, fig.align = 'center', cache = TRUE)
 
 # presetando o ggplot2
 library(ggplot2)
@@ -46,7 +46,7 @@ Contentualizar o desejo de responder a pergunta.
 
 Mostrar que existe um aumento na quantidade de intervenções de segurança.
 
-```{r motivacao_safety_measures, layout = 'l-body-outset', dpi = 200, fig.height=5, fig.width=8}
+```{r motivacao_safety_measures, layout = 'l-body-outset', dpi = 200, fig.height=5, fig.width=8, code_folding = TRUE}
 # carregando os pacotes necessários
 library(tidyverse) # core
 # library(tidytuesdayR) # ler os arquivos do tidytuesday
@@ -54,7 +54,8 @@ library(fs) # manipular paths
 library(lubridate) # trablhar com datas
 library(readxl) # carregar dados de excel
 library(skimr) # descricao do dataframe
-library(patchwork) # para compor figuras do ggplot2
+library(ggupset) # para criar um upset plot
+library(patchwork) # para compor figuras
 
 # carregando os dados de dispositivos de segurança na F1
 safety <- read_excel(path = 'data/f1_safety.xlsx', skip = 1)
@@ -151,6 +152,56 @@ acidentes_por_prova <- resultados %>%
 count(acidentes_por_prova, tem_acidente, name = 'ocorrencias')
 ```
 
+A proporção de provas com acidente se mantém no mesmo patamar há algumas décadas, ainda que um número cada vez maior de medidas de segurança estejam sendo implementadas para preveni-los.
+
+```{r serie_historica_acidentes, layout = 'l-body-outset', dpi = 200, fig.height=4, fig.width=9, code_folding = TRUE}
+# calculando o volume acumulado de medidas de seguranca
+acumulado_medidas <- tibble(
+  # criando uma sequência completa de anos
+  year = seq(from = 1950, to = 2020, by = 1)
+) %>% 
+  # juntando com as informacoes das medidas de seguraca por ano
+  left_join(y = safety %>% 
+              distinct(Year) %>% 
+              mutate(medida = 1), 
+            by = c('year' = 'Year')) %>% 
+  # adicionando um contador zero para ajudar a fazer a soma acumulada
+  replace_na(replace = list(medida = 0)) %>% 
+  # calculando o volume acumulado de medidas de seguranca existentes por temporada
+  mutate(n_medidas = cumsum(medida))
+
+# criando a figura
+## juntando as informacoes da ocorrencia de acidentes por prova com o ano em que a prova ocorreu
+left_join(x = acidentes_por_prova,
+          y = select(tt_dataset$races, raceId, year),
+          by = 'raceId') %>% 
+  # agrupando pela temporada
+  group_by(year) %>% 
+  # calculando a proporcao de provas com acidentes por temporada
+  summarise(proporcao = mean(tem_acidente)) %>% 
+  # juntando informacoes da quantidade acumulada de medidas de seguranca existentes por temporada
+  left_join(y = acumulado_medidas, by = 'year') %>% 
+  # criando a figura
+  ggplot() +
+  geom_line(mapping = aes(x = year, y = n_medidas / 20), color = '#3399E6', size = 1) +
+  geom_line(mapping = aes(x = year, y = proporcao), color = 'tomato1', size = 1) +
+  scale_x_continuous(breaks = seq(from = 1950, to = 2020, by = 10)) +
+  scale_y_continuous(sec.axis = sec_axis(trans = ~ . * 20, 
+                                         name = 'Quantidade de medidas de segurança existentes')) +
+  labs(
+    title    = 'Histórico da proporção de provas com acidente e medidas de segurança existentes por temporada',
+    subtitle = 'A proporção de provas com acidente se mantém no mesmo patamar há algumas décadas, ainda que um número cada vez maior de medidas de segurança estejam sendo\nimplementadas para preveni-los.',
+    x        = 'Ano/Temporada',
+    y        = 'Proporção de provas com acidente na temporada'
+  ) +
+  theme(
+    axis.title.y.left  = element_text(colour = 'tomato1'),
+    axis.text.y.left   = element_text(colour = 'tomato1', face = 'bold'),
+    axis.title.y.right = element_text(colour = '#3399E6'),
+    axis.text.y.right = element_text(colour = '#3399E6', face = 'bold')
+  )
+```
+
 # Preparação dos Dados
 
 Explicar que preciso levantar as informações ao nível de cada prova, considerando informações que saberemos de antemão. Falar que as variáveis que vou utilizar são baseadas em algumas hipóteses que tenho, e que apresento enquanto explicar.
@@ -160,7 +211,22 @@ Começar por um combo de três hipóteses: tempo durante a prova, o tipo de circ
 Falar que consegui as informações raspando a wikipedia através de informações disponíveis nos próprios dados. Aproveitar para exemplificar o caso em que não dá para usar informação _a posteriori_ usando a variável de distancia.
 
 ```{r fe_weather, code_folding = FALSE}
-tempo_durante_prova <- select(tt_dataset$weather_and_other, -voltas)
+tempo_durante_prova <- tt_dataset$weather_and_other %>% 
+  # removendo a coluna de voltas, pois ja temos ela na base de dados
+  select(-voltas) %>% 
+  # agrupando operacao seguinte linha a linha
+  rowwise(raceId) %>% 
+  # ajustando features relacionadas ao tempo durante a prova
+  mutate(
+    # flag para quando a informação estiver indisponivel
+    indefinido = as.numeric(is.na(sum(c_across(nublado:quente)))),
+    # flag para quando o tempo nao for nenhuma das outras alternativas 
+    outro      = as.numeric(sum(c_across(nublado:quente)) == 0)
+  ) %>%
+  # desagrupando a estrutura rowwise da tabela
+  ungroup() %>% 
+  # preenchendo os NAs com 0 apenas nas colunas com as flags do tempo durante a prova
+  mutate(across(nublado:outro, replace_na, 0))
 rmarkdown::paged_table(x = tempo_durante_prova)
 ```
 
@@ -292,41 +358,9 @@ df <- df %>%
   replace_na(replace = list(permanent_circuit = 1, street_circuit = 0, temporary_circuit = 0))
 ```
 
-blablabla
+Acidentes são mais frequentes em alguns meses do ano, mas sem padrão claro.
 
-```{r target_por_decada, layout = 'l-body-outset', dpi = 200, fig.height=4, fig.width=8, code_folding = TRUE}
-df %>% 
-  # agrupando por decada
-  group_by(decada) %>% 
-  # calculando a proporcao de provas com acidente
-  summarise(
-    proporcao = mean(tem_acidente), 
-    .groups = 'drop'
-  ) %>% 
-  # reordenando a coluna de decada para o fill
-  mutate(
-    decada_fill = fct_reorder(.f = as.factor(decada),
-                              .x = proporcao, .desc = TRUE)
-  ) %>% 
-  # criando a figura
-  ggplot(mapping = aes(x = decada, y = proporcao, fill = decada_fill)) +
-  geom_col(color = 'black') +
-  scale_x_continuous(breaks = seq(from = 1950, to = 2020, by = 10)) +
-  scale_y_continuous(breaks = seq(from = 0, to = 1, by = 0.2), limits = c(0, 1)) +
-  scale_fill_brewer(type = 'div', palette = 'RdBu') +
-  labs(
-    title    = 'Proporção de provas com acidente por década',
-    subtitle = 'A frequência de acidentes foi muito alta entre as décadas de 70 e 80, mas voltou a cair logo na década de 90.',
-    caption  = 'Quanto mais fria a cor do preenchimento, mais desejado é aquele comportamento para a variável analisada.',
-    x        = 'Década',
-    y        = 'Proporção de provas com acidente'
-  ) +
-  theme(legend.position = 'none')
-```
-
-blablabla
-
-```{r acidentes_por_mes, layout = 'l-body-outset', dpi = 200, fig.height = 7, fig.width = 7, code_folding = TRUE}
+```{r acidentes_por_mes, layout = 'l-body-outset', dpi = 200, fig.height = 4, fig.width = 7, code_folding = TRUE}
 # criando a figura da propoção de provas com acidentes por mes
 df %>% 
   # criando coluna com o mes por extenso em portugues
@@ -337,13 +371,13 @@ df %>%
   summarise(proporcao = mean(tem_acidente)) %>% 
   # plotando a figura
   ggplot(mapping = aes(x = mes_str, y = proporcao, fill = proporcao)) +
-  geom_col() +
+  geom_col(color = 'black') +
   geom_text(mapping = aes(label = round(x = proporcao, digits = 2)), nudge_y = 0.06) +
   scale_fill_fermenter(type = 'div', palette = 'RdBu', direction = -1) +
   coord_polar() +
   labs(
-    title = 'Proporção de provas com acidente por mês entre todos os anos no histórico',
-    caption  = 'Quanto mais fria a cor do preenchimento, mais desejado é aquele comportamento para a variável analisada.'
+    title = 'Proporção de provas com acidente por mês no histórico',
+    caption  = 'Quanto mais quente o gradiente de cor, mais frequentes são os acidentes naquele mês.'
     ) +
   theme(
     legend.position = 'none',
@@ -352,7 +386,7 @@ df %>%
     )
 ```
 
-blablabla
+Acidentes são certos em alguns circuitos, mas nem tanto em outros.
 
 ```{r acidentes_por_circuito, layout = 'l-body-outset', dpi = 200, fig.height=8, fig.width = 9, code_folding = TRUE}
 df %>% 
@@ -376,9 +410,9 @@ df %>%
   scale_x_continuous(breaks = seq(from = 0, to = 1, by = 0.2), limits = c(0, 1)) +
   scale_fill_distiller(type = 'div', palette = 'RdBu') +
   labs(
-    title    = 'Proporção de acidentes por prova no registro histórico',
+    title    = 'Proporção das provas com acidente em cada circuito',
     subtitle = 'Existem registros de acidentes em todas as provas que ocorreram em alguns circuitos.',
-    caption  = 'Quanto mais fria a cor do preenchimento, mais desejado é aquele comportamento para a variável analisada.',
+    caption  = 'Quanto mais quente o gradiente de cor, mais frequentes são os acidentes naquele circuito.',
     x        = 'Proporção de provas com acidente'
   ) +
   theme(
@@ -387,9 +421,9 @@ df %>%
   )
 ```
 
-blablabla
+Tipo de circuito parece interferir na ocorrência dos acidentes.
 
-```{r acidente_por_tipo_circuito, layout = 'l-body-outset', dpi = 200, fig.height=4, fig.width=8, code_folding = TRUE}
+```{r acidente_por_tipo_circuito, layout = 'l-paged', dpi = 200, fig.height=4, fig.width=8, code_folding = TRUE}
 df %>% 
   # pegando apenas o target e o tipo de circuito
   select(tem_acidente, raceId, ends_with('_circuit')) %>% 
@@ -422,8 +456,9 @@ df %>%
   scale_fill_distiller(type = 'div', palette = 'RdBu') +
   scale_y_continuous(breaks = seq(from = 0, to = 1, by = 0.2), limits = c(0, 1.01)) +
   labs(
-    title    = 'Proporção de acidentes registrados por tipo de circuito',
+    title    = 'Proporção de provas com acidente por tipo de circuito',
     subtitle = 'Uma menor proporção de acidentes ocorreu em provas em autódromos quando comparado àquelas em circuitos temporários e/ou de rua.',
+    caption  = 'Quanto mais quente o gradiente de cor, mais frequentes são os acidentes naquele tipo de circuito.',
     x        = 'Tipo de circuito',
     y        = 'Proporção de acidentes registados'
   ) +
@@ -432,9 +467,9 @@ df %>%
   )
 ```
 
-blablabla
+Intensidade da disputa também parece colaborar para a ocorrência de acidentes.
 
-```{r acidentes_por_forca_competicao, layout = 'l-paged', dpi = 200, fig.height=5, fig.width=7, code_folding = TRUE}
+```{r acidentes_por_forca_competicao, layout = 'l-body-outset', dpi = 200, fig.height=5, fig.width=8, code_folding = TRUE}
 df %>% 
   # parseando o vetor logico do target para numerico
   mutate(tem_acidente = as.numeric(tem_acidente)) %>% 
@@ -443,12 +478,14 @@ df %>%
   # criando a figura
   ggplot(mapping = aes(x = cvl_top_pilots, y = cvl_all_pilots, color = tem_acidente)) +
   stat_bin_2d(bins = 20) +
-  scale_fill_distiller(type = 'div', palette = 'RdBu') +
+  scale_fill_distiller(type = 'div', palette = 'RdBu', 
+                       guide = guide_colorbar(title = 'Acidentes')) +
   scale_y_continuous(breaks = seq(from = 0, to = 3.5, by = 0.25)) +
   labs(
     title    = 'Intensidade da disputa e ocorrência de acidentes',
     subtitle = 'Um coeficiente de variação menor que 1 sugere que a diferença na pontuação dos pilotos é pequena e, portanto, seria indicativa 
 de uma maior intensidade da disputa pelo campeonato.',
+    caption  = 'Quanto mais quente o gradiente de cor, mais frequentes são os acidentes naquela condição de disputa.',
     x        = 'Coeficiente de variação na pontuação dos cinco pilotos no topo do ranking',
     y        = 'Coeficiente de variação na pontuação de todos os pilotos'
   )
@@ -456,11 +493,105 @@ de uma maior intensidade da disputa pelo campeonato.',
 
 Clima durante a prova.
 
-```{r}
-library(ggupset)
+```{r acidentes_por_tempo, layout = 'l-body-outset', dpi = 200, fig.height=7, fig.width=10, code_folding = TRUE}
+# acidentes por combinacao de condicao climatica
+fig_1 <- df %>% 
+  # pegando apenas as colunas de identificador das provas e da condicao do tempo durante a prova
+  select(raceId, tem_acidente, nublado:outro) %>% 
+  # passando a base para o formato longo
+  pivot_longer(cols = -c(raceId, tem_acidente), names_to = 'tempo', values_to = 'valor') %>% 
+  # removendo as linhas com as condicoes do tempo que nao ocorreram durante cada prova
+  filter(valor > 0) %>% 
+  # agrupando pela prova
+  group_by(raceId) %>% 
+  # juntanto a condicao do tempo em uma string so por prova
+  summarise(
+    tem_acidente = any(tem_acidente),
+    tempo        = paste0(sort(tempo), collapse = '-')
+  ) %>% 
+  # agrupando pela condicao do tempo especifica
+  group_by(tempo) %>% 
+  # calculando a proporcao de acidentes associada à cada condicao do tempo especifica
+  summarise(
+    proporcao = mean(tem_acidente), 
+    .groups = 'drop'
+  ) %>% 
+  # reorganizando a variavel de condicao do tempo para a figura
+  mutate(
+    tempo = str_to_title(string = tempo),
+    tempo = fct_reorder(.f = tempo, .x = proporcao, .fun = min, .desc = TRUE)
+  ) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = tempo, y = proporcao, fill = proporcao)) +
+  geom_col(color = 'black', size = 0.5, show.legend = FALSE) +
+  axis_combmatrix() +
+  scale_fill_distiller(type = 'div', palette = 'RdBu') +
+  scale_y_continuous(breaks = seq(from = 0, to = 1, by = 0.2)) +
+  labs(
+    x        = 'Condição do tempo',
+    y        = 'Proporção de provas com acidente'
+  )
+
+# acidentes por tipo unico de condicao do tempo
+fig_2 <- df %>% 
+  # pegando apenas as colunas de identificador das provas e do tempo durante a prova
+  select(raceId, tem_acidente, nublado:outro) %>% 
+  # passando a base para o formato longo
+  pivot_longer(cols = -c(raceId, tem_acidente), names_to = 'tempo', values_to = 'valor') %>% 
+  # removendo as linhas com tempos que nao ocorreram durante cada prova
+  filter(valor > 0) %>% 
+  # agrupando pela condicao do tempo
+  group_by(tempo) %>% 
+  # calculando a proporcao de acidentes associada à cada condicao do tempo generica
+  summarise(
+    proporcao = mean(tem_acidente), 
+    .groups = 'drop'
+  ) %>% 
+  # reorganizando a variavel de condicao do tempo para a figura
+  mutate(
+    tempo = str_to_title(string = tempo),
+    tempo = fct_reorder(.f = tempo, .x = proporcao, .fun = min, .desc = FALSE)
+  ) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = tempo, y = proporcao, fill = tempo)) +
+  geom_col(color = 'black', show.legend = FALSE, size = 0.5) +
+  geom_text(mapping = aes(label = round(x = proporcao, digits = 3)), nudge_y = -0.1, size = 3) +
+  scale_fill_brewer(type = 'div', palette = 'RdBu', direction = -1) +
+  scale_y_continuous(breaks = seq(from = 0, to = 1, by = 0.25)) +
+  theme(axis.title = element_blank()) +
+  coord_flip()
+
+# compondo a figura
+fig_1 + 
+  fig_2 +
+  plot_layout(
+    design = c(
+      area(t = 1, l = 1, b = 5, r = 4),
+      area(t = 1, l = 4, b = 2, r = 5)
+    )
+  ) +
+  plot_annotation(
+    title    = 'Proporção de provas com acidentes de acordo com a condição do tempo',
+    subtitle = 'O gráfico principal mostra a proporção de provas em que houve um acidente que estão associadas à uma condição do tempo específica, enquanto o inset traz as mesmas informações mas focando\nnas 9 condições do tempo organizadas de forma mais genérica.',
+    caption  = 'Quanto mais quente o gradiente de cor, mais frequentes são os acidentes nas provas que apresentam àquela condição do tempo.'
+  )
 ```
 
 # Análise dos Dados
+
+## Definição das métricas
+
+## Separação dos dados
+
+## Preparação dos dados
+
+## Preparação do algoritmo
+
+## Seleção de hiperparâmetros
+
+## Ajuste do modelo selecionado
+
+## Explicabilidade
 
 # Conclusão
 
