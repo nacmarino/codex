@@ -100,8 +100,8 @@ paths_copias_locais <- dir_ls(path = 'data/', regexp = '.rds')
 # paths_copias_locais <- dir_ls(path = '_posts/2021-09-11-f1-acidentes/data/', regexp = '.rds')
 
 ## criando vetor de nomes dos arquivos
-nomes_arquivos <- paths_copias_locais %>% 
-  path_file() %>% 
+nomes_arquivos <- paths_copias_locais %>%
+  path_file() %>%
   path_ext_remove()
 
 ## carregando os arquivos em uma lista
@@ -120,27 +120,11 @@ resultados <- left_join(x = tt_dataset$results,
                         by = 'statusId')
 
 ## vetor com as categorias que vou usar como acidente
-categorias_acidente <- c('Accident', 'Collision', 'Injured', 'Injury', 
-                         'Fatal accident', 'Eye injury')
+categorias_acidente <- c('Accident', 'Fatal accident')
 
 ## juntando padrao de regex para os acidentes
 regex_acidentes <- paste0(categorias_acidente, collapse = '|')
 
-## mostrando a quantidade de vezes que estes padrões de acidente aparecem no texto
-resultados %>% 
-  filter(str_detect(string = status, pattern = regex_acidentes)) %>% 
-  count(status, name = 'registros', sort = TRUE)
-
-## mostrando a quantidade de vezes que estes padrões de acidente aparecem no texto
-resultados %>% 
-  filter(str_detect(string = status, pattern = regex_acidentes)) %>% 
-  count(status, name = 'registros', sort = TRUE) %>% 
-  rmarkdown::paged_table()
-```
-
-Revisitar a pergunta e dizer que vou trabalhar com ocorrência ou não de acidente ao nível de cada prova. Objetivo é ser capaz de dizer quando há maior chance de haver um acidente antes da prova.
-
-```{r base_variavel_resposta}
 ## mapeando os acidentes por prova
 acidentes_por_prova <- resultados %>% 
   # testando se aquele padrão de regex ocorre em cada linha
@@ -219,9 +203,9 @@ tempo_durante_prova <- tt_dataset$weather_and_other %>%
   # ajustando features relacionadas ao tempo durante a prova
   mutate(
     # flag para quando a informação estiver indisponivel
-    indefinido = as.numeric(is.na(sum(c_across(nublado:quente)))),
+    ausente = as.numeric(is.na(sum(c_across(nublado:quente)))),
     # flag para quando o tempo nao for nenhuma das outras alternativas 
-    outro      = as.numeric(sum(c_across(nublado:quente)) == 0)
+    outro   = as.numeric(sum(c_across(nublado:quente)) == 0)
   ) %>%
   # desagrupando a estrutura rowwise da tabela
   ungroup() %>% 
@@ -454,7 +438,7 @@ df %>%
   geom_col(color = 'black', width = 0.8) + 
   geom_text(mapping = aes(label = round(x = proporcao, digits = 3)), size = 3, nudge_y = 0.03) +
   scale_fill_distiller(type = 'div', palette = 'RdBu') +
-  scale_y_continuous(breaks = seq(from = 0, to = 1, by = 0.2), limits = c(0, 1.01)) +
+  scale_y_continuous(breaks = seq(from = 0, to = 0.8, by = 0.2), limits = c(0, 0.81)) +
   labs(
     title    = 'Proporção de provas com acidente por tipo de circuito',
     subtitle = 'Uma menor proporção de acidentes ocorreu em provas em autódromos quando comparado àquelas em circuitos temporários e/ou de rua.',
@@ -581,17 +565,342 @@ fig_1 +
 
 ## Definição das métricas
 
+Explica racional.
+
+```{r define_metricas}
+# carregando os pacotes para a analise de dados
+library(tidymodels) # core para ajustar os modelos
+library(finetune) # selecao de hiperparametros
+
+# definindo as tres metricas que vamos monitorar: log loss, AUC e especificidade
+metricas <- metric_set(roc_auc, mn_log_loss, sensitivity)
+```
+
 ## Separação dos dados
+
+Separa em treino e teste.
+
+```{r train_test_split}
+# passando o target para um fator e a variavel de turno para numerico
+df <- mutate(df, 
+             tem_acidente = as.factor(ifelse(test = tem_acidente, yes = 1L, no = 0L)),
+             turno_pm     = as.numeric(turno_pm)
+)
+
+# definindo a seed para a reprodutibilidade
+set.seed(64)
+# fazendo o split da base em treino e teste
+train_test_split <- initial_split(data = df, prop = 0.75, strata = tem_acidente)
+train_test_split
+```
+
+Separa para a validação cruzada.
+
+```{r cross_val_split}
+# definindo a seed para a reprodutibilidade
+set.seed(128)
+# criando o esquema para a validação cruzada
+kfold <- vfold_cv(data = training(x = train_test_split), v = 5, strata = tem_acidente)
+kfold
+```
 
 ## Preparação dos dados
 
+```{r cria_receita}
+pre_processamento <- recipe(tem_acidente ~ ., data = training(x = train_test_split)) %>%
+  # passando a raceId para a role de id da base
+  update_role(raceId, new_role = 'id') %>%
+  # adicionando o mes
+  step_date(data, features = 'month', abbr = FALSE) %>% 
+  # removendo as colunas que nao sao necessarias para a modelagem
+  step_rm(c(gp, location:data, semana, distancia, decada, 
+            cv_top_pilots, cv_all_pilots, n_construtores, mes)) %>%
+  # criando um step para associar circuitos nao vistos a um novo valor
+  step_novel(circuit) %>%
+  # agrupando circuitos menos frequentes
+  step_other(circuit, threshold = 5, other = 'Other') %>%
+  # fazendo o one hot encoding dos circuitos
+  step_dummy(circuit, data_month, one_hot = FALSE)
+pre_processamento
+```
+
+## Definição do baseline
+
+### Naive
+
+```{r baseline_naive}
+kfold %>% 
+  # extraindo o target a partir de cada fold
+  mutate(
+    obs_target = map(.x = splits, .f = ~ training(.x) %>% pull(tem_acidente))
+  ) %>% 
+  # pegando so o id do fold e a list column com o target
+  select(id, obs_target) %>% 
+  # desempacotando os targets
+  unnest(obs_target) %>% 
+  # criando colunas com a previsao naive a fim de definir um baseline sem um modelo
+  # nesse caso, vamos sempre prever que ocorrera um acidente em cada prova, independentemente
+  # de qualquer informacao que tenhamos sobre elas
+  mutate(
+    # criando um target numerico para que ele seja usado para calcular o auc e log loss
+    prd_target_num = 1, 
+    # criando um target no formato fator para calcular a especificidade
+    prd_target_fct = factor(x = 1L, levels = c(0L, 1L)),
+    # target
+  ) %>% 
+  # agrupando pelo id do fold
+  group_by(id) %>% 
+  # calculando cada uma das metricas para cada fold
+  summarise(
+    log_loss       = mn_log_loss_vec(truth = obs_target, estimate = prd_target_num),
+    auc            = roc_auc_vec(truth = obs_target, estimate = prd_target_num),
+    especificidade = specificity_vec(truth = obs_target, estimate = prd_target_fct),
+    .groups = 'drop'
+  )
+```
+
+### Modelo
+
+blablabla
+
+```{r baseline_modelo}
+# cria uma instancia do algoritmo com valores default
+algoritmo_baseline <- rand_forest() %>%
+  set_engine(engine = 'ranger', importance = 'impurity') %>%
+  set_mode(mode = 'classification')
+
+# define um workflow com a receita do pre-processamento e o algoritmo
+wf_baseline <- workflow() %>% 
+  add_recipe(recipe = pre_processamento) %>% 
+  add_model(spec = algoritmo_baseline)
+
+# setando a seed para a reprodutibilidade
+set.seed(256)
+
+# ajusta o workflow do baseline aos folds
+fit_baseline <- wf_baseline %>% 
+  fit_resamples(resamples = kfold, 
+                metrics = metricas, 
+                control = control_resamples(verbose = TRUE, allow_par = TRUE)
+  )
+
+# extrai as metricas do baseline
+collect_metrics(x = fit_baseline)
+```
+
 ## Preparação do algoritmo
+
+blablabla
+
+```{r tuning_algoritmo}
+# cria uma instancia do algoritmo com hiperparametros a serem tunados
+algoritmo_tuning <- rand_forest(mtry = tune(), trees = tune(), min_n = tune()) %>%
+  set_engine(engine = 'ranger', importance = 'impurity') %>%
+  set_mode(mode = 'classification')
+```
+
+blablabla
+
+```{r tuning_finaliza_hiperparametros}
+hiperparametros <- parameters(algoritmo_tuning) %>% 
+  update(mtry = mtry(range = c(1L, 25L)))
+```
+
+blablabla
+
+```{r tuning_workflow}
+# define um workflow com a receita do pre-processamento e o algoritmo para ser tunado
+wf_tuning <- workflow() %>% 
+  add_recipe(recipe = pre_processamento) %>% 
+  add_model(spec = algoritmo_tuning)
+```
 
 ## Seleção de hiperparâmetros
 
+blablabla
+
+```{r tuning_hiperparametros}
+# setando a seed para a reprodutibilidade
+set.seed(512)
+
+# ajusta o workflow do baseline aos folds
+fit_tuning <- wf_tuning %>% 
+  tune_sim_anneal(
+    resamples  = kfold,
+    metrics    = metricas,
+    param_info = hiperparametros,
+    iter       = 50,
+    initial    = 10,
+    control    = control_sim_anneal(verbose = TRUE, restart = 5)
+  )
+```
+
+blablabla
+
+```{r tuning_autoplot, layout = 'l-body-outset', dpi = 200, fig.height=7, fig.width=10, code_folding = TRUE}
+# hiperparametros utilizados por iteracao
+params <- autoplot(object = fit_tuning, metric = 'roc_auc', type = 'parameters') +
+  labs(y = 'Valor do hiperparâmetro') +
+  theme(axis.title.x = element_blank())
+# evolucao da performance por iteracao
+perf <- autoplot(object = fit_tuning, metric = 'roc_auc', type = 'performance') +
+  labs(x = 'Iteração', y = 'AUC')
+# compondo o plot
+(params / perf) +
+  plot_annotation(title = 'Evolução da seleção de hiperparâmetros por iteração do Simulated Annealing',
+                  tag_levels = 'A')
+```
+
+blablabla
+
+```{r tuning_melhores}
+show_best(x = fit_tuning, metric = 'roc_auc', n = 5)
+```
+
+blablabla
+
+```{r diferenca_tuning_baseline, code_folding = TRUE}
+# pegando o resultado do AUC do baseline
+baseline <- collect_metrics(x = fit_baseline) %>% filter(.metric == 'roc_auc')
+# pegando as metricas do melhor modelo tunado
+tuned_results <- show_best(x = fit_tuning, metric = 'roc_auc', n = 1)
+
+# pre-calculando o quadrado dos erros padroes
+se_baseline <- baseline$std_err^2
+se_tuned <- tuned_results$mean^2
+
+# extraindo a quantidade de observacoes (igual para os dois)
+n_obs <- baseline$n
+
+# calculando a estatística t da diferenca entre as medias
+estatistica <- (baseline$mean - tuned_results$mean) / sqrt((se_baseline + se_tuned))
+
+# numero de graus de liberdade ajustado
+df_welch <- ((se_baseline + se_tuned)^2) / ((se_baseline^2/(n_obs - 1)) + (se_tuned^2/(n_obs - 1)))
+
+# calculando o p-valor associado a estatistica
+p_valor <- 2 * pt(q = estatistica, df = df_welch, lower.tail = TRUE)
+
+# printando o resultado
+sprintf(fmt = 'Estatistica t: %.3f | df: %.2f| p-valor: %5f', estatistica, df_welch, p_valor)
+```
+
 ## Ajuste do modelo selecionado
 
+blablabla
+
+```{r last_fit_baseline}
+## ajustando o modelo aos dados uma ultima vez
+modelo_ajustado <- last_fit(object = wf_baseline, split = train_test_split, metrics = metricas)
+
+## pegando as metricas do modelo
+collect_metrics(x = modelo_ajustado)
+```
+
+blablabla
+
+```{r matriz_confusao_normal, dpi = 200, fig.height=4, fig.width=5, code_folding = TRUE}
+# pegando as previsoes do modelo ajustado
+collect_predictions(x = modelo_ajustado) %>% 
+  # tabulando as previsoes e observacoes
+  count(tem_acidente, .pred_class) %>% 
+  # ajustando o texto das previsoes e target
+  mutate(across(where(is.factor), \(x) ifelse(test = x == 1, yes = 'Sim', no = 'Não'))) %>% 
+  # recodificando o nivel dos fatores
+  mutate(
+    tem_acidente = fct_relevel(.f = tem_acidente, 'Sim'),
+    .pred_class = fct_relevel(.f = .pred_class, 'Não')
+  ) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = .pred_class, y = tem_acidente, fill = n, label = n)) +
+  geom_tile(color = 'black', show.legend = FALSE) +
+  geom_text(fontface = 'bold', size = 4) +
+  scale_fill_viridis_c(begin = 0.3) +
+  labs(
+    title    = 'Previsões feitas pelo modelo vs ocorrência dos acidentes',
+    subtitle = 'A matriz de confusão apresenta os acertos no modelo na diagonal principal e os\nerros na diagonal oposta.',
+    x        = 'Previsão de acidente?',
+    y        = 'Ocorreu o acidente?'
+  )
+```
+
 ## Explicabilidade
+
+blablabla
+
+```{r importancia_variaveis, layout = 'l-body-outset', dpi = 200, fig.height=5, fig.width=8, code_folding = TRUE}
+# pegando o modelo ajustado
+extract_fit_parsnip(x = modelo_ajustado) %>% 
+  # extraindo a importancia das variaveis de dentro do objeto do modelo
+  pluck('fit', 'variable.importance') %>% 
+  # colocando o vetor nomeado em uma dataframe
+  enframe(name = 'variavel', value = 'importance') %>% 
+  # pegando as 15 variaveis mais importantes
+  top_n(n = 15, wt = importance) %>% 
+  # reordenando as variaveis para plotar
+  mutate(
+    variavel = str_remove(string = variavel, pattern = 'circuit_'),
+    variavel = str_replace_all(string = variavel, pattern = '(_|\\.)', replacement = ' '),
+    variavel = str_to_title(string = variavel, locale = 'pt_BR'),
+    variavel = fct_reorder(.f = variavel, .x = importance, .desc = FALSE)
+  ) %>% 
+  # criando a figura
+  ggplot(aes(x = importance, y = variavel)) +
+  geom_col(aes(fill = importance), color = 'black') +
+  geom_text(aes(label = round(importance, 2)), nudge_x = 3) +
+  scale_fill_viridis_c(begin = 0.1) +
+  scale_x_continuous(breaks = seq(from = 0, to = 50, by = 10)) +
+  labs(title    = 'Importância das variáveis para o modelo',
+       subtitle = 'As 15 variáveis mais importantes de acordo com o critério de impureza de Gini') +
+  theme(
+    legend.position = 'none',
+    axis.title = element_blank()
+  )
+```
+
+blablabla
+
+```{r instancia_dalex}
+# carregando o pacote
+library(DALEX)
+library(DALEXtra)
+
+# criando instancia do DALEX para explicar o modelo
+explainer <- explain_tidymodels(
+  extract_workflow(x = modelo_ajustado), 
+  data = training(train_test_split) %>% select(-tem_acidente),
+  y = as.integer(training(train_test_split)$tem_acidente)
+)
+```
+
+blablalba
+
+```{r pdp_dalex, layout = 'l-body-outset', dpi = 200, fig.height=4, fig.width=10, code_folding = TRUE}
+# pegando os dados do partial dependence plot
+model_profile(
+  explainer = explainer, 
+  variables = c('year', 'cvl_all_pilots', 'cvl_top_pilots'), 
+  type = 'partial'
+) %>%
+  # extraindo os dados para criar a figura no ggplot
+  pluck('agr_profiles') %>% 
+  # ajustando a ordem dos graficos
+  mutate(
+    `_vname_` = case_when(`_vname_` == 'cvl_top_pilots' ~ 'CV pontuação dos cinco pilotos no topo do ranking',
+                          `_vname_` == 'cvl_all_pilots' ~ 'CV pontuação de todos os pilotos',
+                          TRUE ~ 'Ano')
+  ) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = `_x_`, y = `_yhat_`)) +
+  facet_wrap(~ `_vname_`, scales = 'free', strip.position = 'bottom') +
+  geom_line() +
+  labs(
+    title    = 'Efeitos parciais de três variáveis sobre a probabilidade de ocorrência de acidentes',
+    subtitle = 'O efeito parcial de uma variável sobre a resposta é aquele medido variando apenas à variável de interesse e fixando-se todas as demais',
+    y        = 'Probabilidade de ocorrência de um acidente'
+  ) +
+  theme(axis.title.x = element_blank())
+```
 
 # Conclusão
 
