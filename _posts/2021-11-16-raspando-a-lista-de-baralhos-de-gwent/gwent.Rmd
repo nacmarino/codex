@@ -44,7 +44,31 @@ theme_update(
 
 # Raspando um deck
 
+blablabla
+
+```{r img_identificar_deck, layout = 'l-body-outset', code_folding = TRUE}
+knitr::include_graphics(path = 'images/imagem_3.jpg')
+```
+
+blablabla
+
+```{r img_entender_deck, layout = 'l-body-outset', code_folding = TRUE}
+knitr::include_graphics(path = 'images/imagem_4.jpg')
+```
+
 # Raspando a lista de decks
+
+blablabla
+
+```{r img_identificar_lista, layout = 'l-body-outset', code_folding = TRUE}
+knitr::include_graphics(path = 'images/imagem_1.jpg')
+```
+
+blablabla
+
+```{r img_entender_lista, layout = 'l-body-outset', code_folding = TRUE}
+knitr::include_graphics(path = 'images/imagem_2.jpg')
+```
 
 # Qual a tendência do momento?
 
