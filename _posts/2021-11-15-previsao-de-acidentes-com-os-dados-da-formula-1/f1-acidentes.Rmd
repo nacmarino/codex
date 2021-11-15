@@ -1,12 +1,12 @@
 ---
-title: "F1 Acidentes"
+title: "Previsao de acidentes com os dados da Formula 1"
 description: |
   Há algum tempo atrás escrevi um post para tentar entender se e de que forma os tempos de conclusão das provas de Fórmulas 1 vêm evoluindo ao longo das temporadas. Neste post eu mudo o foco, e tento entender e determinar a probabilidade de ocorrência de acidentes nas provas da Fórmula 1.
 author:
   - first_name: Nicholas 
     last_name: Marino
     url: https://github.com/nacmarino
-date: 09-06-2021
+date: 11-15-2021
 categories:
   - web scrapping
   - tidytuesday
