@@ -192,11 +192,13 @@ walk(.x = 1:10,
 ## listando o path para os decks disponiveis
 listas_disponiveis <- dir_ls(path = list_path, regexp = '.json')
 
+## definindo a faccao alvo
+faccao <- 'nilfgaard'
+
 ## extraindo os decks que vamos buscar e raspar
 decks_selecionados <- map_dfr(.x = listas_disponiveis, .f = parser_lista) %>%
-  group_by(slug) %>% 
-  top_n(n = 100, wt = votes) %>% 
-  ungroup
+  filter(slug == faccao) %>% 
+  slice_max(n = 500, order_by = votes)
 
 # pegando os decks selecionados -----------------------------------------------------
 
@@ -218,4 +220,5 @@ decks <- map_dfr(.x = decks_disponiveis,
 
 decks %>% 
   select(-where(is.list)) %>% 
-  write_rds(file = '_posts/2021-11-14-meu-deck-no-gwent/data/decks.rds')
+  write_rds(file = str_glue('_posts/2021-11-14-meu-deck-no-gwent/data/decks_{faccao}.rds'))
+  
