@@ -1,0 +1,53 @@
+---
+title: "Raspando a Lista de Baralhos de Gwent"
+description: |
+  Gwent é um jogo de cartas que nasceu dentro do universo de The Witcher e, dada a popularidade deste universo, também ficou disponível como um jogo para celular. Existe uma lista de baralhos montados pela comunidade que está disponível dentro do site oficial do jogo, de forma que meu objetivo aqui será raspar esta lista e os baralhos que elas sugerem.
+author:
+  - first_name: Nicholas 
+    last_name: Marino
+    url: https://github.com/nacmarino
+date: 11-16-2021
+categories:
+  - web scraping
+  - boardgames
+output:
+  distill::distill_article:
+    self_contained: false
+    toc: true
+    code_folding: true
+    highlight: rstudio
+draft: true
+---
+
+```{r setup, include=FALSE}
+# setando as opções gerais dos code chunks
+knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, fig.align = 'center')
+
+# presetando o ggplot2
+library(ggplot2)
+
+# setando o tema geral do ggplot2
+theme_set(new = theme_minimal(base_family = 'Roboto'))
+
+# atualizando o tema
+theme_update(
+  plot.title    = element_text(face = 'bold', size = 10),
+  plot.subtitle = element_text(size = 8),
+  plot.caption  = element_text(size = 8),
+  axis.title    = element_text(face = 'bold', size = 8),
+  axis.text     = element_text(color = 'black', size = 8),
+  strip.text    = element_text(face = 'bold', size = 8)
+)
+```
+
+# Motivação
+
+# Raspando um deck
+
+# Raspando a lista de decks
+
+# Qual a tendência do momento?
+
+# Conclusões
+
+# Possíveis Extensões
