@@ -1,13 +1,14 @@
 ---
 title: "F1 Acidentes"
 description: |
-  A short description of the post.
+  Há algum tempo atrás escrevi um post para tentar entender se e de que forma os tempos de conclusão das provas de Fórmulas 1 vêm evoluindo ao longo das temporadas. Neste post eu mudo o foco, e tento entender e determinar a probabilidade de ocorrência de acidentes nas provas da Fórmula 1.
 author:
   - first_name: Nicholas 
     last_name: Marino
     url: https://github.com/nacmarino
 date: 09-06-2021
 categories:
+  - web scrapping
   - tidytuesday
   - tidymodels
 output:
@@ -42,11 +43,9 @@ theme_update(
 
 # Motivação
 
-Contentualizar o desejo de responder a pergunta.
+Uma parte chata de um esporte competitivo e de velocidade como a Fórmula 1 é o risco de ocorrência de um acidente. A história da Fórmula 1 está marcada por estes eventos, e não é preciso ir muito longe para lembrar de casos que marcaram gerações. Em resposta a esse risco, diversas intervenções têm sido implementadas no intuito de reduzir e/ou mitigar a ocorrência de acidentes e suas consequências para os pilotos - conforme informações retiradas do site [F1 Insider](https://f1-insider.com/en/history-of-formula-1-safety/) e resumidas na figura abaixo.
 
-Mostrar que existe um aumento na quantidade de intervenções de segurança.
-
-```{r motivacao_safety_measures, layout = 'l-body-outset', dpi = 200, fig.height=5, fig.width=8, code_folding = TRUE}
+```{r motivacao_safety_measures, layout = 'l-body-outset', dpi = 200, fig.height=6, fig.width=8, code_folding = TRUE}
 # carregando os pacotes necessários
 library(tidyverse) # core
 # library(tidytuesdayR) # ler os arquivos do tidytuesday
@@ -88,11 +87,12 @@ e o início dos anos 2000.',
   )
 ```
 
-Vamos carregar o dataset do tidytuesday para analisar os acidentes.
+Dado o investimento crescente na segurança dos pilotos, uma pergunta que me veio à mente é o quanto isto está relacionado à variação na ocorrência de acidentes entre provas e temporadas. Ao que àquela figura sugere, eu esperaria que a frequência de ocorrência destes eventos estaria em uma decrescente ao longo dos anos, talvez não chegando à zero, mas tornando-os cada vez mais raros. Por sorte, podemos tentar explorar esta ideia utilizando uma base de dados disponível através de um [_#TidyTuesday_](^https://github.com/rfordatascience/tidytuesday) que ocorreu há alguns meses atrás. Você pode acessar essa base de dados usando as funções do pacote `tidytuesdayR` ou apontando diretamente para o arquivo no GitHub; eu optei por baixar uma imagem desses dados e deixá-los disponíveis localmente^[Uma diferença dos dados que estão disponíveis lá no _tidytuesday_ é que eu acabei criando mais uma tabela com informações adicionais sobre cada prova, que estavam disponíveis na Wikipedia - mas explico sobre isso mais adiante.].
 
 ```{r motivacao_carrega_dados}
 # carregando todos os dados a partir do github do tidytuesday
-# tt_dataset <- tt_load(x = 2021, week = 37) # se você quiser baixar os dados direto da fonte
+# se você quiser baixar os dados direto da fonte
+# tt_dataset <- tt_load(x = 2021, week = 37)
 
 # carregando a copia local dos dados
 ## extraindo os paths das copias locais
@@ -111,7 +111,9 @@ tt_dataset <- map(.x = paths_copias_locais, .f = read_rds)
 names(tt_dataset) <- nomes_arquivos
 ```
 
-Precisamos juntar os resultados de cada piloto com o de-para de status para saber quantas ocorrências de acidentes têm por prova. Vou considerar 6 tipos de status para dizer que houve um acidente.
+As informações que precisamos para analisar a ocorrência dos acidentes nas provas da Fórmula 1 estão separadas em duas tabelas. A primeira delas, `results`, contém os resultados e outras informações sobre cada piloto em cada prova. A segunda tabela, `status`, é uma base de-para que nos ajuda a converter a coluna numérica `statusId`, comum às duas bases, em um _string_ associado ao que ocorreu com aquele piloto naquela prova. É nesta coluna que está a informação se cada piloto esteve envolvido ou não em um acidente em uma dada prova. Assim, agrupando as observações pelo código identificador da prova, podemos determinar se existe pelo menos um piloto que esteve envolvido em um acidente ou não em cada prova. 
+
+Um ponto importante é que vou considerar apenas os `status` de `Accident` e `Fatal accident` para determinar se um piloto esteve envolvido em um acidente ou não. Até existem outras categorias de `status` que poderiam caracterizar estes mesmos eventos, tais como, `Collision`, `Injury`, `Eye injury`. No entanto, vou ficar no lado mais seguro, e assumir que apenas àquelas duas primeiras categorias de `status` é que caracterizam a ocorrência de um acidente. O código abaixo dá conta de juntar as duas tabelas e de definir se houve pelo menos um acidente associado à cada uma das provas. 
 
 ```{r motivacao_contagem_acidentes}
 ## adicionando o dicionario de resultados
@@ -136,7 +138,7 @@ acidentes_por_prova <- resultados %>%
 count(acidentes_por_prova, tem_acidente, name = 'ocorrencias')
 ```
 
-A proporção de provas com acidente se mantém no mesmo patamar há algumas décadas, ainda que um número cada vez maior de medidas de segurança estejam sendo implementadas para preveni-los.
+A base de dados sobre a ocorrência de acidentes ao nível das provas é levemente desbalanceada, uma vez que existem `r sum(!acidentes_por_prova$tem_acidente)` provas sem a ocorrência de um acidente contra `r sum(acidentes_por_prova$tem_acidente)` onde eles ocorreram. Mas com que frequência estes acidentes foram registrados ao longo das temporadas da Fórmula 1 comparado ao aumento nas medidas de segurança para preveni-los?
 
 ```{r serie_historica_acidentes, layout = 'l-body-outset', dpi = 200, fig.height=4, fig.width=9, code_folding = TRUE}
 # calculando o volume acumulado de medidas de seguranca
@@ -169,12 +171,12 @@ left_join(x = acidentes_por_prova,
   ggplot() +
   geom_line(mapping = aes(x = year, y = n_medidas / 20), color = '#3399E6', size = 1) +
   geom_line(mapping = aes(x = year, y = proporcao), color = 'tomato1', size = 1) +
-  scale_x_continuous(breaks = seq(from = 1950, to = 2020, by = 10)) +
+  scale_x_continuous(breaks = seq(from = 1950, to = 2020, by = 5)) +
   scale_y_continuous(sec.axis = sec_axis(trans = ~ . * 20, 
                                          name = 'Quantidade de medidas de segurança existentes')) +
   labs(
     title    = 'Histórico da proporção de provas com acidente e medidas de segurança existentes por temporada',
-    subtitle = 'A proporção de provas com acidente se mantém no mesmo patamar há algumas décadas, ainda que um número cada vez maior de medidas de segurança estejam sendo\nimplementadas para preveni-los.',
+    subtitle = 'A frequência de ocorrência de acidentes caiu no final da década de 80 e se manteve assim até o início dos anos 2000, quando ela novamente voltou a aumentar um pouco.\nNo mesmo período, uma número cada vez mais de medidas de segurança têm sido implementado.',
     x        = 'Ano/Temporada',
     y        = 'Proporção de provas com acidente na temporada'
   ) +
@@ -186,13 +188,29 @@ left_join(x = acidentes_por_prova,
   )
 ```
 
+Através da figura acima podemos observar que acidentes eram muito comuns na Fórmula 1 até o final da década de 80, quando eles despencaram^[Coincidentemente ou não, isto parece ter ocorrido um pouco depois que os _crash tests_ foram implementados.]. A partir daí, eles se mantiveram em baixa até meados dos anos 2000, quando eles voltaram a subir, se mantendo em um patamar entre 2003 à 2012 e outro até hoje. Por outro lado, o número de medidas de segurança só têm aumentado, principalmente durante o período entre 1990 e 2005, quando elas praticamente dobraram. Ainda assim, a frequência de ocorrência de acidentes não zerou e, tampouco, continuou apresentando uma tendência de queda com o aumento no número de medidas de segurança nos últimos anos.
+
+Dado os padrões observados, a ocorrência de acidentes parece não estar associada simplesmente à quantidade ou natureza das medidas de segurança implementadas. Isto abre a possibilidade para que outros fatores associados às provas e/ou às temporadas também estejam contribuindo para a variação na frequência destes eventos. Neste contexto, que outros fatores poderiam ser estes? Se nós os conhecermos, seria possível determinar a probabilidade e/ou o potencial de que estes eventos ocorram? São essas as perguntas que eu buscarei abordar aqui^[Só para frisar: não é minha intenção prever acidentes! Meu intuito principal aqui será olhar para o histórico dos eventos e tentar entender o conjunto de fatores que parece estar mais frequentemente associado à sua ocorrência. Gerar predições que impeçam estes eventos de ocorrerem está fora do escopo deste _post_.].^[_Disclaimer:_ eu já fui muito fã de Fórmula 1, mas deixei de acompanhar há muito tempo atrás. Neste contexto, é muito provável que eu deixe de fora das minhas análises algumas informações muito valiosas ou de conhecimento geral para os fãs mais assíduos. Assim, peço desculpa de antemão caso isso ocorra e, reforço, que as análises aqui apresentadas estão mais orientadas ao exercício do que algo que seja para valer.]
+
 # Preparação dos Dados
 
-Explicar que preciso levantar as informações ao nível de cada prova, considerando informações que saberemos de antemão. Falar que as variáveis que vou utilizar são baseadas em algumas hipóteses que tenho, e que apresento enquanto explicar.
+## Considerações gerais
 
-Começar por um combo de três hipóteses: tempo durante a prova, o tipo de circuito e a extensão do circuito. 
+Definir precisamente a pergunta que queremos responder e/ou o objetivo que queremos alcançar é o passo principal para a criação da base analítica correta: é isto que define qual será a variável resposta bem como a sua granularidade. No caso apresentado aqui, buscarei definir a probabilidade de ocorrência de um acidente em cada uma das provas da Fórmula 1 no registro histórico. Como consequência, precisarei montar uma base analítica na qual tenhamos uma observação por prova (_i.e._, a granularidade) e, associado à elas, um indicador se houve ou não um acidente (_i.e._, a variável resposta).
 
-Falar que consegui as informações raspando a wikipedia através de informações disponíveis nos próprios dados. Aproveitar para exemplificar o caso em que não dá para usar informação _a posteriori_ usando a variável de distancia.
+O segundo passo importante é definir quais variáveis utilizar para auxiliar na tarefa de previsão. Meu ponto com isto não está na seleção de variáveis _per se_, mas sim na criação de variáveis para ajudar a endereçar a pergunta e/ou objetivo proposta. É bem relevante traçar essa diferença, pois é bastante comum encontrar bases de dados prontas para ajustar os algoritmos mas, na vida real, é muito raro encontrar essas coisas já desenhadas para nós. Além disso, eu tenho a impressão de que raramente refletimos sobre o processo de ideação que levou àquelas variáveis à estarem naquela tabela. Isso daria uma discussão longa por si só, mas gostaria de aproveitar a oportunidade para comentar sobre três coisas relevantes nesta tarefa. Todas elas parecerão óbvias mas, novamente, acho que de tempos em tempos é relevante relembrarmos destas coisas.
+
++ As variáveis criadas precisam estar na mesma granularidade da variável resposta. Isto significa que as variáveis que vou utilizar precisam descrever características ao nível de cada prova. Se eu estivesse buscando gerar previsões para a temporada, então faria mais sentido que as variáveis utilizadas descrevessem características relacionadas à cada temporada. Em outras palavras, as variáveis devem sempre descrever aquilo que estamos buscando analisar;  
++ As variáveis utilizadas para a previsão precisam estar disponíveis _antes_ que o fenômeno analisado ocorra. Isto é, se queremos antecipar a probabilidade de ocorrência de um acidente em uma prova, não podemos utilizar informações que estariam disponíveis apenas após a conclusão daquela prova^[Uma exceção seria, por exemplo, uma análise orientada à geração de entendimento do fenômeno ou causal, mas aí é outro assunto.]. Relacionado a este ponto, também é importante estar atento para não incluir variáveis que estão obviamente confundidas com aquilo que queremos prever. Por exemplo, a ocorrência de acidentes pode colocar o _safety car_ na pista, de forma que a distância percorrida pelos pilotos em um circuito ou o tempo de prova podem acabar aumentando. Neste caso, ambas as informações estariam disponíveis apenas após a conclusão da prova e, também, confundidas com aquilo que queremos prever. Assim, estas duas variáveis teriam um potencial bastante pequeno de fornecer _insights_ úteis para a análise.
++ Finalmente, é __muito__ importante que as variáveis criadas estejam bem embasadas em hipóteses, perguntas e expectativas pré-definidas. Em outras palavras, nós não saímos jogando variáveis dentro de uma base analítica só porque podemos fazer isso. É preciso pensar sobre o que elas estão representando, de que forma podem estar contribuindo para o fenômeno analisado e, também, quão razoável é a relação que imaginamos existir. Dificilmente conseguiremos representar uma relação complexa entre um padrão e um processo usando uma única variável; se o objetivo da análise for a predição e você se encontrar em uma situação como essa, talvez valha a pena redesenhar a pergunta ou a abordagem que está sendo seguida.
+     
+Com estas considerações em mente, vou criar algumas variáveis que estarão associadas direta ou indiretamente à hipóteses e perguntas relacionadas à ocorrência dos acidentes em cada prova. 
+
+## Criação das variáveis
+
+Começo falando de três hipóteses relacionadas à informações que não temos na base de dados original. Uma hipótese é de que provas que ocorram sob condições do tempo mais chuvosas ou similares têm maior probabilidade de ter um acidente; o porquê disso me parece bem intuitivo, então não vou me ater muito aqui. Uma segunda hipótese é que provas que ocorram fora dos autódromos (_e.g._, em circuitos de rua ou adaptados) possuem maior chance de ocorrência de um acidente, talvez por não possuírem a infraestrutura necessária para preveni-los ou por apresentarem uma rota muito sinuosa e errática. Finalmente, uma outra hipótese seria que provas em circuitos mais longos teriam maior probabilidade de ocorrência de um acidente, uma vez que _e.g._ dirigir nestes circuitos seria mais cansativo. Apesar das informações relacionadas à estas hipóteses não estarem na base original, é muito fácil obtê-las a partir da Wikipedia.
+
+Para extrair àquelas informações da Wikipedia utilizei a _url_ da Wikipedia que está relacionada à cada prova, e disponível na tabela `races`. Eu criei um _scrapper_ para ir até uma dessas páginas e extrair as informações e metadados sobre cada cada uma das provas. A partir daí eu fiz um parser e montei a base de dados que ajusto abaixo. Você encontra esse _scrapper_ dentro da pasta deste _post_, neste link. 
 
 ```{r fe_weather, code_folding = FALSE}
 tempo_durante_prova <- tt_dataset$weather_and_other %>% 
@@ -214,7 +232,11 @@ tempo_durante_prova <- tt_dataset$weather_and_other %>%
 rmarkdown::paged_table(x = tempo_durante_prova)
 ```
 
-Hipótese seguinte tem haver com o estado da disputa entre os pilotos.
+Outra coisa que poderia estar associada à ocorrência de acidentes está na própria intensidade e assimetria da disputa pelo campeonato em cada temporada. Por exemplo, poderia ser o caso de que observemos uma maior frequência de acidentes quando a disputa pelo título da temporada estiver mais intenso. Por outro lado, também seria razoável imaginar que quando os pilotos diferem muito em sua habilidade e, consequentemente, na pontuação obtida ao longo da temporada, maior seria a probabilidade de ocorrência de um acidente. Neste caso, isto ocorreria pois os pilotos menos habilidosos acabariam 'atrapalhando' os demais, provocando e/ou os envolvendo em mais acidentes. Finalmente, também é possível que a ocorrência de acidentes esteja associada à combinação entre estes dois fatores: pilotos muito habilidosos e competitivos ousando na pista e pilotos menos habilidosos só atrapalhando
+
+Vou representar estas hipóteses utilizando as informações sobre a pontuação de cada piloto existente na tabela `driver_standings`. Esta tabela traz o somatório das pontuações dos pilotos em cada prova da temporada e, portanto, nos dá uma ideia da evolução da competição pelo campeonato prova a prova. Com base nestes dados, calculei o coeficiente de variação da pontuação entre os cinco pilotos mais bem posicionados à cada rodada em cada temporada e, também, o coeficiente de variação da pontuação entre todos os pilotos em cada rodada de cada temporada. Em ambos os casos, um coeficiente de variação menor do que 1 sugere que diferenças na pontuação entre pilotos é muito pequena e, portanto, a intensidade da competição é mais forte e simétrica, enquanto valores maiores que 1 indicam o contrário.
+
+Um detalhe importante aqui é que estas variáveis estariam disponíveis apenas _após_ a conclusão de cada prova. No entanto, a ideia é que estas variáveis sejam utilizadas para representar a intensidade e assimetria da competição _antes_ de cada prova iniciar. Assim, vou utilizar o coeficiente de variação da pontuação até a prova anterior como _input_ para caracterizar a intensidade da competição na prova atual. Isto é, a intensidade e assimetria da competição prova _i_ será caracterizada pela informação disponível até a prova _i - 1_, garantindo assim que tenhamos acesso à informação _antes_ de cada prova se iniciar^[E como fazer no caso da primeira prova da temporada, quando não há prova anterior para definir a intensidade da competição? Aqui eu optei por imputar o valor 0, a fim de representar o fato de que a competição estaria em pé de igualdade no início de cada temporada.].
 
 ```{r fe_points, code_folding = FALSE}
 ## juntando as informacoes das provas com a pontuacao por piloto por prova, round e temporada
@@ -225,17 +247,18 @@ disputa_por_prova <- left_join(x = tt_dataset$driver_standings,
   arrange(year, round, desc(points)) %>% 
   # agrupando por ano e prova
   group_by(year, raceId) %>% 
-  # criando uma mascara para nos ajuda a calcular as metricas apenas considerando a pontuacao
-  # dos pilotos no topo do ranking da temporada por prova e ano
+  # criando uma mascara para nos ajuda a calcular as metricas apenas considerando 
+  # a pontuacao dos pilotos no topo do ranking da temporada por prova e ano
   mutate(
     mask_positions = ifelse(test = row_number() <= 5, yes = 1, no = NA)
   ) %>%
   # sumarizando metricas para representar força da disputa à cada prova e ano
   summarise(
-    # coeficiente de variação da pontuação dos cinco pilotos com mais pontos à cada prova 
-    # concluída em cada temporada
+    # coeficiente de variação da pontuação dos cinco pilotos com mais pontos à 
+    # cada prova concluída em cada temporada
     cv_top_pilots = sd(points * mask_positions, na.rm = TRUE) / mean(points * mask_positions, na.rm = TRUE),
-    # coeficiente de variação da pontuação de todos os pilotos à cada prova concluída em cada temporada
+    # coeficiente de variação da pontuação de todos os pilotos à cada prova
+    # concluída em cada temporada
     cv_all_pilots = sd(points) / mean(points), 
     .groups = 'drop'
   ) %>% 
@@ -243,21 +266,30 @@ disputa_por_prova <- left_join(x = tt_dataset$driver_standings,
   arrange(year, raceId) %>% 
   # agrupando por ano
   group_by(year) %>% 
-  # imputando o coeficiente de variacao das metricas da corrida prova anterior para prever o resultado
-  # da corrida atual - não dá para usar o dado de uma informação obtida após a prova para prever o que 
+  # imputando o coeficiente de variacao das metricas da corrida prova anterior 
+  # para prever o resultado da corrida atual - não dá para usar o dado de uma
+  # informação obtida após a prova para prever o que 
   # acontecerá durante a prova
   mutate(cvl_top_pilots = lag(cv_top_pilots), cvl_all_pilots = lag(cv_all_pilots)) %>% 
   # dropando o grupo
   ungroup %>% 
-  # substituindo os NAs por zero - no inicio de cada temporada não houve nenhuma prova anterior e, 
-  # portanto vamos assumir que não há uma competição intensa neste momento
+  # substituindo os NAs por zero - no inicio de cada temporada não houve nenhuma
+  # prova anterior e, portanto, vamos assumir que não há uma competição intensa 
+  # neste momento
   replace_na(replace = list(cvl_top_pilots = 0, cvl_all_pilots = 0)) %>% 
   # dropando a coluna de ano
   select(-year)
 rmarkdown::paged_table(x = disputa_por_prova)
 ```
 
-Outras hipóteses que temos: quantidade de competidores, quantidade de voltas e informações de calendário.
+Também aproveito os dados disponíveis para criar um outro conjunto de variáveis que podem estar relacionadas à frequência de ocorrência de acidentes. Mais especificamente, estas variáveis ajudam a respoder algumas perguntas, tais como:  
+
++ Como a quantidade de participantes (_i.e._, pilotos e construtores) contribui para a ocorrência de acidentes?  
++ Provas com mais voltas têm maior frequência de acidentes?  
++ A frequência de acidentes está relacionada ao período do ano (_i.e._, o mês) ou do dia (_i.e._, manhã ou tarde) em que as provas são realizadas?  
++ Existem diferenças entre os circuitos em termos da probabilidade de ocorrência de um acidente?  
+
+O pedaço de código abaixo cria estas variáveis e consolida muitas outras relacionadas à estas mesmas perguntas.
 
 ```{r fe_outras_features, code_folding = FALSE}
 ## quantidade de pilotos e construtores por prova
@@ -302,7 +334,7 @@ provas <- left_join(x = tt_dataset$races,
   select(-date, -time)
 ```
 
-Features calculadas, vamos consolidar elas em uma base só.
+Uma vez que tenhamos calculado todas as variáveis para ajudar na modelagem, vou juntá-las em uma tabela só. Farei isso usando um `left_join` entre todas as bases, com a `raceId` (_i.e._, identificador único de cada prova) como chave primária para todas as tabelas.
 
 ```{r junta_features_por_prova, code_folding = FALSE}
 ## juntando informacoes das provas com a quantidade de participantes e construtores
@@ -318,7 +350,7 @@ features_por_prova <- left_join(x = provas,
 rmarkdown::paged_table(x = features_por_prova)
 ```
 
-Consolidando a base analítica.
+Para concluir a preparação da base analítica, vou usar mais um `left_join` para juntar as observações da variável resposta (_i.e._, ocorrência ou não de um acidente em cada prova) com as informações das variáveis preditoras (_i.e._, todas as informações que caracterizam cada uma das provas).
 
 ```{r cria_base_analitica, code_folding = FALSE}
 df <- left_join(x = acidentes_por_prova, y = features_por_prova, by = 'raceId')
@@ -327,13 +359,13 @@ rmarkdown::paged_table(x = df)
 
 # Análise Exploratória
 
-Visão geral dos dados que temos no dataframe.
+Vamos tentar conhecer um pouco mais dos dados antes de partir para a modelagem. A primeira coisa que farei é dar uma olhada no conteúdo das colunas da base analítica, utilizando a função `skim` do pacote `skimr`.
 
 ```{r skim_da_base_analitica, layout = 'l-body-outset'}
 skim(data = df)
 ```
 
-Valores missing que sabemos quais são.
+Podemos ver que existem alguns valores faltantes nas colunas que caracterizam o tipo de circuito. Olhando os dados referentes à estas linhas e buscando os nomes dos circuitos na Wikipedia, podemos ver que todos os circuitos tratam-se de autódromos. Assim, vou substituir estes valores faltantes direto na base analítica.
 
 ```{r imputa_missing}
 df <- df %>% 
@@ -342,7 +374,7 @@ df <- df %>%
   replace_na(replace = list(permanent_circuit = 1, street_circuit = 0, temporary_circuit = 0))
 ```
 
-Acidentes são mais frequentes em alguns meses do ano, mas sem padrão claro.
+Olhando a frequência de ocorrência de acidentes por mês do ano, podemos ver que Janeiro parece concentrar a maior parte dos acidentes no registro histórico. Entretanto, quando quebrei estes dados através das décadas, observei que este padrão não pára de pé: os meses com maior frequência de ocorrência de acidentes variou bastante ao longo do tempo (não mostro a figura, mas você consegue gerá-la com os dados disponíveis neste _post_).
 
 ```{r acidentes_por_mes, layout = 'l-body-outset', dpi = 200, fig.height = 4, fig.width = 7, code_folding = TRUE}
 # criando a figura da propoção de provas com acidentes por mes
@@ -370,7 +402,7 @@ df %>%
     )
 ```
 
-Acidentes são certos em alguns circuitos, mas nem tanto em outros.
+O próximo padrão que observei foi que a frequência de ocorrência de acidentes varia bastante entre circuitos. Por exemplo, mais de 80% das provas que ocorreram nos circuitos de Zolder e Jarama registraram acidentes, enquanto estes foram raríssimos em circuitos como o Red Bull Ring e o Instabul Park. Assim, pode ser que a identidade do circuito contribua para definir o quão provável é que um acidente ocorra ali.
 
 ```{r acidentes_por_circuito, layout = 'l-body-outset', dpi = 200, fig.height=8, fig.width = 9, code_folding = TRUE}
 df %>% 
@@ -405,7 +437,7 @@ df %>%
   )
 ```
 
-Tipo de circuito parece interferir na ocorrência dos acidentes.
+Ainda falando sobre os circuitos, parece existir uma tendência à uma maior frequência de acidentes em circuitos de rua _ou_ temporários do que quando comparados aqueles que ocorrem em autódromos (_i.e._, circuitos permanentes). Entretanto, quando estamos falando de um circuito de rua _e_ temporário, esta diferença parece não ser tão grande. Logo, acredito que esta é outra variável que possa trazer algum benefício para a modelagem.
 
 ```{r acidente_por_tipo_circuito, layout = 'l-paged', dpi = 200, fig.height=4, fig.width=8, code_folding = TRUE}
 df %>% 
@@ -451,7 +483,7 @@ df %>%
   )
 ```
 
-Intensidade da disputa também parece colaborar para a ocorrência de acidentes.
+Seguindo na ideia sobre a intensidade e assimetria da competição, é possível ver que existe uma relação um pouco mais complexa entre a pontuação dos pilotos e aqueles no topo do ranking. Ao que parece, existe uma combinação específica relacionada ao estado da competição que parece favorecer a ocorrência de acidentes. Assim, estas são mais duas variáveis capazes de agregar à modelagem.
 
 ```{r acidentes_por_forca_competicao, layout = 'l-body-outset', dpi = 200, fig.height=5, fig.width=8, code_folding = TRUE}
 df %>% 
@@ -475,7 +507,7 @@ de uma maior intensidade da disputa pelo campeonato.',
   )
 ```
 
-Clima durante a prova.
+Finalmente, sem muita surpresa, a condição do tempo durante a prova parece contribuir com a ocorrência de acidentes. Se analisarmos a combinação de condições específicas relacionadas à cada prova (_i.e._, àquelas no _upset plot_) veremos que o padrão é bastante complexo. No entanto, focando apenas nas condições gerais (_i.e._, o _inset_ na figura abaixo) é possível ver que condições do tempo mais frias ou úmidas estiveram mais relacionadas aos acidentes do que as condições de tempo seco, quente e ensolarado. Além disso, podemos ver que quando a informação sobre a condição do tempo não se encaixava em nenhuma destas categorias ou quando ela não estava especificada, também tivemos uma frequência maior de acidentes. Este último padrão é preocupante, pois não vai fornecer uma idéia muito precisa sobre a contribuição das condições do tempo sobre o fenômeno que estamos analisando. Todavia, este é o dado que temos, e terei que considerar esta limitação quando formos buscar entender os resultados do modelo.
 
 ```{r acidentes_por_tempo, layout = 'l-body-outset', dpi = 200, fig.height=7, fig.width=10, code_folding = TRUE}
 # acidentes por combinacao de condicao climatica
@@ -565,7 +597,7 @@ fig_1 +
 
 ## Definição das métricas
 
-Explica racional.
+O objetivo aqui é gerar um modelo que seja capaz de definir a probabilidade de ocorrência de um acidente em uma prova. Além disso, gostaria que este modelo fosse tão bom em dizer quando esperar que um acidente ocorra quanto quando ele não ocorra. Finalmente, é importante que este modelo seja capaz de prever corretamente as vezes nas quais um acidente ocorrerá. Dado estes três requisitos requisitos, vou focar em avaliar o modelo através dos valores de AUC. Esta métrica representa o trade-off entre a sensibilidade (_i.e._, capacidade de prever os acidentes que ocorreram) e a especificidade (_i.e._, capacidade de prever os acidentes que não ocorreram), e é baseada nas probabilidades que o modelo gera. Esta métrica também pode ser interpretada como a probabilidade de que uma observação amostrada aleatoriamente a partir das previsões do modelo esteja certa ao dizer que haverá um acidente. Também aproveitarei para monitorar o _log loss_ (_i.e._, representa quão bem calibradas as probabilidades geradas pelo modelo estão) e a sensibilidade (_i.e._, métrica baseada na classificação binária, obtida após a conversão das probabilidades em uma decisão)^[No meu uso do _tidymodels_, acabei vendo que quando passava o 0 ou o 1 como fator e pedia para calcular a sensibilidade, ele estava calculando a especificidade. Por outro lado, quando usava a função que retorna a especificidade, ela me retornava o valor que eu esperava para a sensibilidade. Assim, no código abaixo eu estou invocando a função `specificity` ou `specificity_vec`, mas o que ela está me retornando é a métrica de sensibilidade. Examinando os argumentos da função, posteriormente, vi que esse problema seria facilmente resolvido setando alguns dos parâmetros ali, mas optei por não fazer isso e deixar como já estava.].
 
 ```{r define_metricas}
 # carregando os pacotes para a analise de dados
@@ -573,12 +605,12 @@ library(tidymodels) # core para ajustar os modelos
 library(finetune) # selecao de hiperparametros
 
 # definindo as tres metricas que vamos monitorar: log loss, AUC e especificidade
-metricas <- metric_set(roc_auc, mn_log_loss, sensitivity)
+metricas <- metric_set(roc_auc, mn_log_loss, specificity)
 ```
 
 ## Separação dos dados
 
-Separa em treino e teste.
+Vou começar separando a base de treino da base de teste, separando 75% dos dados para a primeira e o restante para a segunda. Vou aproveitar e estratificar esta separação, garantindo que haverá a mesma proporção de provas com e sem acidentes entre as duas bases.
 
 ```{r train_test_split}
 # passando o target para um fator e a variavel de turno para numerico
@@ -594,17 +626,19 @@ train_test_split <- initial_split(data = df, prop = 0.75, strata = tem_acidente)
 train_test_split
 ```
 
-Separa para a validação cruzada.
+Como vou usar uma validação cruzada para avaliar a performance do modelo, faço a separação da base de treino em 10 folds abaixo - novamente, estratificando a separação de forma que tenhamos uma proporção similar de provas com e sem acidentes entre os _folds_.
 
 ```{r cross_val_split}
 # definindo a seed para a reprodutibilidade
 set.seed(128)
 # criando o esquema para a validação cruzada
-kfold <- vfold_cv(data = training(x = train_test_split), v = 5, strata = tem_acidente)
+kfold <- vfold_cv(data = training(x = train_test_split), v = 10, strata = tem_acidente)
 kfold
 ```
 
 ## Preparação dos dados
+
+O próximo passo é preparar uma receita que vai definir a fórmula do modelo (_i.e._, variável resposta e preditoras) bem como todas as etapas de pré-processamento dos dados. Os passos principais dessa receita são tratar a coluna `raceId` como a chave primária da base, criar uma feature de mês a partir da coluna de data, remover colunas que não serão usadas e fazer um _one-hot-encoding_ das variáveis categóricas de identidade do circuito e mês. Nesse último ponto, aproveito também para criar um nível para os níveis não vistos da variável de circuito (útil quando um nível está no fold de treino mas não no de validação) e para agregar os níveis menos frequentes desta variável em um nível único.
 
 ```{r cria_receita}
 pre_processamento <- recipe(tem_acidente ~ ., data = training(x = train_test_split)) %>%
@@ -626,7 +660,11 @@ pre_processamento
 
 ## Definição do baseline
 
+É sempre importante definirmos tantos _baselines_ quantos forem necessários, a fim de verificar se a solução que estamos buscando desenvolver agrega mais valor do que uma regra de negócio ou uma abordagem mais simples. Relacionado a este último ponto, um modelo preditivo em sua versão _default_ pode ser utilizado como um _baseline_ para determinar se o esforço de tunagem de hiperparâmetros está resultando em um ganho de performance ou não. Neste contexto, vou traçar dois _baselines_ aqui antes de implementar a tunagem de hiperparâmetros.
+
 ### Naive
+
+A primeira abordagem será muito simples, e seguirá uma regrinha bastante comum para problemas de classificação quando temos uma base de dados desbalanceada^[Só para lembrar, temos `r table(df$tem_acidente)[[1]]` instâncias de provas sem acidentes e `r table(df$tem_acidente)[[2]]` provas com acidentes.]: prever que todas as instâncias descrevem a categoria majoritária. Para isso, vou desempacotar os dados de cada fold e criar uma coluna toda cheia de zeros (_i.e._, a representação das provas sem acidente em nossa base de dados); com isso, calcularei então o valor das métricas que serão monitoradas para cada _fold_ e, então, tirar a média destes valores entre todos eles. Os valores obtidos com isso representam o _baseline_ das nossas métricas de classificação se seguíssemos uma regra de negócio que diria que não haverá acidente em nenhuma prova.
 
 ```{r baseline_naive}
 kfold %>% 
@@ -643,9 +681,9 @@ kfold %>%
   # de qualquer informacao que tenhamos sobre elas
   mutate(
     # criando um target numerico para que ele seja usado para calcular o auc e log loss
-    prd_target_num = 1, 
+    prd_target_num = 0, 
     # criando um target no formato fator para calcular a especificidade
-    prd_target_fct = factor(x = 1L, levels = c(0L, 1L)),
+    prd_target_fct = factor(x = 0L, levels = c(0L, 1L)),
     # target
   ) %>% 
   # agrupando pelo id do fold
@@ -654,14 +692,20 @@ kfold %>%
   summarise(
     log_loss       = mn_log_loss_vec(truth = obs_target, estimate = prd_target_num),
     auc            = roc_auc_vec(truth = obs_target, estimate = prd_target_num),
-    especificidade = specificity_vec(truth = obs_target, estimate = prd_target_fct),
+    sensibilidade  = specificity_vec(truth = obs_target, estimate = prd_target_fct),
     .groups = 'drop'
+  ) %>% 
+  # tirando a media de cada metrica entre todos os folds
+  summarise(
+    across(log_loss:sensibilidade, mean)
   )
 ```
 
 ### Modelo
 
-blablabla
+O segundo _baseline_ que vou definir será através de um algoritmo em sua versão _default_. Vou focar em um algoritmo de _Random Forest_ neste _post_, só para praticar mesmo. Este algoritmo é bastante popular e, normalmente, consegue uma performance razoável em problemas de classificação e regressão dado a baixa complexidade envolvida em seu processamento. A ideia geral deste algoritmo é gerar uma previsão com base em um _ensemble_ de árvores de decisão (daí a parte _Forest_ no nome do algoritmo), cada uma das quais é crescida com base em um subconjunto diferente das instâncias e das variáveis disponíveis (daí a parte _Random_ no nome do algoritmo).
+
+No código abaixo, instanciamos a _Random Forest_ utilizando a `engine` do pacote `ranger` e, então, consolidamos um `workflow` onde os dados de cada fold serão pré-processados utilizando a receita que havíamos preparado anteriormente. Na sequência, vamos fazer este ajuste e coletar a performance da _Random Forest_ _default_ entre todos os folds da validação cruzada.
 
 ```{r baseline_modelo}
 # cria uma instancia do algoritmo com valores default
@@ -688,27 +732,22 @@ fit_baseline <- wf_baseline %>%
 collect_metrics(x = fit_baseline)
 ```
 
+Fica muito claro que o modelo preditivo supera e muito o _baseline_ definido usando a regra de negócio anterior. Posto de outra forma, os valores obtidos aqui sugerem que um modelo de aprendizado de máquina pode agregar valor para tentar antecipar quando existe um maior potencial de ocorrência de acidentes em uma prova. Como este baseline pronto, vamos agora à tunagem dos hiperparâmetros da _Random Forest_, na tentativa de melhorar um pouco mais a sua performance.
+
 ## Preparação do algoritmo
 
-blablabla
+Vou criar uma instância da _Random Forest_ para que façamos a seleção de hiperparâmetros. Para tal, vou passar o argumento `tune()` para os três hiperparâmetros disponíveis na implementação do algoritmo no `tidymodels`^[Existem muito mais hiperparâmetros disponíveis na implementação original do pacote `ranger` no R e no Scikit-Learn do Python, mas apenas estes três estão disponíveis dentro do wrapper do `tidymodels`]. Além disso, precisamos finalizar o desenho do hiperparâmetro `mtry` antes de consolidar o algoritmo e a receita de pré-processamento em um `workflow`.
 
 ```{r tuning_algoritmo}
 # cria uma instancia do algoritmo com hiperparametros a serem tunados
 algoritmo_tuning <- rand_forest(mtry = tune(), trees = tune(), min_n = tune()) %>%
   set_engine(engine = 'ranger', importance = 'impurity') %>%
   set_mode(mode = 'classification')
-```
 
-blablabla
-
-```{r tuning_finaliza_hiperparametros}
+# concluindo a preparacao dos ranges de hiperparametros que serao testados
 hiperparametros <- parameters(algoritmo_tuning) %>% 
   update(mtry = mtry(range = c(1L, 25L)))
-```
 
-blablabla
-
-```{r tuning_workflow}
 # define um workflow com a receita do pre-processamento e o algoritmo para ser tunado
 wf_tuning <- workflow() %>% 
   add_recipe(recipe = pre_processamento) %>% 
@@ -717,7 +756,9 @@ wf_tuning <- workflow() %>%
 
 ## Seleção de hiperparâmetros
 
-blablabla
+Com tudo pronto, agora é fazer a seleção de hiperparâmetros. Para isso, vou utilizar a técnica de anilhamento simulado (_i.e._, Simulated Annealing). Este é um algoritmo de otimização estocástica global, que utiliza um pouco de aleatoriedade como parte do processo de busca pela solução final (neste caso específico, àquela que oferecer o maior valor de AUC). Mais especificamente, este algoritmo funciona buscando na vizinhança de uma solução inicial outras alternativas que possam melhorar a sua performance, podendo, inclusive, aceitar soluções sub-ótimas com uma determina probabilidade. Esta probabilidade é alta nas primeiras iterações do algoritmo e vai caindo conforme a busca progride, de forma que esta taxa de decaimento é também um hiperparâmetro do algoritmo de busca que podemos modificar. De toda forma, este procedimento colabora para que o algoritmo localize a região do mínimo global de forma mais rápida, escapando de mínimos locais e passando a explorar outras áreas do espaço de busca que uma busca determinística não faria.
+
+Vou gerar 10 iterações iniciais para alimentar o motor de busca do algoritmo e, então, realizar a busca dos hiperparâmetros que maximizem o AUC através de 50 iterações. Além disso, também vou permitir que o algoritmo teste novas combinações de hiperparâmetros caso nenhuma combinação testada durante 5 iterações consecutivas tragam resultados melhores do que aquele já existente.
 
 ```{r tuning_hiperparametros}
 # setando a seed para a reprodutibilidade
@@ -735,7 +776,7 @@ fit_tuning <- wf_tuning %>%
   )
 ```
 
-blablabla
+Podemos ver de que forma a otimização de hiperparâmetros progrediu ao longo das iterações na figura abaixo. O painel A demonstra que o hiperparâmetro que define o número de árvores tendeu a uma convergência bastante clara ao longo das iterações, enquanto isto não foi tão bem o caso para os hiperparâmetros que definem o número de variáveis preditoras disponíveis para a construção de cada árvore e o número mínimo de instâncias no ramo final das árvores. Já o painel B demonstra que o algoritmo tendeu a convergir rapidamente para um valor de AUC próximo à 0.75, com a performance de alguns folds chegando próximo ao patamar de AUC de 0.78; por outro lado, é possível ver também que a performance dos hiperparâmetros utilizados em algumas iterações foi bem ruim.
 
 ```{r tuning_autoplot, layout = 'l-body-outset', dpi = 200, fig.height=7, fig.width=10, code_folding = TRUE}
 # hiperparametros utilizados por iteracao
@@ -751,13 +792,13 @@ perf <- autoplot(object = fit_tuning, metric = 'roc_auc', type = 'performance') 
                   tag_levels = 'A')
 ```
 
-blablabla
+Os cinco modelos cuja combinação de hiperparâmetros geraram os maiores valores de AUC são apresentados abaixo. Ainda que todos eles apresentem valores de AUC acima daquele obtido para o _baseline_ com as configurações _default_ da _Random Forest_, podemos ver que existe alguma incerteza em cima da estimativa pontual destes valores - representado pelo `std_err` associado à cada um deles. Neste contexto, será que os modelos tunados para melhor performance são de fato melhores que o _baseline_?
 
 ```{r tuning_melhores}
 show_best(x = fit_tuning, metric = 'roc_auc', n = 5)
 ```
 
-blablabla
+Para responder à essa pergunta, utilizei um teste-t para testar a hipótese nula de que a diferença entre os valores de AUC do modelo _baseline_ e do melhor modelo tunado não é diferente de 0. Como podemos ver abaixo, o p-valor deste teste supera o valor crítico de 0.05 e, portanto, não podemos rejeitar àquela hipótese nula. Em outras palavras, isto quer dizer que, na prática, tunar a _Random Forest_ não trouxe benefícios substanciais em termos das métricas de performance avaliadas. Tendo este resultado em vista, vou seguir utilizando aqui o modelo _baseline_ para gerar as probabilidades e tentar entender os padrões que o modelo capturou.
 
 ```{r diferenca_tuning_baseline, code_folding = TRUE}
 # pegando o resultado do AUC do baseline
@@ -778,7 +819,8 @@ estatistica <- (baseline$mean - tuned_results$mean) / sqrt((se_baseline + se_tun
 # numero de graus de liberdade ajustado
 df_welch <- ((se_baseline + se_tuned)^2) / ((se_baseline^2/(n_obs - 1)) + (se_tuned^2/(n_obs - 1)))
 
-# calculando o p-valor associado a estatistica
+# calculando o p-valor associado a estatistica calculada, utilizando um teste bicaudal, uma
+# vez que a hipótese nula trata de uma diferenca entre medias que pode ser maior ou menor que 0
 p_valor <- 2 * pt(q = estatistica, df = df_welch, lower.tail = TRUE)
 
 # printando o resultado
@@ -787,7 +829,7 @@ sprintf(fmt = 'Estatistica t: %.3f | df: %.2f| p-valor: %5f', estatistica, df_we
 
 ## Ajuste do modelo selecionado
 
-blablabla
+Faremos o ajuste do modelo uma última vez, utilizando todos os dados da base de treino para ajustar o algoritmo e os dados da base de teste para gerar as probabilidades que serão usadas para avaliar a sua performance.
 
 ```{r last_fit_baseline}
 ## ajustando o modelo aos dados uma ultima vez
@@ -797,7 +839,7 @@ modelo_ajustado <- last_fit(object = wf_baseline, split = train_test_split, metr
 collect_metrics(x = modelo_ajustado)
 ```
 
-blablabla
+Os valores de AUC deste modelo final ficaram praticamente idênticos aquele obtido pelo modelo _baseline_. Todavia, temos um valor de _log loss_ menor (_i.e._, probabilidades mais bem ajustadas) e uma sensibilidade maior (_i.e._, melhor capacidade do prever os acidentes que ocorreram), algo que acredito ser muito bom também. Mas como será que este modelo performou gerando previsões binárias, _i.e._ há ou não um acidente associado à cada prova? Como já havíamos antecipado pela métrica de sensibilidade, o modelo preveu corretamente que houve um acidente em uma prova um pouco mais de metade das vezes; por outro lado, ele errou em 34% das vezes em que preveu que haveria um acidente. Por fim, o modelo também não foi tão mal em prever quando _não_ haveria um acidente, acertando em quase 79% dos casos. Para um modelo tão simples e com tão pouca informação, acredito que estes resultados estão bem OK para o esforço empregado.
 
 ```{r matriz_confusao_normal, dpi = 200, fig.height=4, fig.width=5, code_folding = TRUE}
 # pegando as previsoes do modelo ajustado
@@ -826,7 +868,7 @@ collect_predictions(x = modelo_ajustado) %>%
 
 ## Explicabilidade
 
-blablabla
+Uma vez que cheguei a um modelo preditivo aceitável, vou dar uma olhada agora nos padrões que ele foi capaz de capturar nos dados. A primeira coisa que acho legal olhar é o ranking de importância das variáveis que a _Random Forest_ fornece.
 
 ```{r importancia_variaveis, layout = 'l-body-outset', dpi = 200, fig.height=5, fig.width=8, code_folding = TRUE}
 # pegando o modelo ajustado
@@ -851,14 +893,19 @@ extract_fit_parsnip(x = modelo_ajustado) %>%
   scale_fill_viridis_c(begin = 0.1) +
   scale_x_continuous(breaks = seq(from = 0, to = 50, by = 10)) +
   labs(title    = 'Importância das variáveis para o modelo',
-       subtitle = 'As 15 variáveis mais importantes de acordo com o critério de impureza de Gini') +
+       subtitle = 'As 15 variáveis mais importantes de acordo com o critério de impureza de Gini',
+       x        = 'Impureza de Gini') +
   theme(
     legend.position = 'none',
-    axis.title = element_blank()
+    axis.title.y = element_blank()
   )
 ```
 
-blablabla
+Podemos ver que o ano em que a prova foi realizada foi, de longe, a variável mais importante para gerar as previsões de ocorrência dos acidentes. Na sequência, outras 5 variáveis pareceram importantes: o coeficiente de variação na pontuação dos pilotos até a prova anterior (`cvl_all_pilots`), a extensão do circuito, o coeficiente de variação na pontuação dos 5 pilotos com mais pontos até a prova anterior (`cvl_top_pilots`), a quantidade de voltas e a quantidade de pilotos participando na prova. Todas essas variáveis estão bastante relacionadas com algumas das hipóteses que defini. Todavia, ainda não sei se a contribuição destas variáveis é similar àquela que eu havia hipotetizado ou não, uma vez que este gráfico só mostra quais variáveis são importantes.
+
+Para entender de que forma estas variáveis estão relacionadas à probabilidade de ocorrência de um acidente em uma prova, vou utilizar um _plot_ de dependência parcial. Para criar este _plot_ é necessário extrair as previsões da probabilidade de ocorrência de um acidente para cada instância na base de treino, fixando-se os valores de todas as variáveis preditoras a não ser àquela que estamos interessados. Com isso, geramos algo parecido com um _profile_ sobre a forma pela qual a previsão do modelo para àquela instância varia apenas em função da variável analisada. Uma vez que tenhamos esse _profile_ calculado para cada instância, sumarizamos o padrão obtido entre todas as instâncias para cada valor _x~i~_ da variável analisada, de forma a obter a curva 'média' que descreve a relação daquela variável preditora com a variável resposta.
+
+Para facilitar a criação dos _plots_ de dependência parcial, vou carregar os pacotes `DALEX` e `DALEXtra`, criar uma instância de um explicador do `tidymodels` e passar três argumentos para ela: o `workflow` ajustado, os dados de treino do modelo e o target (convertido para um número inteiro).
 
 ```{r instancia_dalex}
 # carregando o pacote
@@ -873,13 +920,13 @@ explainer <- explain_tidymodels(
 )
 ```
 
-blablalba
+Agora que temos esta instância, podemos gerar o _plot_ de dependência parcial. Vou focar aqui em apenas três daquelas seis variáveis que vimos serem mais importantes para o modelo de _Random Forest_: o ano, o coeficiente de variação na pontuação dos pilotos até a prova anterior (`cvl_all_pilots`) e o coeficiente de variação na pontuação dos 5 pilotos com mais pontos até a prova anterior (`cvl_top_pilots`). De que forma estas variáveis contribuem para definir a probabilidade de ocorrência de acidentes de acordo com o modelo preditivo gerado?
 
 ```{r pdp_dalex, layout = 'l-body-outset', dpi = 200, fig.height=4, fig.width=10, code_folding = TRUE}
 # pegando os dados do partial dependence plot
 model_profile(
   explainer = explainer, 
-  variables = c('year', 'cvl_all_pilots', 'cvl_top_pilots'), 
+  variables = c('year', 'cvl_all_pilots', 'cvl_top_pilots'),
   type = 'partial'
 ) %>%
   # extraindo os dados para criar a figura no ggplot
@@ -889,19 +936,36 @@ model_profile(
     `_vname_` = case_when(`_vname_` == 'cvl_top_pilots' ~ 'CV pontuação dos cinco pilotos no topo do ranking',
                           `_vname_` == 'cvl_all_pilots' ~ 'CV pontuação de todos os pilotos',
                           TRUE ~ 'Ano')
-  ) %>% 
+  ) %>%
   # criando a figura
   ggplot(mapping = aes(x = `_x_`, y = `_yhat_`)) +
   facet_wrap(~ `_vname_`, scales = 'free', strip.position = 'bottom') +
   geom_line() +
   labs(
     title    = 'Efeitos parciais de três variáveis sobre a probabilidade de ocorrência de acidentes',
-    subtitle = 'O efeito parcial de uma variável sobre a resposta é aquele medido variando apenas à variável de interesse e fixando-se todas as demais',
+    subtitle = 'O efeito parcial de uma variável sobre a resposta é aquele que presenta o impact de uma variável sobre a resposta fixando-se o impacto de todas as demais variáveis',
     y        = 'Probabilidade de ocorrência de um acidente'
   ) +
   theme(axis.title.x = element_blank())
 ```
 
+Muitos dos padrões capturados pelo modelo para estas três variáveis são similares aqueles observados na análise exploratória. O modelo foi capaz de identificar o padrão temporal da frequência de ocorrência de acidentes, mostrando que houve uma queda de cerca de 20% na probabilidade de ocorrência destes eventos a partir da década de 90. Não dá para saber o quanto isto pode estar relacionado às intervenções de segurança implementadas no período, mas é importante ver que algo que aconteceu a partir daí contribuiu bastante para a queda na frequência de acidentes. Outro padrão interessante é aquele relacionado à intensidade e assimetria da disputa pelo campeonato, que também havíamos visto na análise exploratória. De fato, parece que quando a disputa pelo campeonato está muito acirrada e existem alguns pilotos que estão ali só de coadjuvante, é quando existe uma maior probabilidade de ocorrência de acidentes. De toda forma, a contribuição média destes fatores parece não ser tão expressiva assim, uma vez que seu impacto sobre as probabilidades é de cerca de 5% a 6%. 
+
 # Conclusão
 
+Meu principal foco neste _post_ foi tentar determinar quais os fatores que contribuem para a ocorrência de acidentes nas provas da Fórmula 1 e, a partir disso, chegar a um modelo preditivo capaz de quantificar a probabilidade e/ou o potencial de que estes eventos ocorram. Neste intuito, utilizei os dados do _tidytuesday_, enriquecidos de mais algumas informações, e utilizei um algoritmo de _Random Forests_ para chegar às previsões. Neste caminho, vi que o algoritmo com a configuração _default_ (_i.e._, o _baseline_) performava de forma similar ao modelo tunado e, usando a parsimônia, optei pelo primeiro para chegar ao meu objetivo. Com isto, confirmei alguns dos padrões que já havia visto durante a análise exploratória de dados e encontrei evidência para algumas das hipóteses que eu tinha. Apesar de acreditar que a tomada de decisão direcionada por dados e o  aprendizado de máquina podem (e muito) contribuir para a prevenção de acidentes, isto está para além dos meus objetivos e do escopo que desenhei para este _post_.
+
+Para finalizar, também há uma consideração sobre minha experiência de usuário com o `tidymodels`. Eu realmente acredito no potencial dessa ferramenta para popularizar o aprendizado de máquina dentro da linguagem R, bem como confio e entendo as decisões tomadas no que diz respeito ao uso da solução^[_e.g._, já ouvi uma palestra uma vez falando da resistência que os desenvolvedores tinham em criar o pacote `workflowsets`, relacionado ao risco de transformar o `tidymodels` em algo que você só fica ajustando algoritmo sem pensar no que está fazendo.]. No entanto, uma coisa que eu acho bem chata nele é a baixa diversidade de hiperparâmetros que os algoritmos já implementados possuem para serem tunados quando comparados à versão básica disponível na própria _engine_. Eu sei que é possível criar uma [função específica para tunar um hiperparâmetro](https://www.tidymodels.org/learn/develop/parameters/) mas, como usuário, é muito chato ter esse trabalho extra durante um processo de exploração e descoberta. Além disso, se o intuito da solução é centralizar o processo de modelagem dentro de um _framework_ só, seria importante que ele oferece as mesmas funcionalidades que os seus componentes já oferecem por padrão.
+
 # Possíveis Extensões
+
++ Outras categorias de `status` que não apenas `Accident` e `Fatal accident` poderiam ter sido usadas para definir se houve um acidente associado à cada prova ou não;  
++ Apesar da base de dados ser levemente desbalanceada, não fiz nenhum esforço no intuito de avaliar e/ou implementar um balanceamento da base como uma etapa de pré-processamento. Isto é algo que poderia ser feito utilizando-se as funções `step_` do pacote `themis`;  
++ Escolhi trabalhar com um _Random Forest_ apenas por diversão e não cheguei a tentar (sério) outros algoritmos;  
++ Usei o _baseline_ pois não vi muita diferença para o modelo tunado a ponto de justificar algo (computacionalmente) mais complexo. Ainda assim, pode ser que o modelo tunado forneça informações sobre a explicabilidade dos padrões analisados de forma diferente e mais intuitiva do que àquela oferecidade pelo _baseline._ Não cheguei a fazer esse teste, mas acho que é algo que poderia ser feito;  
++ Eu optei por tratar este como um problema de classificação. No entanto, seria possível tratá-lo como um problema de regressão, tentando prever a quantidade de acidentes que ocorreram em uma prova;    
++ Outra opção, ainda no campo da ideia da regressão, seria tratar a quantidade de acidentes como um processo vindo de uma distribuição de Poisson. Assim, trabalharíamos tentando prever _e.g._ a quantidade de acidentes observados em _n_ provas para cada temporada;  
++ Mais uma opção seria trabalhar este como um problema de previsão de séries temporais, onde o objetivo seria prever a quantidade de acidentes ou a proporção de provas com acidentes por temporada;  
++ Adicionar outros hiperparâmetros ao algoritmo de _Random Forest_ para a otimização, criando as funções específicas para tal;  
++ Otimizar os hiperparâmetros do anilhamento simulado;  
++ Também não fiz nenhum esforço para calibrar ou ajustar o melhor ponto de corte das probabilidades para desenhar àquela matriz de confusão. Isto é algo bem interessante de ser feito, que também poderia ser implementado.  
