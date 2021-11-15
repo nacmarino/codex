@@ -1,5 +1,5 @@
 ---
-title: "Previsao de acidentes com os dados da Formula 1"
+title: "Previsão de acidentes com os dados da Fórmula 1"
 description: |
   Há algum tempo atrás escrevi um post para tentar entender se e de que forma os tempos de conclusão das provas de Fórmulas 1 vêm evoluindo ao longo das temporadas. Neste post eu mudo o foco, e tento entender e determinar a probabilidade de ocorrência de acidentes nas provas da Fórmula 1.
 author:
@@ -17,12 +17,12 @@ output:
     toc: true
     code_folding: true
     highlight: rstudio
-draft: true
+draft: false
 ---
 
 ```{r setup, include=FALSE}
 # setando as opções gerais dos code chunks
-knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, fig.align = 'center', cache = TRUE)
+knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, fig.align = 'center')
 
 # presetando o ggplot2
 library(ggplot2)
@@ -58,7 +58,6 @@ library(patchwork) # para compor figuras
 
 # carregando os dados de dispositivos de segurança na F1
 safety <- read_excel(path = 'data/f1_safety.xlsx', skip = 1)
-# safety <- read_excel(path = '_posts/2021-09-11-f1-acidentes/data/f1_safety.xlsx', skip = 1)
 
 # criando a figura principal
 safety %>% 
@@ -97,7 +96,6 @@ Dado o investimento crescente na segurança dos pilotos, uma pergunta que me vei
 # carregando a copia local dos dados
 ## extraindo os paths das copias locais
 paths_copias_locais <- dir_ls(path = 'data/', regexp = '.rds')
-# paths_copias_locais <- dir_ls(path = '_posts/2021-09-11-f1-acidentes/data/', regexp = '.rds')
 
 ## criando vetor de nomes dos arquivos
 nomes_arquivos <- paths_copias_locais %>%
@@ -140,7 +138,7 @@ count(acidentes_por_prova, tem_acidente, name = 'ocorrencias')
 
 A base de dados sobre a ocorrência de acidentes ao nível das provas é levemente desbalanceada, uma vez que existem `r sum(!acidentes_por_prova$tem_acidente)` provas sem a ocorrência de um acidente contra `r sum(acidentes_por_prova$tem_acidente)` onde eles ocorreram. Mas com que frequência estes acidentes foram registrados ao longo das temporadas da Fórmula 1 comparado ao aumento nas medidas de segurança para preveni-los?
 
-```{r serie_historica_acidentes, layout = 'l-body-outset', dpi = 200, fig.height=4, fig.width=9, code_folding = TRUE}
+```{r serie_historica_acidentes, layout = 'l-body-outset', dpi = 200, fig.height=4, fig.width=9, code_folding = TRUE, preview = TRUE}
 # calculando o volume acumulado de medidas de seguranca
 acumulado_medidas <- tibble(
   # criando uma sequência completa de anos
@@ -210,7 +208,7 @@ Com estas considerações em mente, vou criar algumas variáveis que estarão as
 
 Começo falando de três hipóteses relacionadas à informações que não temos na base de dados original. Uma hipótese é de que provas que ocorram sob condições do tempo mais chuvosas ou similares têm maior probabilidade de ter um acidente; o porquê disso me parece bem intuitivo, então não vou me ater muito aqui. Uma segunda hipótese é que provas que ocorram fora dos autódromos (_e.g._, em circuitos de rua ou adaptados) possuem maior chance de ocorrência de um acidente, talvez por não possuírem a infraestrutura necessária para preveni-los ou por apresentarem uma rota muito sinuosa e errática. Finalmente, uma outra hipótese seria que provas em circuitos mais longos teriam maior probabilidade de ocorrência de um acidente, uma vez que _e.g._ dirigir nestes circuitos seria mais cansativo. Apesar das informações relacionadas à estas hipóteses não estarem na base original, é muito fácil obtê-las a partir da Wikipedia.
 
-Para extrair àquelas informações da Wikipedia utilizei a _url_ da Wikipedia que está relacionada à cada prova, e disponível na tabela `races`. Eu criei um _scrapper_ para ir até uma dessas páginas e extrair as informações e metadados sobre cada cada uma das provas. A partir daí eu fiz um parser e montei a base de dados que ajusto abaixo. Você encontra esse _scrapper_ dentro da pasta deste _post_, neste link. 
+Para extrair àquelas informações da Wikipedia utilizei a _url_ da Wikipedia que está relacionada à cada prova, e disponível na tabela `races`. Eu criei um _scrapper_ para ir até uma dessas páginas e extrair as informações e metadados sobre cada cada uma das provas. A partir daí eu fiz um parser e montei a base de dados que ajusto abaixo. Você encontra esse _scrapper_ dentro da pasta deste _post_, neste [link](https://github.com/nacmarino/codex/blob/df621705832e6974e6bbd9edc5671525a74ad610/_posts/2021-11-15-previsao-de-acidentes-com-os-dados-da-formula-1/scripts/clima_da_prova.R). 
 
 ```{r fe_weather, code_folding = FALSE}
 tempo_durante_prova <- tt_dataset$weather_and_other %>% 
