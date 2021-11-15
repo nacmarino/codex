@@ -1,0 +1,38 @@
+---
+title: "Livros Recomendados"
+description: |
+  Nesta seção eu reúno algumas recomendações de livros técnicos para a área de estatística, aprendizado de máquina, deep learning e ciência de dados que eu já li e achei um bom investimento de tempo.
+theme: theme.css
+---
+
+1. __Estatística__
+    + A beginner's guide to structural equation modeling - Randall E. Schumacker & Richard G. Lomax
+    + Bayesian Data Analysis - John K. Kruschke
+    + Ecological Models and Data in R - Ben Bolker
+    + Experiments in Ecology: Their Logical Design and Interpretation Using Analysis of Variance - A. J. Underwood
+    + Forecasting: Principles and Practice - Rob J. Hyndman & George Athanasopoulos
+    + Generalized Linear Models with Applications in Engineering and the Sciences - Raymond H. Myers, Douglas C. Montgomery, G. Geoffrey Vining & Timothy J. Robinson
+    + Introduction to Bayesian Statistics - William M. Bolstad & James M. Curran
+    + Linear Mixed-Effects Models Using R: a Step-by-Step - Andrzej Gałecki & Tomasz Burzykowski
+    + Probability & Statistics for Engineering and the Sciences - Jay L. Devore
+
+2. __Meta-Análise__
+    + Handbook of Meta-Analysis in Ecology and Evolution - Julia Koricheva, Jessica Gurevitch & Kerrie Mengersen
+
+3. __Aprendizado de Máquina__
+    + Explanatory Model Analysis - Przemyslaw Biecek & Tomasz Burzykowski
+    + Interpretable Machine Learning - Christoph Molnar
+    + Machine Learning with R - Brett Lantz
+    + Supervised Machine Learning for Text Analysis in R - Emil Hvitfeldt & Julia Silge
+    + Tidy Modelling with R - Max Kuhn & Julia Silge
+
+4. __Deep Learning__
+    + Deep Learning with Python - François Chollet
+    + Deep Learning with R - François Chollet & J. J. Allaire
+    + Dive into Deep Learning - Aston Zhang, Zachary C. Lipton, Mu Li & Alexander J. Smola
+
+5. __R__
+    + R for Data Science - Hadley Wickham & Garrett Grolemund
+    + Text Mining with R - Julia Silge & David Robinson
+
+    

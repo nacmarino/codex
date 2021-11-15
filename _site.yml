@@ -16,6 +16,8 @@ navbar:
       href: index.html
     - text: "Backlog"
       href: backlog.html
+    - text: "Livros"
+      href: livros.html
     - text: "Sobre"
       href: about.html
     - text: "Autor"
