@@ -23,7 +23,7 @@ draft: true
 # setando as opções gerais dos code chunks
 knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, fig.align = 'center')
 
-# presetando o ggplot2
+# carregando o ggplot2
 library(ggplot2)
 
 # setando o tema geral do ggplot2
@@ -50,45 +50,62 @@ Existe bastante conteúdo na internet que é produzido pela própria comunidade 
 
 # Raspando um deck
 
-Falar da landing page. Mostrar que clica para abrir um deck.
+A página principal dos decks disponíveis no site oficial do jogo pode ser acessada através da _url_ https://www.playgwent.com/pt-BR/decks, ou clicando nesse [link](https://www.playgwent.com/pt-BR/decks). Assim que a página abrir, já é possível ver que os decks estão organizados em uma espécie de tabela, com diversas informações sobre eles, tais como a quantidade de votos, nome, autor, custo de fabricação e etc. Além disso, existem diversos filtros e opções de interatividade na página, como os filtros de facção, habilidade do líder, melhores baralhos e etc. Vamos voltar à essa _landing page_ em breve mas, por enquanto, vamos selecionar um baralho qualquer e clicar em seu nome para ir até a sua página.
 
 ```{r img_landing_page, layout = 'l-body-outset', code_folding = TRUE}
 knitr::include_graphics(path = 'images/imagem_1.jpg')
 ```
 
-Falar que se clicar para ver o deck, vai levar para uma pagina uma página com o arranjo abaixo. Falar que o codigo numerico na url é o id do deck. Cada deck vai ter sempre uma habilidade do líder, uma carta de estratégia e pelo menos mais 25 cartas. 
+Chegamos à página do deck, cuja _url_ parece sugerir que a paginação de cada um deles deve seguir o padrão de uma _url_ base (_i.e._, https://www.playgwent.com/pt-BR/decks/guides/) seguida de uma numeração que representa o identificador único do deck. Outra coisa que já é notável é que muitas das informações que estavam disponíveis na página anterior também estão repetidas aqui. No entanto, podemos ver que agora existe (em alguns casos) uma descrição do deck, a estratégia de uso do deck e, o mais importante, uma lista das cartas que o compõem. É esta lista que queremos pegar.
 
 ```{r img_identificar_deck, layout = 'l-body-outset', code_folding = TRUE}
 knitr::include_graphics(path = 'images/imagem_3.jpg')
 ```
 
-Dizer que o dado que precisamos não está em um API escondida, mas dentro do HTML gerado quando essa pagina carrega. Se olharmos mais a fundo, veremos que as informacoes estao em algo que parece um json dentro de uma tag HTML.
+Se passarmos o cursor em cima das cartas, podemos ver que vai aparecer um _tooltip_ com a imagem da carta e a descrição dela. Isto parece sugerir que deve existir algum tipo de linguagem dinâmica atuando por trás dos panos, o que poderia complicar a vida do nosso _scrapper_. Mas o que será que está alimentando esse conteúdo dinâmico dentro da página? Se formos na ferramenta `Inspecionar` do navegador e olharmos o próprio código HTML da página, veremos que existe uma quantidade enorme de texto dentro de uma _tag_, organizada de uma forma que lembra muito um dicionário no Python ou um arquivo JSON. Para achar esse texto, basta procurar uma _tag_ _div_ da classe `wrapper`, buscar dentro dela uma outra _tag_ _div_ da classe `content` e, mais uma vez, uma _tag_ _div_ com o id `root`; a partir daí, todo o dicionário pode ser acessado olhando o atributo `data-state`. Ou seja, não é que o conteúdo da página seja dinâmica, só a forma como ele é mostrado mesmo.
 
 ```{r img_entender_deck, layout = 'l-body-outset', code_folding = TRUE}
 knitr::include_graphics(path = 'images/imagem_4.jpg')
 ```
 
-Falar que vou estruturar o post diretamente nas funções para fazer o scrapper e o parser. Começando pelo scrapper.
+Com esse entendimento, vamos então começar a atividade de raspar esse deck. Vou criar uma função que ficará responsável por fazer um `GET` da página do deck, uma vez que o seu código numérico de identificação seja passado. Essa função também salvará essa página HTML em um algum _path_ especificado e, antes de concluir, vai hibernar por 1 ou 2 segundos^[Esse passo não é obrigatório, mas decidi colocá-lo aqui só para não bombardear o servidor de _request_ uma vez que eu vá usar essa função dentro de um `map`.]
 
 ```{r funcao_scrape_deck}
+## carregando os pacotes
+library(tidyverse) # core
+library(httr) # para fazer o web scrapping
+library(xml2) # para ajudar a parsear
+library(fs) # para manipular os paths
+
 ## para raspar um deck
 scrape_deck <- function(deck_id, path_to_save) {
   ## fazendo o request e salvando em disco
   GET(
     url = str_glue('https://www.playgwent.com/pt-BR/decks/guides/{deck_id}'), 
-    write_disk(path = sprintf(fmt = '%s/deck_%06d.html', path_to_save, deck_id), overwrite = TRUE)
+    write_disk(path = sprintf(fmt = '%s/deck_%06d.html', path_to_save, deck_id), 
+               overwrite = TRUE)
   )
   Sys.sleep(time = runif(n = 1, min = 1, max = 2))
 }
 ```
 
-Usar a função para scrapear.
+Vamos usar agora essa função para baixar o deck da tela e salvá-lo em disco.
 
 ```{r get_um_deck}
-# criar diretorio, fazer o download de um deck
+# setando o path local para salvar o HTML do deck
+path_decks <- 'gwent_decks/'
+# path_decks <- '_posts/2021-11-16-raspando-a-lista-de-baralhos-de-gwent/gwent_decks/'
+
+# criando um diretorio local para salvar o HTML do deck caso nao exista
+if(!dir_exists(path = path_decks)){
+  dir_create(path = path_decks, recurse = TRUE)
+}
+
+# baixando um deck usando a funcao criada
+scrape_deck(deck_id = 280934, path_to_save = path_decks)
 ```
 
-Falar do parser para pegar o json.
+Deck baixado! Vamos agora criar uma função para fazer uma primeira etapa do parser dele, onde a ideia vai ser tirar o dicionário que se parece com o JSON de dentro do código HTML e deixá-lo mais próximo de ser usado para pegar a lista de cartas. A função receberá como input o path até o deck salvo em disco, buscará o JSON e fará uma organização dos dados para extrair apenas a chave relacionada às informações das cartas do deck.
 
 ```{r funcao_deck_to_json}
 # para parsear o html do deck para o json
@@ -114,7 +131,24 @@ deck_to_json <- function(path_para_deck) {
 }
 ```
 
-Falar do parser, que precisa de parsear os metadados separado do tooltip. Além disso, falar que dependendo do tipo de carta, o parser deve ser diferente. Mostrar o parser de metadados da carta
+Se testarmos a função para parsear o JSON do deck, veremos que o seu output é uma lista, e que cada elemento dessa lista é uma informação diferente sobre o deck - não só a lista de cartas em si. Ou seja, precisamos agora parsear e organizar as informações da lista.
+
+```{r}
+# parseando o codigo de HTML para algo parecido com um JSON
+jsonfied_deck <- deck_to_json(path_para_deck = dir_ls(path = path_decks, recurse = TRUE))
+sprintf('Classe do objeto parseado: %s. Quantidade de elementos na lista: %s.', 
+        class(jsonfied_deck), length(jsonfied_deck))
+```
+
+Uma coisa importante antes de prosseguir é entender um pouco sobre a estrutura básica de um deck de Gwent e a forma como ele é apresentado originalmente na página:
+
++ O banner no topo do deck representa a habilidade do líder que deve ser usada. Cada facção oferece umas 6 habilidades diferentes, mas específicas para cada uma delas;  
++ A carta logo abaixo do banner representa a carta de estratégia que deve ser usada junto ao deck. Existem algumas cartas de estratégia disponíveis, algumas das quais são específicas para certas facções, outras neutras. De uma forma ou de outra, todo deck tem também a sua carta de estratégia;  
++ Tudo o que vier depois destes dois, representam as cartas que compõem o deck _per se_. Um deck é montado usando no mínimo 25 cartas, com mais algumas regrinhas relacionadas ao custo das cartas e quantidade de cartas de um tipo específico. Além disso, podem haver cópias de algumas cartas no deck, que são representadas pela tag `x2` ao lado de cada carta.  
+
+Tendo essa visão em mente, precisamos então das informações das cartas do deck, da carta de estratégia e da habilidade do líder a fim de que possamos reproduzir o deck que está na página. Se voltarmos à lista obtida depois que parseamos o deck para algo parecido com um JSON, podemos ver que existem três elementos distintos, cada um deles para um desses tipos de informação: `cards` (_i.e._, lista de cartas no deck), `stratagem` (_i.e._, carta de estratégia) e `leader` (_i.e._, a habilidade do líder). Além disso, existe uma informação importante para cada um destes itens e para cada carta em `cards` que precisaremos estar atentos: as informações do texto de descrição da carta que aparece no `tooltip`. Esse `tooltip` é uma lista de listas (de listas, em alguns casos), e tratá-lo junto dos demais metadados seria bastante doloroso. Neste contexto, vamos parsear as informações que estão no `tooltip` separado daquelas dos metadados de de cada elemento, e os juntaremos posteriormente.
+
+A função abaixo dá conta de fazer o parser dos metadados associados à cada elemento. Nos testes que fiz, reparei que a forma como os metadados do elemento `cards` está organizado é diferente daquele dos outros dois elementos, `stratagem` e `leader`, mas que a estrutura destes dois é bastante similar. Assim, juntei esse parser em uma função só, usando um `if` para dizer se o processamento deve ser específico a um grupo ou outro de elementos. Além disso, aproveitei para numerar as cartas na sequência em que elas aparecem: habilidade do líder (_i.e._, ID numérico -1), carta de estratégia (_i.e._, ID numérico 0) e todas as demais cartas (_i.e._, ID numérico 1 ao número de cartas no deck).
 
 ```{r funcao_parser_card_metadata}
 # para parsear os metadados de cada carta
@@ -218,6 +252,15 @@ parser_cards <- function(path_para_deck) {
 }
 ```
 
+Vamos testar o parser do deck.
+
+```{r parser_um_deck, layout = 'l-body-outset'}
+# parseando o deck
+parsed_deck <- parser_cards(path_para_deck = dir_ls(path = path_decks, recurse = TRUE))
+# visualizando a tabela do deck
+rmarkdown::paged_table(x = parser_cards(path_para_deck = dir_ls(path = path_decks, recurse = TRUE)))
+```
+
 Concluir que agora precisamos de mais decks. Para isso, vamos raspar a lista para pegar o id dos decks.
 
 # Raspando a lista de decks
@@ -236,7 +279,7 @@ knitr::include_graphics(path = 'images/imagem_2.jpg')
 
 Falar do scrapper da lista.
 
-```{r funcao_scrape_lista}
+```{r funcao_scrape_lista, eval = FALSE}
 ## para raspar uma lista
 scrape_lista <- function(pagina, listas_por_pagina, path_to_save) {
   ## calculando o offset atraves da pagina que deseja-se pegar
@@ -252,13 +295,13 @@ scrape_lista <- function(pagina, listas_por_pagina, path_to_save) {
 
 Falar do uso escalando.
 
-```{r get_listas}
+```{r get_listas, eval = FALSE}
 # criar diretorio e baixar umas 5 paginas da lista, aumentando o limit.
 ```
 
 Falar da funcao do parser da lista.
 
-```{r funcao_parser_lista}
+```{r funcao_parser_lista, eval = FALSE}
 ## para parseaar uma lista
 parser_lista <- function(path_para_lista) {
   # carregando os dados como um json
