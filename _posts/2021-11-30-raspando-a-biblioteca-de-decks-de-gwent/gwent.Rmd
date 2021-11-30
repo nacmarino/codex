@@ -21,7 +21,7 @@ draft: false
 
 ```{r setup, include=FALSE}
 # setando as opções gerais dos code chunks
-knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, fig.align = 'center', cache = TRUE, dpi = 200)
+knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, fig.align = 'center', cache = FALSE, dpi = 200)
 
 # carregando o ggplot2
 library(ggplot2)
@@ -328,8 +328,8 @@ parser_lista <- function(path_para_lista) {
 
 ## aplicando a função à cada path
 lista_de_decks <- map_dfr(.x = dir_ls(path = path_listas, recurse = TRUE), .f = parser_lista)
-write_rds(x = listas_de_decks, file = 'data/biblioteca_de_decks.rds')
-rmarkdown::paged_table(x = listas_de_decks)
+write_rds(x = lista_de_decks, file = 'data/biblioteca_de_decks.rds')
+rmarkdown::paged_table(x = lista_de_decks)
 ```
 
 Pronto! Lista de decks disponíveis parseados! Agora seria só voltar ao _scrapper_ dos decks em si, e aplicar a função `scrape_deck` iterando através dos elementos daquela coluna _id_.
