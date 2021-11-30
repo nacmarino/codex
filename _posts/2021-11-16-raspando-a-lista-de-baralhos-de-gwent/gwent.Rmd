@@ -1,12 +1,12 @@
 ---
-title: "Raspando a Lista de Baralhos de Gwent"
+title: "Raspando a biblioteca de baralhos de Gwent"
 description: |
-  Gwent é um jogo de cartas que nasceu dentro do universo de The Witcher e, dada a popularidade da franquia, chegou aos smartphones. A comunidade de jogadores é bastante ativa, e existe uma lista de baralhos montados por ela que está disponível dentro do site oficial do jogo. Meu objetivo neste post será raspar esta lista e os baralhos que elas sugerem. Isto servirá para montar uma base de dados para fazermos outras análises posteriormente.
+  Gwent é um jogo de cartas que nasceu dentro do universo de The Witcher e, dada a popularidade da franquia, chegou aos smartphones. A comunidade de jogadores é bastante ativa, e existe uma biblioteca de decks contribuídos que está disponível dentro do site oficial do jogo. Meu objetivo neste post será obter os dados desta biblioteca e de seus decks. Isto servirá para montar uma base de dados para fazermos outras análises posteriormente.
 author:
   - first_name: Nicholas 
     last_name: Marino
     url: https://github.com/nacmarino
-date: 11-16-2021
+date: 11-30-2021
 categories:
   - web scraping
   - boardgames
@@ -16,59 +16,59 @@ output:
     toc: true
     code_folding: true
     highlight: rstudio
-draft: true
+draft: false
 ---
 
 ```{r setup, include=FALSE}
 # setando as opções gerais dos code chunks
-knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, fig.align = 'center')
+knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, fig.align = 'center', cache = TRUE, dpi = 200)
 
 # carregando o ggplot2
 library(ggplot2)
 
 # setando o tema geral do ggplot2
-theme_set(new = theme_minimal(base_family = 'Roboto'))
+theme_set(new = theme_minimal(base_family = 'Mason'))
 
 # atualizando o tema
 theme_update(
-  plot.title    = element_text(face = 'bold', size = 10),
-  plot.subtitle = element_text(size = 8),
-  plot.caption  = element_text(size = 8),
-  axis.title    = element_text(face = 'bold', size = 8),
-  axis.text     = element_text(color = 'black', size = 8),
-  strip.text    = element_text(face = 'bold', size = 8)
+  plot.title    = element_text(face = 'bold', size = 16),
+  plot.subtitle = element_text(size = 14),
+  axis.title    = element_text(color = 'black', face = 'bold', size = 12),
+  axis.text     = element_text(color = 'black', size = 12),
+  strip.text    = element_text(color = 'black', face = 'bold', size = 12),
+  legend.title  = element_blank()  
 )
 ```
 
 # Motivação
 
-The Witcher é uma franquia lançada como uma série de livros de fantasia que contam as aventuras do bruxo (_i.e._, Witcher) Geralt de Rivia. Essas estórias foram popularizadas através da série da Netflix de mesmo nome e, também, através do jogo para _videogames_ The Witcher 3: The Wild Hunt^[Um dos jogos mais _tops_ que já joguei.]. Esse jogo é bastante complexo e tem uma experiência bastante imersiva, trazendo inclusive diversas tradições do universo à ela. Uma delas é o Gwent, um jogo de cartas entre dois jogadores, onde ganha aquele que mais pontuar em pelo menos 2 de 3 turnos. Parece ser um mini-jogo bobo dentro do título, mas ele próprio invoca muito da fantasia da série na disputa.
+The Witcher é uma franquia lançada como uma série de livros de fantasia que contam as aventuras do bruxo (_i.e._, Witcher) Geralt de Rivia. Essas estórias foram popularizadas através da série da Netflix de mesmo nome e, também, através do jogo The Witcher 3: The Wild Hunt^[Um dos jogos mais _tops_ que já joguei.]. Esse jogo é bastante complexo e tem uma experiência bem imersiva, trazendo inclusive diversas tradições do universo à ela. Uma delas é o Gwent, um jogo de cartas entre dois jogadores, onde ganha aquele que mais pontuar em pelo menos 2 de 3 turnos. Parece ser um mini-jogo bobo dentro do título, mas ele próprio invoca muito da fantasia da série na disputa.
 
-Gwent é um jogo que lembra muito o Magic, onde você deve construir um baralho de no mínimo 25 cartas pertencentes à uma facção de sua escolha, respeitando algumas restrições (_e.g._, custo total das cartas no baralho, quantidade de unidades,...). No momento em que escrevo este _post_, existem cerca de 200 cartas pertencentes à cada uma de 6 facções distintas, além de outras 200 à 400 cartas neutras (_i.e._, que não pertencem à nenhuma facção) que podem ser usadas para montar um baralho. Existe uma diferença inerente ao modo de jogar com cada facção (_e.g._, foco em dano direto, foco bloqueio e roubo de cartas,...) e, dentro de uma dada facção, também existe uma pequena diversidade de formas de montar o baralho de forma a fortificar uma estratégia (_e.g._, cartas que juntas reforçam muito umas as outras, cartas que ajudam a ativar a habilidade de outras cartas mais frequentemente). Neste sentido, montar um baralho forte e consistente passa a ser quase uma arte, mas que poderia ser aprimorado com um pouquinho mais de orientação baseada em dados.
+Gwent é um jogo que lembra muito o Magic, onde você deve construir um deck de no mínimo 25 cartas pertencentes à uma facção de sua escolha, respeitando algumas restrições (_e.g._, custo total das cartas no deck, quantidade de unidades e etc). No momento em que escrevo este _post_, existem cerca de 200 cartas pertencentes à cada uma de 6 facções distintas, além de outras 200 à 400 cartas neutras (_i.e._, que não pertencem à nenhuma facção) que podem ser usadas para montar um deck Existe uma diferença inerente ao modo de jogar com cada facção (_e.g._, foco em dano direto, foco bloqueio e roubo de cartas,...) e, dentro de uma dada facção, também existe uma pequena diversidade de formas de favorecer uma estratégia de jogo (_e.g._, cartas que juntas reforçam muito umas as outras, cartas que ajudam a ativar a habilidade de outras cartas mais frequentemente). Neste sentido, montar um deck forte e consistente passa a ser quase uma arte, mas que poderia ser aprimorado com um pouquinho de acesso aos metadados das cartas.
 
-Existe bastante conteúdo na internet que é produzido pela própria comunidade que joga o Gwent. Em particular, a própria comunidade contribui compartilhando a composição de cartas nos seus baralhos, as estratégias de jogo e votando nestas a partir do próprio site oficial do jogo. E é aqui que entra o meu interesse, pois se pudermos obter estas informações e estruturá-las, ficaria muito mais fácil entender os padrões dentro e entre os baralhos e usar isso em favor de aprimorar a jogabilidade. Além disso, acredito que estes dados podem dar um bom modelo de estudo para responder à algumas perguntas e praticar algumas outras técnicas. Falarei sobre essas idéias ao final do _post_, mas por agora vou mostrar como obter essas informações.
+Existe bastante conteúdo na internet que é produzido pela própria comunidade que joga o Gwent. Em particular, a própria comunidade contribui compartilhando a composição de cartas nos seus decks, as estratégias de jogo e votando nestas a partir do próprio site oficial do jogo. E é aqui que entra o meu interesse: se pudermos obter estas informações e estruturá-las, ficaria muito mais fácil entender os padrões dentro e entre os decks e usar isso em favor de aprimorar a jogabilidade. Além disso, acredito que estes dados podem dar um bom modelo de estudo para responder à algumas perguntas e praticar algumas outras técnicas. Falarei sobre essas idéias ao final do _post_, mas por agora vou mostrar como obter essas informações.
 
 # Raspando um deck
 
-A página principal dos decks disponíveis no site oficial do jogo pode ser acessada através da _url_ https://www.playgwent.com/pt-BR/decks, ou clicando nesse [link](https://www.playgwent.com/pt-BR/decks). Assim que a página abrir, já é possível ver que os decks estão organizados em uma espécie de tabela, com diversas informações sobre eles, tais como a quantidade de votos, nome, autor, custo de fabricação e etc. Além disso, existem diversos filtros e opções de interatividade na página, como os filtros de facção, habilidade do líder, melhores baralhos e etc. Vamos voltar à essa _landing page_ em breve mas, por enquanto, vamos selecionar um baralho qualquer e clicar em seu nome para ir até a sua página.
+A página principal dos decks disponíveis no site oficial do jogo pode ser acessada através destes [link](https://www.playgwent.com/pt-BR/decks). Assim que a página abrir, já é possível ver que os decks estão organizados em uma espécie de tabela, com diversas informações sobre eles, tais como a quantidade de votos, nome, autor, custo de fabricação e etc. Além disso, existem diversos filtros e opções de interatividade na página, como os filtros de facção, habilidade do líder, melhores baralhos e etc. Vamos voltar à essa página inicial em breve mas, por enquanto, vamos selecionar um baralho qualquer e clicar em seu nome para ir até a sua página.
 
 ```{r img_landing_page, layout = 'l-body-outset', code_folding = TRUE}
 knitr::include_graphics(path = 'images/imagem_1.jpg')
 ```
 
-Chegamos à página do deck, cuja _url_ parece sugerir que a paginação de cada um deles deve seguir o padrão de uma _url_ base (_i.e._, https://www.playgwent.com/pt-BR/decks/guides/) seguida de uma numeração que representa o identificador único do deck. Outra coisa que já é notável é que muitas das informações que estavam disponíveis na página anterior também estão repetidas aqui. No entanto, podemos ver que agora existe (em alguns casos) uma descrição do deck, a estratégia de uso do deck e, o mais importante, uma lista das cartas que o compõem. É esta lista que queremos pegar.
+Chegamos à página do deck, cuja _url_ parece sugerir que a paginação deve seguir um padrão base (_i.e._, https://www.playgwent.com/pt-BR/decks/guides/) seguida de uma numeração que representa o identificador único do deck. Outra coisa que já é notável é que muitas das informações que estavam disponíveis na página anterior também estão repetidas aqui. No entanto, podemos ver que agora existe (em alguns casos) uma descrição do deck, sua a estratégia de uso e, o mais importante, uma lista das cartas que o compõem. É esta lista que queremos pegar.
 
 ```{r img_identificar_deck, layout = 'l-body-outset', code_folding = TRUE}
 knitr::include_graphics(path = 'images/imagem_3.jpg')
 ```
 
-Se passarmos o cursor em cima das cartas, podemos ver que vai aparecer um _tooltip_ com a imagem da carta e a descrição dela. Isto parece sugerir que deve existir algum tipo de linguagem dinâmica atuando por trás dos panos, o que poderia complicar a vida do nosso _scrapper_. Mas o que será que está alimentando esse conteúdo dinâmico dentro da página? Se formos na ferramenta `Inspecionar` do navegador e olharmos o próprio código HTML da página, veremos que existe uma quantidade enorme de texto dentro de uma _tag_, organizada de uma forma que lembra muito um dicionário no Python ou um arquivo JSON. Para achar esse texto, basta procurar uma _tag_ _div_ da classe `wrapper`, buscar dentro dela uma outra _tag_ _div_ da classe `content` e, mais uma vez, uma _tag_ _div_ com o id `root`; a partir daí, todo o dicionário pode ser acessado olhando o atributo `data-state`. Ou seja, não é que o conteúdo da página seja dinâmica, só a forma como ele é mostrado mesmo.
+Se passarmos o cursor em cima das cartas, um _tooltip_ com a imagem da carta e a descrição de cada uma delas aparecerá. Isto sugere que deve existir algum tipo de dinamismo atuando por trás dos panos, o que poderia complicar a vida do nosso _scrapper_. Mas o que será que está alimentando esse conteúdo dinâmico dentro da página? Se formos na ferramenta `Inspecionar` do navegador e olharmos o próprio código HTML da página, veremos que existe uma quantidade enorme de texto dentro de uma _tag_, organizada de uma forma que lembra muito um dicionário no Python ou um arquivo JSON. Para achar esse texto, basta procurar uma _tag_ _div_ da classe `wrapper`, buscar dentro dela uma outra _tag_ _div_ da classe `content` e, mais uma vez, uma _tag_ _div_ com o id `root`; a partir daí, todo o dicionário pode ser acessado olhando o atributo `data-state`. Ou seja, não é que o conteúdo da página seja dinâmico, mas só a forma como ele é mostrado.
 
 ```{r img_entender_deck, layout = 'l-body-outset', code_folding = TRUE}
 knitr::include_graphics(path = 'images/imagem_4.jpg')
 ```
 
-Com esse entendimento, vamos então começar a atividade de raspar esse deck. Vou criar uma função que ficará responsável por fazer um `GET` da página do deck, uma vez que o seu código numérico de identificação seja passado. Essa função também salvará essa página HTML em um algum _path_ especificado e, antes de concluir, vai hibernar por 1 ou 2 segundos^[Esse passo não é obrigatório, mas decidi colocá-lo aqui só para não bombardear o servidor de _request_ uma vez que eu vá usar essa função dentro de um `map`.]
+Com esse entendimento, vamos então começar a atividade de raspar esse deck. Vou criar uma função que ficará responsável por fazer um `GET` da página do deck, uma vez que o seu código numérico de identificação seja definido. Essa função também salvará essa página HTML em um algum _path_ especificado e, antes de concluir, vai hibernar por 1 ou 2 segundos^[Esse passo não é obrigatório, mas decidi colocá-lo aqui só para não bombardear o servidor com um monte de _requests_ de uma vez quando formos escalar o seu uso.].
 
 ```{r funcao_scrape_deck}
 ## carregando os pacotes
@@ -76,6 +76,7 @@ library(tidyverse) # core
 library(httr) # para fazer o web scrapping
 library(xml2) # para ajudar a parsear
 library(fs) # para manipular os paths
+library(jsonlite) # para manipular arquivos JSON
 
 ## para raspar um deck
 scrape_deck <- function(deck_id, path_to_save) {
@@ -89,12 +90,11 @@ scrape_deck <- function(deck_id, path_to_save) {
 }
 ```
 
-Vamos usar agora essa função para baixar o deck da tela e salvá-lo em disco.
+Vamos usar essa função para baixar o deck da tela e salvá-lo em disco.
 
 ```{r get_um_deck}
 # setando o path local para salvar o HTML do deck
 path_decks <- 'gwent_decks/'
-# path_decks <- '_posts/2021-11-16-raspando-a-lista-de-baralhos-de-gwent/gwent_decks/'
 
 # criando um diretorio local para salvar o HTML do deck caso nao exista
 if(!dir_exists(path = path_decks)){
@@ -105,7 +105,7 @@ if(!dir_exists(path = path_decks)){
 scrape_deck(deck_id = 280934, path_to_save = path_decks)
 ```
 
-Deck baixado! Vamos agora criar uma função para fazer uma primeira etapa do parser dele, onde a ideia vai ser tirar o dicionário que se parece com o JSON de dentro do código HTML e deixá-lo mais próximo de ser usado para pegar a lista de cartas. A função receberá como input o path até o deck salvo em disco, buscará o JSON e fará uma organização dos dados para extrair apenas a chave relacionada às informações das cartas do deck.
+Deck baixado! Vamos agora criar uma função para fazer uma primeira etapa do _parser_ dele, onde a ideia vai ser tirar o dicionário que se parece com o JSON de dentro do código HTML e deixá-lo mais próximo de ser usado pelas outras funções. Esta função receberá como input o path até o deck salvo em disco, buscará o JSON e fará uma organização dos dados para extrair apenas a chave relacionada às informações das cartas do deck.
 
 ```{r funcao_deck_to_json}
 # para parsear o html do deck para o json
@@ -131,7 +131,7 @@ deck_to_json <- function(path_para_deck) {
 }
 ```
 
-Se testarmos a função para parsear o JSON do deck, veremos que o seu output é uma lista, e que cada elemento dessa lista é uma informação diferente sobre o deck - não só a lista de cartas em si. Ou seja, precisamos agora parsear e organizar as informações da lista.
+Se testarmos a função para parsear o JSON do deck, veremos que o seu output é uma lista, e que cada elemento dessa lista é uma informação diferente sobre o deck - _i.e._, não só a lista de cartas em si. Ou seja, precisamos agora _parsear_ e organizar essas informações também.
 
 ```{r}
 # parseando o codigo de HTML para algo parecido com um JSON
@@ -140,15 +140,15 @@ sprintf('Classe do objeto parseado: %s. Quantidade de elementos na lista: %s.',
         class(jsonfied_deck), length(jsonfied_deck))
 ```
 
-Uma coisa importante antes de prosseguir é entender um pouco sobre a estrutura básica de um deck de Gwent e a forma como ele é apresentado originalmente na página:
+Uma coisa importante antes de prosseguir é entender um pouco sobre a estrutura básica de um deck de Gwent, e a forma como ele é apresentado na página:
 
 + O banner no topo do deck representa a habilidade do líder que deve ser usada. Cada facção oferece umas 6 habilidades diferentes, mas específicas para cada uma delas;  
 + A carta logo abaixo do banner representa a carta de estratégia que deve ser usada junto ao deck. Existem algumas cartas de estratégia disponíveis, algumas das quais são específicas para certas facções, outras neutras. De uma forma ou de outra, todo deck tem também a sua carta de estratégia;  
-+ Tudo o que vier depois destes dois, representam as cartas que compõem o deck _per se_. Um deck é montado usando no mínimo 25 cartas, com mais algumas regrinhas relacionadas ao custo das cartas e quantidade de cartas de um tipo específico. Além disso, podem haver cópias de algumas cartas no deck, que são representadas pela tag `x2` ao lado de cada carta.  
++ Tudo o que vier depois destes dois, representam as cartas que compõem o deck _per se_. Um deck é montado usando no mínimo 25 cartas, com mais algumas regrinhas relacionadas ao custo das cartas e quantidade de cartas de um tipo específico. Além disso, podem haver cópias de algumas cartas no deck, que são representadas pela tag `x2` ao lado de cada carta na página que estamos raspando.  
 
-Tendo essa visão em mente, precisamos então das informações das cartas do deck, da carta de estratégia e da habilidade do líder a fim de que possamos reproduzir o deck que está na página. Se voltarmos à lista obtida depois que parseamos o deck para algo parecido com um JSON, podemos ver que existem três elementos distintos, cada um deles para um desses tipos de informação: `cards` (_i.e._, lista de cartas no deck), `stratagem` (_i.e._, carta de estratégia) e `leader` (_i.e._, a habilidade do líder). Além disso, existe uma informação importante para cada um destes itens e para cada carta em `cards` que precisaremos estar atentos: as informações do texto de descrição da carta que aparece no `tooltip`. Esse `tooltip` é uma lista de listas (de listas, em alguns casos), e tratá-lo junto dos demais metadados seria bastante doloroso. Neste contexto, vamos parsear as informações que estão no `tooltip` separado daquelas dos metadados de de cada elemento, e os juntaremos posteriormente.
+Tendo essa visão em mente, precisamos então das informações das cartas do deck, da carta de estratégia e da habilidade do líder, a fim de que possamos reproduzir o deck que está na página. Se voltarmos à lista obtida depois que parseamos o deck (_i.e._, resultado da função `deck_to_json`), podemos ver que existem três elementos distintos, cada um deles para um desses tipos de informação: `cards` (_i.e._, lista de cartas no deck), `stratagem` (_i.e._, carta de estratégia) e `leader` (_i.e._, a habilidade do líder). Além disso, existe uma informação importante que precisaremos estar atentos: as informações do texto de descrição que aparece no `tooltip`. Esta informação é uma lista de listas (de listas, em alguns casos), e tratá-lo junto dos demais metadados seria bastante doloroso. Assim, vamos parsear as informações que estão no `tooltip` separadamente daquelas dos metadados de cada elemento, e os juntaremos posteriormente.
 
-A função abaixo dá conta de fazer o parser dos metadados associados à cada elemento. Nos testes que fiz, reparei que a forma como os metadados do elemento `cards` está organizado é diferente daquele dos outros dois elementos, `stratagem` e `leader`, mas que a estrutura destes dois é bastante similar. Assim, juntei esse parser em uma função só, usando um `if` para dizer se o processamento deve ser específico a um grupo ou outro de elementos. Além disso, aproveitei para numerar as cartas na sequência em que elas aparecem: habilidade do líder (_i.e._, ID numérico -1), carta de estratégia (_i.e._, ID numérico 0) e todas as demais cartas (_i.e._, ID numérico 1 ao número de cartas no deck).
+A função abaixo dá conta de fazer o _parser_ dos metadados associados à cada elemento. Nos testes que fiz, reparei que a forma como os metadados do elemento `cards` está organizado é diferente daquele dos outros dois elementos, `stratagem` e `leader`, mas que a estrutura destes dois é bastante similar. Assim, juntei esse parser em uma função só, usando um `if` para dizer se o processamento deve ser específico a um grupo ou outro de elementos. Além disso, aproveitei para numerar as cartas na sequência em que elas aparecem: habilidade do líder (_i.e._, ID numérico -1), carta de estratégia (_i.e._, ID numérico 0) e todas as demais cartas (_i.e._, ID numérico 1 ao número de cartas no deck).
 
 ```{r funcao_parser_card_metadata}
 # para parsear os metadados de cada carta
@@ -178,7 +178,7 @@ parser_card_metadata <- function(deck_json_file, card_type = c('cards', 'stratag
 }
 ```
 
-Falar do parser do tooltip.
+Assim como no _parser_ dos metadados de cada elemento, o _parser_ do `tooltip` também precisa ter uma especificidades - mas aqui ela é para aplicar um processamento diferente ao `tooltip` da habilidade do líder _vs_ às outras cartas. Por conta disso, esse _parser_ começa separando o processamento entre a carta de habilidade do líder ou as outras usando um `if`, mas ambas chegam ao mesmo output: um dataframe onde temos uma linha para cada texto que descrevam as características de uma carta (_i.e._, cada carta pode ser representada por um ou mais textos, cada um dos quais discriminado em uma linha distinta do dataframe). Uma vez que temos o dado nessa estrutura, aplicamos mais algumas manipulações a ele, de forma a termos uma linha para cada carta, sumarizando todas as informações do texto do `tooltip` já organizados. Finalmente, o parser é encerrado adicionando à numeração as cartas quando necessário (_i.e._, -1 para a carta de habilidade do líder e 0 para a carta de estratégia).
 
 ```{r funcao_parser_card_tooltip}
 # para fazer o parser do tooltip de cada carta
@@ -230,7 +230,7 @@ parser_card_tooltip <- function(deck_json_file, card_type = c('cards', 'stratage
 }
 ```
 
-Testar o parser consolidando em uma unica funcao.
+Com os _parsers_ para cada informação prontos, criei mais uma função que vai juntar tudo e gerar um dataframe organizado. Essa função recebe o path até o deck salvo em disco, o transforma naquele arquivo parecido com um JSON, extrai o `tooltip` e os metadados de cada elemento separadamente e, então, os junta usando o identificador sequencial da carta no deck (_i.e._, aquele ID numérico que fomos criando).
 
 ```{r funcao_parser_card}
 # para parsear todas as informacoes do deck
@@ -248,11 +248,12 @@ parser_cards <- function(path_para_deck) {
                        .f = parser_card_metadata,
                        deck_json_file = target_deck)
   
+  # juntando as duas informacoes usando o id numerico sequencial da carta
   left_join(x = metadados, y = tooltips, by = 'card_in_seq')
 }
 ```
 
-Vamos testar o parser do deck.
+Vamos usar essa função para tratar os dados do deck que raspamos neste exemplo.
 
 ```{r parser_um_deck, layout = 'l-body-outset'}
 # parseando o deck
@@ -261,25 +262,25 @@ parsed_deck <- parser_cards(path_para_deck = dir_ls(path = path_decks, recurse =
 rmarkdown::paged_table(x = parser_cards(path_para_deck = dir_ls(path = path_decks, recurse = TRUE)))
 ```
 
-Concluir que agora precisamos de mais decks. Para isso, vamos raspar a lista para pegar o id dos decks.
+Como podemos ver, sucesso! Agora precisamos de mais decks. Como vimos, parece que para isso basta alterarmos o identificador numérico na _url_ da página. Só que, como é que vamos saber qual é o identificador numérico de qual deck?
 
-# Raspando a lista de decks
+# Raspando a biblioteca de decks
 
-Voltar para a landing page e falar que não tem paginação, que o conteúdo parece ser gerado dinamicamente.
+Vamos voltar à página inicial da biblioteca de decks de Gwent. É visível que o que precisávamos fazer para raspar os outros decks é pegar os links que levam à cada um deles. Todavia, como já havíamos falado, parece que muito do conteúdo da página é gerado dinamicamente. Se você inspecionar o HTML da página, verá, inclusive que existe muitas chamadas ao Javascript. Além disso, verá que também existe um dicionário similar aquele da página do deck, que contém as informações que precisávamos pegar - mas apenas dos decks que aparecem nessa página. Se esse for o caso, então mudar a paginação da _url_ resolveria o nosso problema^[_e.g._, https://www.playgwent.com/pt-BR/decks/2, https://www.playgwent.com/pt-BR/decks/3,...], certo? O problema é que como o conteúdo é dinâmico, não há paginação para percorrer, então essa estratégia não funciona.
 
 ```{r img_identificar_lista, layout = 'l-body-outset', code_folding = TRUE}
 knitr::include_graphics(path = 'images/imagem_1.jpg')
 ```
 
-Mostrar que se abrir o network, vai ver que tem uma API escondida.
+Se formos um pouquinho além, ir na aba Network e atualizar a página, veremos que vão haver vários _requests_ aleatórios e um monte de _requests_ do tipo _GET_ a um arquivo com o nome `500`. Se clicarmos nesse arquivo e inspecionarmos a sua _url_, veremos que todas essas requisições estão endereçadas à uma API, e que cada requisição dessa pega os n `limit` decks a partir do `m` offset (_e.g._, offset = 0 e limit = 500: os 500 primeiros decks; offset = 1000 e limit = 500: os decks de 1000 à 1500). Essa API escondida facilita e muito a nossa vida.
 
 ```{r img_entender_lista, layout = 'l-body-outset', code_folding = TRUE}
 knitr::include_graphics(path = 'images/imagem_2.jpg')
 ```
 
-Falar do scrapper da lista.
+Vamos utilizar a _url_ da API escondida para fazer as requisições e pegar a biblioteca com os decks disponíveis e seus metadados. Essa função será bem flexível, aceitando como argumento um valor para a quantidade de páginas e decks por página que queremos raspar, e salvando cada arquivo JSON resultante em disco.
 
-```{r funcao_scrape_lista, eval = FALSE}
+```{r funcao_scrape_lista}
 ## para raspar uma lista
 scrape_lista <- function(pagina, listas_por_pagina, path_to_save) {
   ## calculando o offset atraves da pagina que deseja-se pegar
@@ -293,15 +294,24 @@ scrape_lista <- function(pagina, listas_por_pagina, path_to_save) {
 }
 ```
 
-Falar do uso escalando.
+Eu não consegui deduzir qual é a quantidade de decks disponíveis no site oficial, então não consegui bolar um jeito para definir qual é o limite de páginas que podemos raspar. No entanto, até onde eu consegui averiguar nas requisições `500`, a lista se extende para além de 30 mil decks. Assim, vou usar a função para pegar os 37.000 decks que aparecem para mim quando opero a página. 
 
-```{r get_listas, eval = FALSE}
-# criar diretorio e baixar umas 5 paginas da lista, aumentando o limit.
+```{r get_listas}
+# setando o path local para salvar o HTML das listas
+path_listas <- 'gwent_listas/'
+
+# criando um diretorio local para salvar o HTML das listas caso nao exista
+if(!dir_exists(path = path_listas)){
+  dir_create(path = path_listas, recurse = TRUE)
+}
+
+# baixando as informações gerais dos 5000 primeiros elementos na lista de decks disponiveis
+walk(.x = 1:37, .f = scrape_lista, listas_por_pagina = 1000, path_to_save = path_listas)
 ```
 
-Falar da funcao do parser da lista.
+Com os arquivos JSON em disco, agora é só criar a função para parseá-los - tarefa que não é difícil, uma vez que os dados que compõem àquela tabelinha no site já estão relativamente bem estruturados nesse formato.
 
-```{r funcao_parser_lista, eval = FALSE}
+```{r funcao_parser_lista}
 ## para parseaar uma lista
 parser_lista <- function(path_para_lista) {
   # carregando os dados como um json
@@ -315,12 +325,197 @@ parser_lista <- function(path_para_lista) {
     # jogando fora o que nao interessa
     select(-c(short, thumbnailImg, abilityImg))
 }
+
+## aplicando a função à cada path
+lista_de_decks <- map_dfr(.x = dir_ls(path = path_listas, recurse = TRUE), .f = parser_lista)
+write_rds(x = listas_de_decks, file = 'data/biblioteca_de_decks.rds')
+rmarkdown::paged_table(x = listas_de_decks)
 ```
 
-# Qual a tendência do momento?
+Pronto! Lista de decks disponíveis parseados! Agora seria só voltar ao _scrapper_ dos decks em si, e aplicar a função `scrape_deck` iterando através dos elementos daquela coluna _id_.
 
-Mostrar análise do tipo de deck, custo da carta, votos, datas de contribuição e modificação.
+# Qual a tendência entre os decks?
+
+E o que será que existe de interessante na biblioteca de decks de Gwent? 
+
+A primeira coisa que gostaria de saber é como está o jogo em termos da participação da comunidade. Vou utilizar a data da última modificação de cada deck como uma aproximação à participação da comunidade, assumindo que isto está diretamente relacionado ao quanto às pessoas e o próprio jogo estão ativos. Neste contexto, o painel B da figura abaixo demonstra que a atividade da comunidade vem aumentando desde o lançamento do jogo, com contribuições sendo feitas principalmente em torno dos decks de duas facções: Monstros e Nilfgaard. Por outro lado, o painel A demonstra que o padrão de contribuição mensal têm se mantido num patamar bastante estável desde o último ano^[Isso pode estar relacionado ao comportamento aparentemente linear que pode ser visto no painel B.]. Ainda olhando esta série temporal, parece haver alguns períodos em que ocorrem uns picos de contribuição da comunidade - fato possivelmente associado ao lançamento de patches e expansões.
+
+```{r fig_serie_temporal, fig.height = 10, fig.width = 10, layout = 'l-body-outset', code_folding = TRUE, preview = TRUE}
+# carregando pacotes
+library(lubridate) # para mexer com datas
+library(ggridges) # para o ridge plot
+library(patchwork) # para compor as figuras
+library(tidylo) # para calcular o log odds
+
+# mapeando as contribuições ao longo do tempo
+decks_no_tempo <- lista_de_decks %>% 
+  # passando a data para o formato de date
+  mutate(data = as_date(x = modified)) %>% 
+  # contando a quantidade de decks por data e faccao
+  count(data, slug, name = 'decks') %>% 
+  # agrupando pela faccao
+  group_by(slug) %>% 
+  # ordenando as observacoes por faccao e data
+  arrange(slug, data) %>% 
+  # calculando a quantidde acumulada de decks por faccao
+  mutate(acumulado = cumsum(decks)) %>% 
+  # desagrupando o dataframe
+  ungroup %>% 
+  # ajustando a string do nome da faccao
+  mutate(slug = str_to_title(string = slug),
+         slug = case_when(slug == 'Northernrealms' ~ 'Northern Realms',
+                          slug == 'Scoiatael' ~ "Scoia'Tael",
+                          TRUE ~ slug))
+
+# criando figura da serie temporal dos decks contribuidos por faccao
+fig1 <- decks_no_tempo %>% 
+  # arredondando as datas
+  mutate(
+    data = floor_date(x = data, unit = 'month')
+  ) %>% 
+  # agrupando pela faccao e data
+  group_by(slug, data) %>%
+  # recalculando o total de decks contribuidos por mes-ano
+  summarise(decks = sum(decks), .groups = 'drop') %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = data, y = decks, color = slug)) +
+  facet_wrap(~ slug, scales = 'free') +
+  geom_line(show.legend = FALSE) +
+  scale_color_manual(values = c('red', 'black', 'deepskyblue2', 'forestgreen', 'purple3', 'orange2')) +
+  scale_x_date(breaks = '6 months', date_labels = '%Y-%m') +
+  scale_y_continuous(limits = c(0, NA), expand = c(0, 0)) +
+  labs(
+    title    = 'Gwent: The Witcher Card Game',
+    subtitle = 'Quantidade de decks contribuídos ao longo do tempo por facção',
+    x        = 'Período',
+    y        = 'Quantidade de decks'
+  ) +
+  theme(
+    plot.title       = element_text(size = 18, family = 'thewitcher'),
+    axis.text        = element_text(size = 8),
+    panel.grid.minor = element_blank()
+  )
+
+# contribuicao total ao longo do tempo por faccao
+fig2 <- decks_no_tempo %>% 
+  ggplot(mapping = aes(x = data, y = acumulado, color = slug)) +
+  geom_line(size = 1) +
+  scale_color_manual(values = c('red', 'black', 'deepskyblue2', 'forestgreen', 'purple3', 'orange2')) +
+  scale_x_date(breaks = '6 months', date_labels = '%Y-%m') +
+  labs(
+    subtitle = 'Quantidade acumulada de decks contribuídos pela comunidade',
+    x        = 'Período',
+    y        = 'Quantidade de decks'
+  ) +
+  guides(
+    color = guide_legend(label.theme = element_text(size = 12, family = 'Mason'), 
+                         keywidth = unit(x = 0.6, units = 'in'))) +
+  theme(
+    legend.position = 'bottom'
+  )
+
+# compondo a figura
+(fig1 / plot_spacer() / fig2) +
+  plot_layout(heights = c(1, 0.05, 1)) +
+  plot_annotation(tag_levels = 'A')
+```
+
+Outra coisa que achei interessante foi o fato de que parece existir alguma diferença no custo de criação dos decks contribuídos pela comunidade de acordo com a facção. A figura abaixo mostra que parece existir uma tendência de que os decks da facção de Nilfgaard, Skellinge e do Syndicate tenham custos ligeiramente maiores que os demais, enquanto o deck da facção dos Monstros tenha um custo ligeiramente menor - tudo isso à julgar apenas pela mediana e o formato da distribuição mas, é claro, caberia alguma análise estatística aqui. Esse padrão é interessante, pois isso mostra o quão difícil é montar um deck de acordo com cada facção.
+
+```{r fig_custo, fig.height = 5, fig.width = 10, layout = 'l-body-outset', code_folding = TRUE}
+# preparando os dados para a figura
+df_metadados <- lista_de_decks %>% 
+  # removendo os decks invalidados
+  filter(!invalid) %>%
+  # ajustando os dados para plotar
+  mutate(
+    # ajustando a string do nome da faccao
+    slug = str_to_title(string = slug),
+    slug = case_when(slug == 'Northernrealms' ~ 'Northern Realms',
+                     slug == 'Scoiatael' ~ "Scoia'Tael",
+                     TRUE ~ slug),
+    # discretizando a quantidade de votos
+    votes_binned = case_when(votes < 0 ~ 'Negativos',
+                             votes == 0 ~ 'Nenhum',
+                             between(x = votes, left = 1, right = 40) ~ 'Até 40',
+                             votes >= 41 ~ 'Tops'),
+    # ordenando a quantidade discretizada de votos
+    votes_binned = fct_reorder(.f = votes_binned, .x = votes, .fun = median, .desc = TRUE)
+  )
+
+# distribuição dos valores de densidade do crafting cost
+df_metadados %>% 
+  ggplot(mapping = aes(x = craftingCost, y = slug, fill = slug)) +
+  geom_density_ridges2(scale = 0.95, quantile_lines = TRUE, quantiles = 2, color = 'white', show.legend = FALSE) +
+  scale_fill_manual(values = c('red', 'black', 'deepskyblue2', 'forestgreen', 'purple3', 'orange2')) +
+  scale_x_continuous(breaks = seq(from = 0, to = 11000, by = 2000)) +
+  labs(
+    title    = 'Distribuição do custo de criação do deck',
+    subtitle = 'A linha vertical branca em cada plot de densidade representa a mediana da distribuição\ndo custo de criação dos decks da respectiva facção',
+    x     = 'Custo de criação do deck'
+  ) +
+  theme(
+    plot.title    = element_text(size = 16, face = 'bold'),
+    plot.subtitle = element_text(size = 14),
+    axis.title.y  = element_blank(),
+    axis.title.x  = element_text(size = 14)
+  )
+```
+
+Finalmente, estava interessado em tentar entender de que forma os votos estão distribuídos entre os decks das diferentes facções: é possível votar dando _likes_ em cada deck e, também, dando _dislikes_. Inicialmente, quando olhei esses dados, vi que a maioria esmagadora dos decks possuía nenhum ou apenas um voto, e que isso fazia com que ficasse difícil visualizar o padrão que eu estava buscando avaliar. Assim, resolvi fazer duas coisas para entender os padrões de votação em torno dos decks de cada facção:  
+
+1. A primeira delas foi discretizar os votos em torno de quatro categorias: (a) `Dislikes`, para juntar os decks que receberam apenas votos negativos, (b) uma categoria para os decks que não receberam nenhum voto (_i.e._, `Nenhum`), (c) uma outra categoria para decks que receberam até 40 votos (_i.e._, `Até 40`) e (d) uma última categoria para os decks que receberam mais de 40 (_i.e._, os decks no topo do ranking, `Tops`);  
+2. A segunda coisa que fiz foi calcular o log da razão de probabilidades (_i.e._, _log odds ratio_) com base na quantidade de decks em cada combinação de facção e categoria de votos. Esta métrica é calculada com base no logarítimo da razão entre (a) a probabilidade de que os decks de uma facção estejam associados à uma categoria de voto _vs_ (b) a probabilidade dos decks das outras facções estarem associadas à esta mesma categoria. Em outras palavras, esta métrica vai ajudar a identificar as categorias de votos mais características dos decks de cada uma das facções. Caso o valor desta métrica seja positivo, isto sugere que é muito provável que os decks daquela facção estejam frequentemente associados àquela categoria de votos; caso contrário, isto sugere que esta associação é pouco provável. 
+
+Os resultados desta análise são apresentados na figura abaixo.
+
+```{r fig_odds, fig.height = 7, fig.width = 10, layout = 'l-body-outset', code_folding = TRUE}
+# distribuição dos votos mais característicos para cada deck
+df_metadados %>% 
+  # contando quantidade de decks em cada categoria por deck
+  count(slug, votes_binned) %>% 
+  # calculando o log odds por deck
+  bind_log_odds(set = slug, feature = votes_binned, n = n, uninformative = TRUE) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = log_odds_weighted, y = votes_binned, fill = slug)) +
+  facet_wrap(~ slug, scales = 'free') +
+  geom_vline(xintercept = 0) +
+  geom_col(color = 'black', show.legend = FALSE) + 
+  scale_fill_manual(values = c('red', 'black', 'deepskyblue2', 'forestgreen', 'purple3', 'orange2')) +
+  scale_x_continuous(n.breaks = 5) +
+  labs(
+    title    = 'Padrão de votação mais característico para os decks de cada facção',
+    subtitle = 'Os valores representam o quão mais provável é que os decks de uma facção tenham mais votos naquela\nfaixa do que aqueles das outras facções.',
+    x        = 'Log da razão de probabilidades (Log Odds Ratio)'
+  ) +
+  theme(
+    plot.title    = element_text(size = 16, face = 'bold'),
+    plot.subtitle = element_text(size = 12),
+    axis.title.y  = element_blank(),
+    axis.title.x  = element_text(size = 14)
+  )
+```
+
+Existem alguns padrões muito interessantes identificados na figura acima. Podemos ver, por exemplo, que os decks das facções dos Monstros e de Nilfgaard parecem estar entre os mais odiados (_i.e._, alta probabilidade de estar na categoria `Dislikes` comparada aos demais) mas, quando recebem votos positivos, estarem entre os mais bem posicionados no ranking dos decks. De forma similar, os decks das facções dos Reinos do Norte, Scoia'Tael e Skellige parecem ser aqueles que sempre recebem alguns votos, mas dificilmente são os decks que estarão lá no topo do ranking dos decks. Por fim, decks da facção do Sindicato parecem não ser nem ruins, nem bons...apenas estão lá.
 
 # Conclusões
 
+Neste post eu mostrei de que forma podemos raspar a lista dos decks de Gwent contribuídos pela comunidade, e como utilizar a informação do identificador único de cada deck a fim de também raspar as suas informações. Muito do conteúdo raspado é exibido de forma dinâmica, mas vimos que parte dele é servido através de uma API escondida (_i.e._, a biblioteca de decks) e a outra parte estava escondida dentro do código HTML da página (_i.e._, o deck em si). Estas duas coisas facilitaram (e muito) a tarefa de raspar, _parsear_ e organizar as informações obtidas.
+
+Para fechar o post, eu ainda olhei três padrões sobre os decks contribuídos pela comunidade, e constatei que:  
+
++ O jogo ainda está em uma fase de plena atividade, ainda com uma participação e contribuição bastante expressiva da comunidade. Logo, acredito que vale a pena continuar jogando uma partidinha ou outra, e investir na construção de novos decks (_i.e._, sem monetizar, claro);  
++ Se quisermos montar um deck legalzinho, o ideal é focar nas facções dos Reinos do Norte, Scoia'Tael ou Skellige. Por outro lado, se o objetivo é construir um deck que é super bem avaliado, a estratégia seria partir para as facções dos Monstros ou de Nilfgaard. Se, no entanto, estiver em dúvida, só não invista em um deck da facção do Sindicato;  
++ Os decks das facções que estão mais frequentemente no topo do ranking de cotação, Monstros e Nilfgaard, são também aqueles que parecem estar em opostos no que diz respeito ao custo de construção dos decks (_i.e._, Montros < Nilfgaard). É claro que só uma análise estatística poderia nos ajudar a esclarecer se isto é um padrão mesmo ou só um viés do nosso olhar, mas é algo que ajuda a pensar em estratégia.  
+
 # Possíveis Extensões
+
+Uma vez que temos o _scrapper_ e, com ele, temos acesso às cartas que compõem cada deck, podemos explorar algumas ideias:
+
++ Determinar se as cartas das diferentes facções formam grupos, de fato, dissimilares com base nas informações de texto do `tooltip`. Uma forma de fazer isso seria através de uma clusterização e/ou uma análise de dissimilaridade (_e.g._, PERMANOVA);  
++ Treinar um algoritmo de _embedding_ utilizando o texto do `tooltip`, só pelo prazer de criar o modelo e praticar um pouco as técnicas de NLP;  
++ Desenvolver um modelo capaz de sugerir uma carta dado outras _n_ cartas no baralho, baseado no texto do `tooltip`. Penso nisso como algo similar a um modelo de previsão de texto, tipo um Bag-of-Words ou um Skip-Gram...até li esses dias um exemplo similar que usava um BERT pré-treinado. De repente, é algo que vale a pena testar;  
++ Ao invés de recorrer a um modelo de texto em si, poderíamos usar algo mais simples para tentar entender as regras de associação entre as cartas (_e.g._, o algoritmo _apriori_);  
++ Poderíamos desenvolver uma aplicação capaz de receber como input um deck que eu tenha e, então, identificar qual o deck mais similar a ele que existe dentro da biblioteca de decks contribuídos pela comunidade. Desta forma, eu poderia utilizar estas informações para buscar montar e/ou modificar cada um dos meus decks de forma a chegar o mais próximo e de forma mais rápida à decks já testados e aprovados pela comunidade.  
+
+Dúvidas, sugestões ou críticas? Só me procurar pelo e-mail ou GitHub!

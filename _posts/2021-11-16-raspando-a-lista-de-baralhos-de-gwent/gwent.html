@@ -85,7 +85,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
   <!--radix_placeholder_meta_tags-->
   <title>Raspando a Lista de Baralhos de Gwent</title>
 
-  <meta property="description" itemprop="description" content="Gwent é um jogo de cartas que nasceu dentro do universo de The Witcher e, dada a popularidade da franquia, chegou aos smartphones. A comunidade de jogadores é bastante ativa, e existe uma lista de baralhos montados por ela que está disponível dentro do site oficial do jogo. Meu objetivo neste post será raspar esta lista e os baralhos que elas sugerem. Isto servirá para montar uma base de dados para fazermos outras análises posteriormente."/>
+  <meta property="description" itemprop="description" content="Gwent é um jogo de cartas que nasceu dentro do universo de The Witcher e, dada a popularidade da franquia, chegou aos smartphones. A comunidade de jogadores é bastante ativa, e existe uma biblioteca de decks contribuídos que está disponível dentro do site oficial do jogo. Meu objetivo neste post será obter os dados desta biblioteca e de seus decks. Isto servirá para montar uma base de dados para fazermos outras análises posteriormente."/>
 
 
   <!--  https://schema.org/Article -->
@@ -96,24 +96,24 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
   <!--  https://developers.facebook.com/docs/sharing/webmasters#markup -->
   <meta property="og:title" content="Raspando a Lista de Baralhos de Gwent"/>
   <meta property="og:type" content="article"/>
-  <meta property="og:description" content="Gwent é um jogo de cartas que nasceu dentro do universo de The Witcher e, dada a popularidade da franquia, chegou aos smartphones. A comunidade de jogadores é bastante ativa, e existe uma lista de baralhos montados por ela que está disponível dentro do site oficial do jogo. Meu objetivo neste post será raspar esta lista e os baralhos que elas sugerem. Isto servirá para montar uma base de dados para fazermos outras análises posteriormente."/>
+  <meta property="og:description" content="Gwent é um jogo de cartas que nasceu dentro do universo de The Witcher e, dada a popularidade da franquia, chegou aos smartphones. A comunidade de jogadores é bastante ativa, e existe uma biblioteca de decks contribuídos que está disponível dentro do site oficial do jogo. Meu objetivo neste post será obter os dados desta biblioteca e de seus decks. Isto servirá para montar uma base de dados para fazermos outras análises posteriormente."/>
   <meta property="og:locale" content="en_US"/>
 
   <!--  https://dev.twitter.com/cards/types/summary -->
   <meta property="twitter:card" content="summary"/>
   <meta property="twitter:title" content="Raspando a Lista de Baralhos de Gwent"/>
-  <meta property="twitter:description" content="Gwent é um jogo de cartas que nasceu dentro do universo de The Witcher e, dada a popularidade da franquia, chegou aos smartphones. A comunidade de jogadores é bastante ativa, e existe uma lista de baralhos montados por ela que está disponível dentro do site oficial do jogo. Meu objetivo neste post será raspar esta lista e os baralhos que elas sugerem. Isto servirá para montar uma base de dados para fazermos outras análises posteriormente."/>
+  <meta property="twitter:description" content="Gwent é um jogo de cartas que nasceu dentro do universo de The Witcher e, dada a popularidade da franquia, chegou aos smartphones. A comunidade de jogadores é bastante ativa, e existe uma biblioteca de decks contribuídos que está disponível dentro do site oficial do jogo. Meu objetivo neste post será obter os dados desta biblioteca e de seus decks. Isto servirá para montar uma base de dados para fazermos outras análises posteriormente."/>
 
   <!--/radix_placeholder_meta_tags-->
   <!--radix_placeholder_rmarkdown_metadata-->
 
   <script type="text/json" id="radix-rmarkdown-metadata">
-  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","author","date","categories","output","draft"]}},"value":[{"type":"character","attributes":{},"value":["Raspando a Lista de Baralhos de Gwent"]},{"type":"character","attributes":{},"value":["Gwent é um jogo de cartas que nasceu dentro do universo de The Witcher e, dada a popularidade da franquia, chegou aos smartphones. A comunidade de jogadores é bastante ativa, e existe uma lista de baralhos montados por ela que está disponível dentro do site oficial do jogo. Meu objetivo neste post será raspar esta lista e os baralhos que elas sugerem. Isto servirá para montar uma base de dados para fazermos outras análises posteriormente.\n"]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["first_name","last_name","url"]}},"value":[{"type":"character","attributes":{},"value":["Nicholas"]},{"type":"character","attributes":{},"value":["Marino"]},{"type":"character","attributes":{},"value":["https://github.com/nacmarino"]}]}]},{"type":"character","attributes":{},"value":["11-16-2021"]},{"type":"character","attributes":{},"value":["web scraping","boardgames"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["self_contained","toc","code_folding","highlight"]}},"value":[{"type":"logical","attributes":{},"value":[false]},{"type":"logical","attributes":{},"value":[true]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["rstudio"]}]}]},{"type":"logical","attributes":{},"value":[true]}]}
+  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","author","date","categories","output","draft"]}},"value":[{"type":"character","attributes":{},"value":["Raspando a Lista de Baralhos de Gwent"]},{"type":"character","attributes":{},"value":["Gwent é um jogo de cartas que nasceu dentro do universo de The Witcher e, dada a popularidade da franquia, chegou aos smartphones. A comunidade de jogadores é bastante ativa, e existe uma biblioteca de decks contribuídos que está disponível dentro do site oficial do jogo. Meu objetivo neste post será obter os dados desta biblioteca e de seus decks. Isto servirá para montar uma base de dados para fazermos outras análises posteriormente.\n"]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["first_name","last_name","url"]}},"value":[{"type":"character","attributes":{},"value":["Nicholas"]},{"type":"character","attributes":{},"value":["Marino"]},{"type":"character","attributes":{},"value":["https://github.com/nacmarino"]}]}]},{"type":"character","attributes":{},"value":["11-16-2021"]},{"type":"character","attributes":{},"value":["web scraping","boardgames"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["self_contained","toc","code_folding","highlight"]}},"value":[{"type":"logical","attributes":{},"value":[false]},{"type":"logical","attributes":{},"value":[true]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["rstudio"]}]}]},{"type":"logical","attributes":{},"value":[true]}]}
   </script>
   <!--/radix_placeholder_rmarkdown_metadata-->
   
   <script type="text/json" id="radix-resource-manifest">
-  {"type":"character","attributes":{},"value":["gwent_decks/deck_280934.html","gwent_files/anchor-4.2.2/anchor.min.js","gwent_files/bowser-1.9.3/bowser.min.js","gwent_files/distill-2.2.21/template.v2.js","gwent_files/header-attrs-2.10/header-attrs.js","gwent_files/jquery-1.11.3/jquery.min.js","gwent_files/popper-2.6.0/popper.min.js","gwent_files/tippy-6.2.7/tippy-bundle.umd.min.js","gwent_files/tippy-6.2.7/tippy-light-border.css","gwent_files/tippy-6.2.7/tippy.css","gwent_files/tippy-6.2.7/tippy.umd.min.js","gwent_files/webcomponents-2.0.0/webcomponents.js","images/imagem_1.jpg","images/imagem_2.jpg","images/imagem_3.jpg","images/imagem_4.jpg","scripts/raspa_gwent.R"]}
+  {"type":"character","attributes":{},"value":["data/lista_de_decks.rds","gwent_decks/deck_280934.html","gwent_files/anchor-4.2.2/anchor.min.js","gwent_files/bowser-1.9.3/bowser.min.js","gwent_files/distill-2.2.21/template.v2.js","gwent_files/figure-html5/fig_custo-1.png","gwent_files/figure-html5/fig_metadados-1.png","gwent_files/figure-html5/fig_odds-1.png","gwent_files/figure-html5/fig_serie_temporal-1.png","gwent_files/header-attrs-2.10/header-attrs.js","gwent_files/jquery-1.11.3/jquery.min.js","gwent_files/pagedtable-1.1/css/pagedtable.css","gwent_files/pagedtable-1.1/js/pagedtable.js","gwent_files/popper-2.6.0/popper.min.js","gwent_files/tippy-6.2.7/tippy-bundle.umd.min.js","gwent_files/tippy-6.2.7/tippy-light-border.css","gwent_files/tippy-6.2.7/tippy.css","gwent_files/tippy-6.2.7/tippy.umd.min.js","gwent_files/webcomponents-2.0.0/webcomponents.js","images/imagem_1.jpg","images/imagem_2.jpg","images/imagem_3.jpg","images/imagem_4.jpg","scripts/raspa_gwent.R"]}
   </script>
   <!--radix_placeholder_navigation_in_header-->
   <!--/radix_placeholder_navigation_in_header-->
@@ -1454,7 +1454,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <!--radix_placeholder_front_matter-->
 
 <script id="distill-front-matter" type="text/json">
-{"title":"Raspando a Lista de Baralhos de Gwent","description":"Gwent é um jogo de cartas que nasceu dentro do universo de The Witcher e, dada a popularidade da franquia, chegou aos smartphones. A comunidade de jogadores é bastante ativa, e existe uma lista de baralhos montados por ela que está disponível dentro do site oficial do jogo. Meu objetivo neste post será raspar esta lista e os baralhos que elas sugerem. Isto servirá para montar uma base de dados para fazermos outras análises posteriormente.","authors":[{"author":"Nicholas Marino","authorURL":"https://github.com/nacmarino","affiliation":"&nbsp;","affiliationURL":"#","orcidID":""}],"publishedDate":"2021-11-16T00:00:00.000+00:00","citationText":"Marino, 2021"}
+{"title":"Raspando a Lista de Baralhos de Gwent","description":"Gwent é um jogo de cartas que nasceu dentro do universo de The Witcher e, dada a popularidade da franquia, chegou aos smartphones. A comunidade de jogadores é bastante ativa, e existe uma biblioteca de decks contribuídos que está disponível dentro do site oficial do jogo. Meu objetivo neste post será obter os dados desta biblioteca e de seus decks. Isto servirá para montar uma base de dados para fazermos outras análises posteriormente.","authors":[{"author":"Nicholas Marino","authorURL":"https://github.com/nacmarino","affiliation":"&nbsp;","affiliationURL":"#","orcidID":""}],"publishedDate":"2021-11-16T00:00:00.000+00:00","citationText":"Marino, 2021"}
 </script>
 
 <!--/radix_placeholder_front_matter-->
@@ -1471,7 +1471,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <div class="dt=tag">boardgames</div>
 </div>
 <!--/radix_placeholder_categories-->
-<p><p>Gwent é um jogo de cartas que nasceu dentro do universo de The Witcher e, dada a popularidade da franquia, chegou aos smartphones. A comunidade de jogadores é bastante ativa, e existe uma lista de baralhos montados por ela que está disponível dentro do site oficial do jogo. Meu objetivo neste post será raspar esta lista e os baralhos que elas sugerem. Isto servirá para montar uma base de dados para fazermos outras análises posteriormente.</p></p>
+<p><p>Gwent é um jogo de cartas que nasceu dentro do universo de The Witcher e, dada a popularidade da franquia, chegou aos smartphones. A comunidade de jogadores é bastante ativa, e existe uma biblioteca de decks contribuídos que está disponível dentro do site oficial do jogo. Meu objetivo neste post será obter os dados desta biblioteca e de seus decks. Isto servirá para montar uma base de dados para fazermos outras análises posteriormente.</p></p>
 </div>
 
 <div class="d-byline">
@@ -1489,18 +1489,18 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <li><a href="#motivação">Motivação</a></li>
 <li><a href="#raspando-um-deck">Raspando um deck</a></li>
 <li><a href="#raspando-a-lista-de-decks">Raspando a lista de decks</a></li>
-<li><a href="#qual-a-tendência-do-momento">Qual a tendência do momento?</a></li>
+<li><a href="#qual-a-tendência-entre-os-decks">Qual a tendência entre os decks?</a></li>
 <li><a href="#conclusões">Conclusões</a></li>
 <li><a href="#possíveis-extensões">Possíveis Extensões</a></li>
 </ul>
 </nav>
 </div>
 <h1 id="motivação">Motivação</h1>
-<p>The Witcher é uma franquia lançada como uma série de livros de fantasia que contam as aventuras do bruxo (<em>i.e.</em>, Witcher) Geralt de Rivia. Essas estórias foram popularizadas através da série da Netflix de mesmo nome e, também, através do jogo para <em>videogames</em> The Witcher 3: The Wild Hunt<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>. Esse jogo é bastante complexo e tem uma experiência bastante imersiva, trazendo inclusive diversas tradições do universo à ela. Uma delas é o Gwent, um jogo de cartas entre dois jogadores, onde ganha aquele que mais pontuar em pelo menos 2 de 3 turnos. Parece ser um mini-jogo bobo dentro do título, mas ele próprio invoca muito da fantasia da série na disputa.</p>
-<p>Gwent é um jogo que lembra muito o Magic, onde você deve construir um baralho de no mínimo 25 cartas pertencentes à uma facção de sua escolha, respeitando algumas restrições (<em>e.g.</em>, custo total das cartas no baralho, quantidade de unidades,…). No momento em que escrevo este <em>post</em>, existem cerca de 200 cartas pertencentes à cada uma de 6 facções distintas, além de outras 200 à 400 cartas neutras (<em>i.e.</em>, que não pertencem à nenhuma facção) que podem ser usadas para montar um baralho. Existe uma diferença inerente ao modo de jogar com cada facção (<em>e.g.</em>, foco em dano direto, foco bloqueio e roubo de cartas,…) e, dentro de uma dada facção, também existe uma pequena diversidade de formas de montar o baralho de forma a fortificar uma estratégia (<em>e.g.</em>, cartas que juntas reforçam muito umas as outras, cartas que ajudam a ativar a habilidade de outras cartas mais frequentemente). Neste sentido, montar um baralho forte e consistente passa a ser quase uma arte, mas que poderia ser aprimorado com um pouquinho mais de orientação baseada em dados.</p>
-<p>Existe bastante conteúdo na internet que é produzido pela própria comunidade que joga o Gwent. Em particular, a própria comunidade contribui compartilhando a composição de cartas nos seus baralhos, as estratégias de jogo e votando nestas a partir do próprio site oficial do jogo. E é aqui que entra o meu interesse, pois se pudermos obter estas informações e estruturá-las, ficaria muito mais fácil entender os padrões dentro e entre os baralhos e usar isso em favor de aprimorar a jogabilidade. Além disso, acredito que estes dados podem dar um bom modelo de estudo para responder à algumas perguntas e praticar algumas outras técnicas. Falarei sobre essas idéias ao final do <em>post</em>, mas por agora vou mostrar como obter essas informações.</p>
+<p>The Witcher é uma franquia lançada como uma série de livros de fantasia que contam as aventuras do bruxo (<em>i.e.</em>, Witcher) Geralt de Rivia. Essas estórias foram popularizadas através da série da Netflix de mesmo nome e, também, através do jogo The Witcher 3: The Wild Hunt<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>. Esse jogo é bastante complexo e tem uma experiência bem imersiva, trazendo inclusive diversas tradições do universo à ela. Uma delas é o Gwent, um jogo de cartas entre dois jogadores, onde ganha aquele que mais pontuar em pelo menos 2 de 3 turnos. Parece ser um mini-jogo bobo dentro do título, mas ele próprio invoca muito da fantasia da série na disputa.</p>
+<p>Gwent é um jogo que lembra muito o Magic, onde você deve construir um deck de no mínimo 25 cartas pertencentes à uma facção de sua escolha, respeitando algumas restrições (<em>e.g.</em>, custo total das cartas no deck, quantidade de unidades e etc). No momento em que escrevo este <em>post</em>, existem cerca de 200 cartas pertencentes à cada uma de 6 facções distintas, além de outras 200 à 400 cartas neutras (<em>i.e.</em>, que não pertencem à nenhuma facção) que podem ser usadas para montar um deck Existe uma diferença inerente ao modo de jogar com cada facção (<em>e.g.</em>, foco em dano direto, foco bloqueio e roubo de cartas,…) e, dentro de uma dada facção, também existe uma pequena diversidade de formas de favorecer uma estratégia de jogo (<em>e.g.</em>, cartas que juntas reforçam muito umas as outras, cartas que ajudam a ativar a habilidade de outras cartas mais frequentemente). Neste sentido, montar um deck forte e consistente passa a ser quase uma arte, mas que poderia ser aprimorado com um pouquinho de acesso aos metadados das cartas.</p>
+<p>Existe bastante conteúdo na internet que é produzido pela própria comunidade que joga o Gwent. Em particular, a própria comunidade contribui compartilhando a composição de cartas nos seus decks, as estratégias de jogo e votando nestas a partir do próprio site oficial do jogo. E é aqui que entra o meu interesse: se pudermos obter estas informações e estruturá-las, ficaria muito mais fácil entender os padrões dentro e entre os decks e usar isso em favor de aprimorar a jogabilidade. Além disso, acredito que estes dados podem dar um bom modelo de estudo para responder à algumas perguntas e praticar algumas outras técnicas. Falarei sobre essas idéias ao final do <em>post</em>, mas por agora vou mostrar como obter essas informações.</p>
 <h1 id="raspando-um-deck">Raspando um deck</h1>
-<p>A página principal dos decks disponíveis no site oficial do jogo pode ser acessada através da <em>url</em> <a href="https://www.playgwent.com/pt-BR/decks" class="uri">https://www.playgwent.com/pt-BR/decks</a>, ou clicando nesse <a href="https://www.playgwent.com/pt-BR/decks">link</a>. Assim que a página abrir, já é possível ver que os decks estão organizados em uma espécie de tabela, com diversas informações sobre eles, tais como a quantidade de votos, nome, autor, custo de fabricação e etc. Além disso, existem diversos filtros e opções de interatividade na página, como os filtros de facção, habilidade do líder, melhores baralhos e etc. Vamos voltar à essa <em>landing page</em> em breve mas, por enquanto, vamos selecionar um baralho qualquer e clicar em seu nome para ir até a sua página.</p>
+<p>A página principal dos decks disponíveis no site oficial do jogo pode ser acessada através destes <a href="https://www.playgwent.com/pt-BR/decks">link</a>. Assim que a página abrir, já é possível ver que os decks estão organizados em uma espécie de tabela, com diversas informações sobre eles, tais como a quantidade de votos, nome, autor, custo de fabricação e etc. Além disso, existem diversos filtros e opções de interatividade na página, como os filtros de facção, habilidade do líder, melhores baralhos e etc. Vamos voltar à essa página inicial em breve mas, por enquanto, vamos selecionar um baralho qualquer e clicar em seu nome para ir até a sua página.</p>
 <div class="layout-chunk" data-layout="l-body-outset">
 <details>
 <summary>
@@ -1511,9 +1511,9 @@ Show code
 </code></pre>
 </div>
 </details>
-<p><img src="images/imagem_1.jpg" width="1678" style="display: block; margin: auto;" /></p>
+<p><img src="images/imagem_1.jpg" width="805" style="display: block; margin: auto;" /></p>
 </div>
-<p>Chegamos à página do deck, cuja <em>url</em> parece sugerir que a paginação de cada um deles deve seguir o padrão de uma <em>url</em> base (<em>i.e.</em>, <a href="https://www.playgwent.com/pt-BR/decks/guides/" class="uri">https://www.playgwent.com/pt-BR/decks/guides/</a>) seguida de uma numeração que representa o identificador único do deck. Outra coisa que já é notável é que muitas das informações que estavam disponíveis na página anterior também estão repetidas aqui. No entanto, podemos ver que agora existe (em alguns casos) uma descrição do deck, a estratégia de uso do deck e, o mais importante, uma lista das cartas que o compõem. É esta lista que queremos pegar.</p>
+<p>Chegamos à página do deck, cuja <em>url</em> parece sugerir que a paginação deve seguir um padrão base (<em>i.e.</em>, <a href="https://www.playgwent.com/pt-BR/decks/guides/" class="uri">https://www.playgwent.com/pt-BR/decks/guides/</a>) seguida de uma numeração que representa o identificador único do deck. Outra coisa que já é notável é que muitas das informações que estavam disponíveis na página anterior também estão repetidas aqui. No entanto, podemos ver que agora existe (em alguns casos) uma descrição do deck, sua a estratégia de uso e, o mais importante, uma lista das cartas que o compõem. É esta lista que queremos pegar.</p>
 <div class="layout-chunk" data-layout="l-body-outset">
 <details>
 <summary>
@@ -1524,9 +1524,9 @@ Show code
 </code></pre>
 </div>
 </details>
-<p><img src="images/imagem_3.jpg" width="1678" style="display: block; margin: auto;" /></p>
+<p><img src="images/imagem_3.jpg" width="805" style="display: block; margin: auto;" /></p>
 </div>
-<p>Se passarmos o cursor em cima das cartas, podemos ver que vai aparecer um <em>tooltip</em> com a imagem da carta e a descrição dela. Isto parece sugerir que deve existir algum tipo de linguagem dinâmica atuando por trás dos panos, o que poderia complicar a vida do nosso <em>scrapper</em>. Mas o que será que está alimentando esse conteúdo dinâmico dentro da página? Se formos na ferramenta <code>Inspecionar</code> do navegador e olharmos o próprio código HTML da página, veremos que existe uma quantidade enorme de texto dentro de uma <em>tag</em>, organizada de uma forma que lembra muito um dicionário no Python ou um arquivo JSON. Para achar esse texto, basta procurar uma <em>tag</em> <em>div</em> da classe <code>wrapper</code>, buscar dentro dela uma outra <em>tag</em> <em>div</em> da classe <code>content</code> e, mais uma vez, uma <em>tag</em> <em>div</em> com o id <code>root</code>; a partir daí, todo o dicionário pode ser acessado olhando o atributo <code>data-state</code>. Ou seja, não é que o conteúdo da página seja dinâmica, só a forma como ele é mostrado mesmo.</p>
+<p>Se passarmos o cursor em cima das cartas, um <em>tooltip</em> com a imagem da carta e a descrição de cada uma delas aparecerá. Isto sugere que deve existir algum tipo de dinamismo atuando por trás dos panos, o que poderia complicar a vida do nosso <em>scrapper</em>. Mas o que será que está alimentando esse conteúdo dinâmico dentro da página? Se formos na ferramenta <code>Inspecionar</code> do navegador e olharmos o próprio código HTML da página, veremos que existe uma quantidade enorme de texto dentro de uma <em>tag</em>, organizada de uma forma que lembra muito um dicionário no Python ou um arquivo JSON. Para achar esse texto, basta procurar uma <em>tag</em> <em>div</em> da classe <code>wrapper</code>, buscar dentro dela uma outra <em>tag</em> <em>div</em> da classe <code>content</code> e, mais uma vez, uma <em>tag</em> <em>div</em> com o id <code>root</code>; a partir daí, todo o dicionário pode ser acessado olhando o atributo <code>data-state</code>. Ou seja, não é que o conteúdo da página seja dinâmico, mas só a forma como ele é mostrado.</p>
 <div class="layout-chunk" data-layout="l-body-outset">
 <details>
 <summary>
@@ -1537,9 +1537,9 @@ Show code
 </code></pre>
 </div>
 </details>
-<p><img src="images/imagem_4.jpg" width="1678" style="display: block; margin: auto;" /></p>
+<p><img src="images/imagem_4.jpg" width="805" style="display: block; margin: auto;" /></p>
 </div>
-<p>Com esse entendimento, vamos então começar a atividade de raspar esse deck. Vou criar uma função que ficará responsável por fazer um <code>GET</code> da página do deck, uma vez que o seu código numérico de identificação seja passado. Essa função também salvará essa página HTML em um algum <em>path</em> especificado e, antes de concluir, vai hibernar por 1 ou 2 segundos<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a></p>
+<p>Com esse entendimento, vamos então começar a atividade de raspar esse deck. Vou criar uma função que ficará responsável por fazer um <code>GET</code> da página do deck, uma vez que o seu código numérico de identificação seja definido. Essa função também salvará essa página HTML em um algum <em>path</em> especificado e, antes de concluir, vai hibernar por 1 ou 2 segundos<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## carregando os pacotes</span>
@@ -1547,20 +1547,22 @@ Show code
 <span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://httr.r-lib.org/'>httr</a></span><span class='op'>)</span> <span class='co'># para fazer o web scrapping</span>
 <span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://xml2.r-lib.org/'>xml2</a></span><span class='op'>)</span> <span class='co'># para ajudar a parsear</span>
 <span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='http://fs.r-lib.org'>fs</a></span><span class='op'>)</span> <span class='co'># para manipular os paths</span>
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://arxiv.org/abs/1403.2805'>jsonlite</a></span><span class='op'>)</span> <span class='co'># para manipular arquivos JSON</span>
 
 <span class='co'>## para raspar um deck</span>
 <span class='va'>scrape_deck</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>deck_id</span>, <span class='va'>path_to_save</span><span class='op'>)</span> <span class='op'>{</span>
   <span class='co'>## fazendo o request e salvando em disco</span>
   <span class='fu'><a href='https://httr.r-lib.org/reference/GET.html'>GET</a></span><span class='op'>(</span>
     url <span class='op'>=</span> <span class='fu'>str_glue</span><span class='op'>(</span><span class='st'>'https://www.playgwent.com/pt-BR/decks/guides/{deck_id}'</span><span class='op'>)</span>, 
-    <span class='fu'><a href='https://httr.r-lib.org/reference/write_disk.html'>write_disk</a></span><span class='op'>(</span>path <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/sprintf.html'>sprintf</a></span><span class='op'>(</span>fmt <span class='op'>=</span> <span class='st'>'%s/deck_%06d.html'</span>, <span class='va'>path_to_save</span>, <span class='va'>deck_id</span><span class='op'>)</span>, overwrite <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+    <span class='fu'><a href='https://httr.r-lib.org/reference/write_disk.html'>write_disk</a></span><span class='op'>(</span>path <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/sprintf.html'>sprintf</a></span><span class='op'>(</span>fmt <span class='op'>=</span> <span class='st'>'%s/deck_%06d.html'</span>, <span class='va'>path_to_save</span>, <span class='va'>deck_id</span><span class='op'>)</span>, 
+               overwrite <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
   <span class='op'>)</span>
   <span class='fu'><a href='https://rdrr.io/r/base/Sys.sleep.html'>Sys.sleep</a></span><span class='op'>(</span>time <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/Uniform.html'>runif</a></span><span class='op'>(</span>n <span class='op'>=</span> <span class='fl'>1</span>, min <span class='op'>=</span> <span class='fl'>1</span>, max <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span><span class='op'>)</span>
 <span class='op'>}</span>
 </code></pre>
 </div>
 </div>
-<p>Vamos usar agora essa função para baixar o deck da tela e salvá-lo em disco.</p>
+<p>Vamos usar essa função para baixar o deck da tela e salvá-lo em disco.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'># setando o path local para salvar o HTML do deck</span>
@@ -1577,7 +1579,7 @@ Show code
 </code></pre>
 </div>
 </div>
-<p>Deck baixado! Vamos agora criar uma função para fazer uma primeira etapa do parser dele, onde a ideia vai ser tirar o dicionário que se parece com o JSON de dentro do código HTML e deixá-lo mais próximo de ser usado para pegar a lista de cartas. A função receberá como input o path até o deck salvo em disco, buscará o JSON e fará uma organização dos dados para extrair apenas a chave relacionada às informações das cartas do deck.</p>
+<p>Deck baixado! Vamos agora criar uma função para fazer uma primeira etapa do <em>parser</em> dele, onde a ideia vai ser tirar o dicionário que se parece com o JSON de dentro do código HTML e deixá-lo mais próximo de ser usado pelas outras funções. Esta função receberá como input o path até o deck salvo em disco, buscará o JSON e fará uma organização dos dados para extrair apenas a chave relacionada às informações das cartas do deck.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'># para parsear o html do deck para o json</span>
@@ -1604,25 +1606,26 @@ Show code
 </code></pre>
 </div>
 </div>
-<p>Se testarmos a função para parsear o JSON do deck, veremos que o seu output é uma lista, e que cada elemento dessa lista é uma informação diferente sobre o deck - não só a lista de cartas em si. Ou seja, precisamos agora parsear e organizar as informações da lista.</p>
+<p>Se testarmos a função para parsear o JSON do deck, veremos que o seu output é uma lista, e que cada elemento dessa lista é uma informação diferente sobre o deck - <em>i.e.</em>, não só a lista de cartas em si. Ou seja, precisamos agora <em>parsear</em> e organizar essas informações também.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'># parseando o codigo de HTML para algo parecido com um JSON</span>
 <span class='va'>jsonfied_deck</span> <span class='op'>&lt;-</span> <span class='fu'>deck_to_json</span><span class='op'>(</span>path_para_deck <span class='op'>=</span> <span class='fu'><a href='http://fs.r-lib.org/reference/dir_ls.html'>dir_ls</a></span><span class='op'>(</span>path <span class='op'>=</span> <span class='va'>path_decks</span>, recurse <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span><span class='op'>)</span>
-<span class='fu'><a href='https://rdrr.io/r/base/sprintf.html'>sprintf</a></span><span class='op'>(</span><span class='st'>'Classe do objeto parseado: %s. Quantidade de elementos na lista: %s.'</span>, <span class='fu'><a href='https://rdrr.io/r/base/class.html'>class</a></span><span class='op'>(</span><span class='va'>jsonfied_deck</span><span class='op'>)</span>, <span class='fu'><a href='https://rdrr.io/r/base/length.html'>length</a></span><span class='op'>(</span><span class='va'>jsonfied_deck</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/sprintf.html'>sprintf</a></span><span class='op'>(</span><span class='st'>'Classe do objeto parseado: %s. Quantidade de elementos na lista: %s.'</span>, 
+        <span class='fu'><a href='https://rdrr.io/r/base/class.html'>class</a></span><span class='op'>(</span><span class='va'>jsonfied_deck</span><span class='op'>)</span>, <span class='fu'><a href='https://rdrr.io/r/base/length.html'>length</a></span><span class='op'>(</span><span class='va'>jsonfied_deck</span><span class='op'>)</span><span class='op'>)</span>
 </code></pre>
 </div>
 <pre><code>[1] &quot;Classe do objeto parseado: list. Quantidade de elementos na lista: 14.&quot;</code></pre>
 </div>
-<p>Uma coisa importante antes de prosseguir é entender um pouco sobre a estrutura básica de um deck de Gwent e a forma como ele é apresentado originalmente na página:</p>
+<p>Uma coisa importante antes de prosseguir é entender um pouco sobre a estrutura básica de um deck de Gwent, e a forma como ele é apresentado na página:</p>
 <ul>
 <li>O banner no topo do deck representa a habilidade do líder que deve ser usada. Cada facção oferece umas 6 habilidades diferentes, mas específicas para cada uma delas;<br />
 </li>
 <li>A carta logo abaixo do banner representa a carta de estratégia que deve ser usada junto ao deck. Existem algumas cartas de estratégia disponíveis, algumas das quais são específicas para certas facções, outras neutras. De uma forma ou de outra, todo deck tem também a sua carta de estratégia;<br />
 </li>
-<li>Tudo o que vier depois destes dois, representam as cartas que compõem o deck <em>per se</em>. Um deck é montado usando no mínimo 25 cartas, com mais algumas regrinhas relacionadas ao custo das cartas e quantidade de cartas de um tipo específico. Além disso, podem haver cópias de algumas cartas no deck, que são representadas pela tag <code>x2</code> ao lado de cada carta.</li>
+<li>Tudo o que vier depois destes dois, representam as cartas que compõem o deck <em>per se</em>. Um deck é montado usando no mínimo 25 cartas, com mais algumas regrinhas relacionadas ao custo das cartas e quantidade de cartas de um tipo específico. Além disso, podem haver cópias de algumas cartas no deck, que são representadas pela tag <code>x2</code> ao lado de cada carta na página que estamos raspando.</li>
 </ul>
-<p>Tendo essa visão em mente, precisamos então das informações das cartas do deck, da carta de estratégia e da habilidade do líder a fim de que possamos reproduzir o deck que está na página. Se voltarmos à lista obtida depois que parseamos o deck para algo parecido com um JSON, podemos ver que existem três elementos distintos, cada um deles para um desses tipos de informação: <code>cards</code> (<em>i.e.</em>, lista de cartas no deck), <code>stratagem</code> (<em>i.e.</em>, carta de estratégia) e <code>leader</code> (<em>i.e.</em>, a habilidade do líder). Além disso, existe uma informação importante para cada um destes itens e para cada carta em <code>cards</code> que precisaremos estar atentos: as informações do texto de descrição da carta que aparece no <code>tooltip</code>. Esse <code>tooltip</code> é uma lista de listas (de listas, em alguns casos), e tratá-lo junto dos demais metadados seria bastante doloroso. Neste contexto, vamos parsear as informações que estão no <code>tooltip</code> separado daquelas dos metadados de de cada elemento, e os juntaremos posteriormente.</p>
+<p>Tendo essa visão em mente, precisamos então das informações das cartas do deck, da carta de estratégia e da habilidade do líder, a fim de que possamos reproduzir o deck que está na página. Se voltarmos à lista obtida depois que parseamos o deck (<em>i.e.</em>, resultado da função <code>deck_to_json</code>), podemos ver que existem três elementos distintos, cada um deles para um desses tipos de informação: <code>cards</code> (<em>i.e.</em>, lista de cartas no deck), <code>stratagem</code> (<em>i.e.</em>, carta de estratégia) e <code>leader</code> (<em>i.e.</em>, a habilidade do líder). Além disso, existe uma informação importante que precisaremos estar atentos: as informações do texto de descrição que aparece no <code>tooltip</code>. Esta informação é uma lista de listas (de listas, em alguns casos), e tratá-lo junto dos demais metadados seria bastante doloroso. Assim, vamos parsear as informações que estão no <code>tooltip</code> separadamente daquelas dos metadados de cada elemento, e os juntaremos posteriormente.</p>
 <p>A função abaixo dá conta de fazer o parser dos metadados associados à cada elemento. Nos testes que fiz, reparei que a forma como os metadados do elemento <code>cards</code> está organizado é diferente daquele dos outros dois elementos, <code>stratagem</code> e <code>leader</code>, mas que a estrutura destes dois é bastante similar. Assim, juntei esse parser em uma função só, usando um <code>if</code> para dizer se o processamento deve ser específico a um grupo ou outro de elementos. Além disso, aproveitei para numerar as cartas na sequência em que elas aparecem: habilidade do líder (<em>i.e.</em>, ID numérico -1), carta de estratégia (<em>i.e.</em>, ID numérico 0) e todas as demais cartas (<em>i.e.</em>, ID numérico 1 ao número de cartas no deck).</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
@@ -1654,7 +1657,7 @@ Show code
 </code></pre>
 </div>
 </div>
-<p>Falar do parser do tooltip.</p>
+<p>Assim como no parser dos metadados de cada elemento, o parser do <code>tooltip</code> também precisa ter uma especificidades - mas aqui ela é para aplicar um processamento diferente ao <code>tooltip</code> da habilidade do líder <em>vs</em> às outras cartas. Por conta disso, esse parser começar separando o processando entre a carta de habilidade do líder ou as outras usando um <code>if</code>, mas ambas chegam ao mesmo output: um dataframe onde temos uma linha para cada texto que descrevam as características de uma carta (<em>i.e.</em>, cada carta pode ser representada por um ou mais textos, cada um dos quais discriminado em uma linha distinta do dataframe). Uma vez que temos o dado nessa estrutura, aplicamos mais algumas manipulações a ele, de forma a termos uma linha para cada carta, sumarizando todas as informações do texto do <code>tooltip</code> já organizados. Finalmente, o parser é encerrado adicionando à numeração as cartas quando necessário (<em>i.e.</em>, -1 para a carta de habilidade do líder e 0 para a carta de estratégia).</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'># para fazer o parser do tooltip de cada carta</span>
@@ -1707,7 +1710,7 @@ Show code
 </code></pre>
 </div>
 </div>
-<p>Testar o parser consolidando em uma unica funcao.</p>
+<p>Com os parsers para cada informação prontos, criei mais uma função que vai juntar tudo e gerar um dataframe organizado. Essa função recebe o path até o deck salvo em disco, o transforma naquele arquivo parecido com um JSON, extrai o <code>tooltip</code> e os metadados de cada elemento separadamente e então os junta usando o identificador sequencial da carta no deck (<em>i.e.</em>, aquele ID numérico que fomos criando).</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'># para parsear todas as informacoes do deck</span>
@@ -1725,12 +1728,13 @@ Show code
                        .f <span class='op'>=</span> <span class='va'>parser_card_metadata</span>,
                        deck_json_file <span class='op'>=</span> <span class='va'>target_deck</span><span class='op'>)</span>
   
+  <span class='co'># juntando as duas informacoes usando o id numerico sequencial da carta</span>
   <span class='fu'>left_join</span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>metadados</span>, y <span class='op'>=</span> <span class='va'>tooltips</span>, by <span class='op'>=</span> <span class='st'>'card_in_seq'</span><span class='op'>)</span>
 <span class='op'>}</span>
 </code></pre>
 </div>
 </div>
-<p>Vamos testar o parser do deck.</p>
+<p>Vamos usar essa função para tratar os dados do deck que raspamos aqui.</p>
 <div class="layout-chunk" data-layout="l-body-outset">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'># parseando o deck</span>
@@ -1745,9 +1749,9 @@ Show code
   </script>
 </div>
 </div>
-<p>Concluir que agora precisamos de mais decks. Para isso, vamos raspar a lista para pegar o id dos decks.</p>
+<p>Como podemos ver, sucesso! Agora precisamos de mais decks e, como vimos, parece que para isso basta alterarmos o identificador numérico na <em>url</em> da página. Só que, como é que vamos saber quais são os identificadores numérico de qual deck?</p>
 <h1 id="raspando-a-lista-de-decks">Raspando a lista de decks</h1>
-<p>Voltar para a landing page e falar que não tem paginação, que o conteúdo parece ser gerado dinamicamente.</p>
+<p>Vamos voltar à página inicial da lista dos decks de Gwent. É visível que o que precisávamos fazer para raspar os outros decks é pegar os links que levam à cada um dos decks aqui. Todavia, como já havíamos falado, parece que muito do conteúdo da página é gerado dinamicamente. Se você inspecionar o HTML da página, verá, inclusive que existe muitas chamadas ao Javascript. Além disso, verá que também existe um dicionário similar aquele da página do deck, que contém as informações que precisávamos pegar - mas apenas dos decks que aparecem nessa página. Se esse for o caso, então mudar a paginação da <em>url</em> resolveria o nosso problema<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>, certo? O problema é que como o conteúdo é dinâmico, não há paginação para percorrer, então essa estratégia não funciona.</p>
 <div class="layout-chunk" data-layout="l-body-outset">
 <details>
 <summary>
@@ -1758,9 +1762,9 @@ Show code
 </code></pre>
 </div>
 </details>
-<p><img src="images/imagem_1.jpg" width="1678" style="display: block; margin: auto;" /></p>
+<p><img src="images/imagem_1.jpg" width="805" style="display: block; margin: auto;" /></p>
 </div>
-<p>Mostrar que se abrir o network, vai ver que tem uma API escondida.</p>
+<p>Se formos um pouquinho além, ir na aba Network e atualizar a página, veremos que vão haver vários <em>requests</em> aleatórios e um monte de <em>request</em> do tipo <em>GET</em> à um arquivo com o nome <code>500</code>. Se clicarmos nesse arquivo e inspecionarmos a sua <em>url</em>, veremos que todas essas requisições estão endereçadas à uma API, e que cada requisição dessa esta pegando os n <code>limit</code> decks a partir do <code>m</code> offset (<em>e.g.</em>, offset = 0 e limit = 500: os 500 primeiros decks; offset = 1000 e limit = 500: os decks de 1000 à 1500). Essa API escondida facilita e muito a nossa vida.</p>
 <div class="layout-chunk" data-layout="l-body-outset">
 <details>
 <summary>
@@ -1771,9 +1775,9 @@ Show code
 </code></pre>
 </div>
 </details>
-<p><img src="images/imagem_2.jpg" width="1678" style="display: block; margin: auto;" /></p>
+<p><img src="images/imagem_2.jpg" width="805" style="display: block; margin: auto;" /></p>
 </div>
-<p>Falar do scrapper da lista.</p>
+<p>Vamos utilizar a <em>url</em> da API escondida para fazer as requisições e pegar a lista com os decks disponíveis e seus metadados. Essa função será bem flexível, aceitando um valor flexível para a quantidade de páginas e listas por página que queremos raspar, e salvando cada arquivo JSON resultante em disco.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## para raspar uma lista</span>
@@ -1790,20 +1794,30 @@ Show code
 </code></pre>
 </div>
 </div>
-<p>Falar do uso escalando.</p>
+<p>Eu não consegui deduzir qual é a quantidade de decks disponíveis no site oficial, então não consegui bolar um jeito para definir qual é o limite de páginas que podemos raspar. No entanto, até onde eu consegui averiguar nas requisições <code>500</code>, a lista se extende para além de 30 mil decks. Assim, vou fazer um exercício mais simples aqui, e usar a função que para pegar os 20000 primeiros elementos na lista de decks disponíveis através da API.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
-<pre class="sourceCode r"><code class="sourceCode r"><span class='co'># criar diretorio e baixar umas 5 paginas da lista, aumentando o limit.</span>
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'># setando o path local para salvar o HTML das listas</span>
+<span class='va'>path_listas</span> <span class='op'>&lt;-</span> <span class='st'>'gwent_listas/'</span>
+<span class='co'># path_listas &lt;- '_posts/2021-11-16-raspando-a-lista-de-baralhos-de-gwent/gwent_listas/'</span>
+
+<span class='co'># criando um diretorio local para salvar o HTML das listas caso nao exista</span>
+<span class='kw'>if</span><span class='op'>(</span><span class='op'>!</span><span class='fu'><a href='http://fs.r-lib.org/reference/file_access.html'>dir_exists</a></span><span class='op'>(</span>path <span class='op'>=</span> <span class='va'>path_listas</span><span class='op'>)</span><span class='op'>)</span><span class='op'>{</span>
+  <span class='fu'><a href='http://fs.r-lib.org/reference/create.html'>dir_create</a></span><span class='op'>(</span>path <span class='op'>=</span> <span class='va'>path_listas</span>, recurse <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+<span class='co'># baixando as informações gerais dos 5000 primeiros elementos na lista de decks disponiveis</span>
+<span class='fu'>walk</span><span class='op'>(</span>.x <span class='op'>=</span> <span class='fl'>1</span><span class='op'>:</span><span class='fl'>37</span>, .f <span class='op'>=</span> <span class='va'>scrape_lista</span>, listas_por_pagina <span class='op'>=</span> <span class='fl'>1000</span>, path_to_save <span class='op'>=</span> <span class='va'>path_listas</span><span class='op'>)</span>
 </code></pre>
 </div>
 </div>
-<p>Falar da funcao do parser da lista.</p>
+<p>Com os arquivos JSON em disco, agora é só criar a função para parseá-los - tarefa que não é difícil, uma vez que os dados que compõem àquela tabelinha no site já estão relativamente bem estruturados nesse formato.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## para parseaar uma lista</span>
 <span class='va'>parser_lista</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>path_para_lista</span><span class='op'>)</span> <span class='op'>{</span>
   <span class='co'># carregando os dados como um json</span>
-  <span class='fu'>read_json</span><span class='op'>(</span>path <span class='op'>=</span> <span class='va'>path_para_lista</span>, simplifyDataFrame <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='fu'><a href='https://rdrr.io/pkg/jsonlite/man/read_json.html'>read_json</a></span><span class='op'>(</span>path <span class='op'>=</span> <span class='va'>path_para_lista</span>, simplifyDataFrame <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
     <span class='co'># pegando so o elemento da lista que sejam os guides</span>
     <span class='fu'>pluck</span><span class='op'>(</span><span class='st'>'guides'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
     <span class='co'># passando para tibble</span>
@@ -1813,19 +1827,231 @@ Show code
     <span class='co'># jogando fora o que nao interessa</span>
     <span class='fu'>select</span><span class='op'>(</span><span class='op'>-</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='va'>short</span>, <span class='va'>thumbnailImg</span>, <span class='va'>abilityImg</span><span class='op'>)</span><span class='op'>)</span>
 <span class='op'>}</span>
+
+<span class='co'>## aplicando a função à cada path</span>
+<span class='va'>lista_de_decks</span> <span class='op'>&lt;-</span> <span class='fu'>map_dfr</span><span class='op'>(</span>.x <span class='op'>=</span> <span class='fu'><a href='http://fs.r-lib.org/reference/dir_ls.html'>dir_ls</a></span><span class='op'>(</span>path <span class='op'>=</span> <span class='va'>path_listas</span>, recurse <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>, .f <span class='op'>=</span> <span class='va'>parser_lista</span><span class='op'>)</span>
+<span class='fu'>write_rds</span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>listas_de_decks</span>, file <span class='op'>=</span> <span class='st'>'data/lista_de_decks.rds'</span><span class='op'>)</span>
+<span class='fu'>rmarkdown</span><span class='fu'>::</span><span class='fu'><a href='https://pkgs.rstudio.com/rmarkdown/reference/paged_table.html'>paged_table</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>listas_de_decks</span><span class='op'>)</span>
 </code></pre>
 </div>
 </div>
-<h1 id="qual-a-tendência-do-momento">Qual a tendência do momento?</h1>
-<p>Mostrar análise do tipo de deck, custo da carta, votos, datas de contribuição e modificação.</p>
+<p>Pronto! Lista de decks disponíveis parseados! Agora seria só voltar ao scrapper dos decks em si, e aplicar a função <code>scrape_deck</code> iterando através dos elementos daquela coluna <em>id</em>.</p>
+<h1 id="qual-a-tendência-entre-os-decks">Qual a tendência entre os decks?</h1>
+<p>E o que será que existe de interessante na lista dos decks de Gwent?</p>
+<p>A primeira coisa que gostaria de saber é como está o jogo em termos da participação da comunidade. Vou utilizar a data da última modificação de cada deck como uma aproximação à participação da comunidade, assumindo que isto está diretamente relacionado ao quanto às pessoas e o próprio jogo estão ativos. Neste contexto, o painel B da figura abaixo demonstra que a atividade da comunidade vem aumentando desde o lançamento do jogo, com contribuições sendo feitas principalmente em torno dos decks de duas facções: Monstros e Nilfgaard. Por outro lado, o painel A demonstra que o padrão de contribuição mensal têm se mantido num patamar bastante estável desde o último ano<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>. Ainda olhando esta série tempora, parece haver alguns períodos em que ocorre um pico de contribuição da comunidade - fato possivelmente associado ao lançamento de patches e expansões.</p>
+<div class="layout-chunk" data-layout="l-body-outset">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'># carregando pacotes</span>
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://lubridate.tidyverse.org'>lubridate</a></span><span class='op'>)</span> <span class='co'># para mexer com datas</span>
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://wilkelab.org/ggridges/'>ggridges</a></span><span class='op'>)</span> <span class='co'># para o ridge plot</span>
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://patchwork.data-imaginist.com'>patchwork</a></span><span class='op'>)</span> <span class='co'># para compor as figuras</span>
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='http://github.com/juliasilge/tidylo'>tidylo</a></span><span class='op'>)</span> <span class='co'># para calcular o log odds</span>
+
+<span class='va'>lista_de_decks</span> <span class='op'>&lt;-</span> <span class='fu'>read_rds</span><span class='op'>(</span>file <span class='op'>=</span> <span class='st'>'data/lista_de_decks.rds'</span><span class='op'>)</span>
+
+<span class='co'># mapeando as contribuições ao longo do tempo</span>
+<span class='va'>decks_no_tempo</span> <span class='op'>&lt;-</span> <span class='va'>lista_de_decks</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># passando a data para o formato de date</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>data <span class='op'>=</span> <span class='fu'><a href='https://lubridate.tidyverse.org/reference/as_date.html'>as_date</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>modified</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># contando a quantidade de decks por data e faccao</span>
+  <span class='fu'>count</span><span class='op'>(</span><span class='va'>data</span>, <span class='va'>slug</span>, name <span class='op'>=</span> <span class='st'>'decks'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># agrupando pela faccao</span>
+  <span class='fu'>group_by</span><span class='op'>(</span><span class='va'>slug</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># ordenando as observacoes por faccao e data</span>
+  <span class='fu'>arrange</span><span class='op'>(</span><span class='va'>slug</span>, <span class='va'>data</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># calculando a quantidde acumulada de decks por faccao</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>acumulado <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/cumsum.html'>cumsum</a></span><span class='op'>(</span><span class='va'>decks</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># desagrupando o dataframe</span>
+  <span class='va'>ungroup</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># ajustando a string do nome da faccao</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>slug <span class='op'>=</span> <span class='fu'>str_to_title</span><span class='op'>(</span>string <span class='op'>=</span> <span class='va'>slug</span><span class='op'>)</span>,
+         slug <span class='op'>=</span> <span class='fu'>case_when</span><span class='op'>(</span><span class='va'>slug</span> <span class='op'>==</span> <span class='st'>'Northernrealms'</span> <span class='op'>~</span> <span class='st'>'Northern Realms'</span>,
+                          <span class='va'>slug</span> <span class='op'>==</span> <span class='st'>'Scoiatael'</span> <span class='op'>~</span> <span class='st'>"Scoia'Tael"</span>,
+                          <span class='cn'>TRUE</span> <span class='op'>~</span> <span class='va'>slug</span><span class='op'>)</span><span class='op'>)</span>
+
+<span class='co'># criando figura da serie temporal dos decks contribuidos por faccao</span>
+<span class='va'>fig1</span> <span class='op'>&lt;-</span> <span class='va'>decks_no_tempo</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># arredondando as datas</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>
+    data <span class='op'>=</span> <span class='fu'><a href='https://lubridate.tidyverse.org/reference/round_date.html'>floor_date</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>data</span>, unit <span class='op'>=</span> <span class='st'>'month'</span><span class='op'>)</span>
+  <span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># agrupando pela faccao e data</span>
+  <span class='fu'>group_by</span><span class='op'>(</span><span class='va'>slug</span>, <span class='va'>data</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
+  <span class='co'># recalculando o total de decks contribuidos por mes-ano</span>
+  <span class='fu'>summarise</span><span class='op'>(</span>decks <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/sum.html'>sum</a></span><span class='op'>(</span><span class='va'>decks</span><span class='op'>)</span>, .groups <span class='op'>=</span> <span class='st'>'drop'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># criando a figura</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/ggplot.html'>ggplot</a></span><span class='op'>(</span>mapping <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>data</span>, y <span class='op'>=</span> <span class='va'>decks</span>, color <span class='op'>=</span> <span class='va'>slug</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/facet_wrap.html'>facet_wrap</a></span><span class='op'>(</span><span class='op'>~</span> <span class='va'>slug</span>, scales <span class='op'>=</span> <span class='st'>'free'</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_path.html'>geom_line</a></span><span class='op'>(</span>show.legend <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_manual.html'>scale_color_manual</a></span><span class='op'>(</span>values <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>'red'</span>, <span class='st'>'black'</span>, <span class='st'>'deepskyblue2'</span>, <span class='st'>'forestgreen'</span>, <span class='st'>'purple3'</span>, <span class='st'>'orange2'</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_date.html'>scale_x_date</a></span><span class='op'>(</span>breaks <span class='op'>=</span> <span class='st'>'6 months'</span>, date_labels <span class='op'>=</span> <span class='st'>'%Y-%m'</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_continuous.html'>scale_y_continuous</a></span><span class='op'>(</span>limits <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0</span>, <span class='cn'>NA</span><span class='op'>)</span>, expand <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0</span>, <span class='fl'>0</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/labs.html'>labs</a></span><span class='op'>(</span>
+    title    <span class='op'>=</span> <span class='st'>'Gwent: The Witcher Card Game'</span>,
+    subtitle <span class='op'>=</span> <span class='st'>'Quantidade de decks contribuídos ao longo do tempo por facção'</span>,
+    x        <span class='op'>=</span> <span class='st'>'Período'</span>,
+    y        <span class='op'>=</span> <span class='st'>'Quantidade de decks'</span>
+  <span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/theme.html'>theme</a></span><span class='op'>(</span>
+    plot.title       <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_text</a></span><span class='op'>(</span>size <span class='op'>=</span> <span class='fl'>18</span>, family <span class='op'>=</span> <span class='st'>'thewitcher'</span><span class='op'>)</span>,
+    axis.text        <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_text</a></span><span class='op'>(</span>size <span class='op'>=</span> <span class='fl'>8</span><span class='op'>)</span>,
+    panel.grid.minor <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_blank</a></span><span class='op'>(</span><span class='op'>)</span>
+  <span class='op'>)</span>
+
+<span class='co'># contribuicao total ao longo do tempo por faccao</span>
+<span class='va'>fig2</span> <span class='op'>&lt;-</span> <span class='va'>decks_no_tempo</span> <span class='op'>%&gt;%</span> 
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/ggplot.html'>ggplot</a></span><span class='op'>(</span>mapping <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>data</span>, y <span class='op'>=</span> <span class='va'>acumulado</span>, color <span class='op'>=</span> <span class='va'>slug</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_path.html'>geom_line</a></span><span class='op'>(</span>size <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_manual.html'>scale_color_manual</a></span><span class='op'>(</span>values <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>'red'</span>, <span class='st'>'black'</span>, <span class='st'>'deepskyblue2'</span>, <span class='st'>'forestgreen'</span>, <span class='st'>'purple3'</span>, <span class='st'>'orange2'</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_date.html'>scale_x_date</a></span><span class='op'>(</span>breaks <span class='op'>=</span> <span class='st'>'6 months'</span>, date_labels <span class='op'>=</span> <span class='st'>'%Y-%m'</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/labs.html'>labs</a></span><span class='op'>(</span>
+    subtitle <span class='op'>=</span> <span class='st'>'Quantidade acumulada de decks contribuídos pela comunidade'</span>,
+    x        <span class='op'>=</span> <span class='st'>'Período'</span>,
+    y        <span class='op'>=</span> <span class='st'>'Quantidade de decks'</span>
+  <span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/guides.html'>guides</a></span><span class='op'>(</span>
+    color <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/guide_legend.html'>guide_legend</a></span><span class='op'>(</span>label.theme <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_text</a></span><span class='op'>(</span>size <span class='op'>=</span> <span class='fl'>12</span>, family <span class='op'>=</span> <span class='st'>'Mason'</span><span class='op'>)</span>, 
+                         keywidth <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/grid/unit.html'>unit</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='fl'>0.6</span>, units <span class='op'>=</span> <span class='st'>'in'</span><span class='op'>)</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/theme.html'>theme</a></span><span class='op'>(</span>
+    legend.position <span class='op'>=</span> <span class='st'>'bottom'</span>
+  <span class='op'>)</span>
+
+<span class='co'># compondo a figura</span>
+<span class='op'>(</span><span class='va'>fig1</span> <span class='op'>/</span> <span class='fu'><a href='https://patchwork.data-imaginist.com/reference/plot_spacer.html'>plot_spacer</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>/</span> <span class='va'>fig2</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://patchwork.data-imaginist.com/reference/plot_layout.html'>plot_layout</a></span><span class='op'>(</span>heights <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>1</span>, <span class='fl'>0.05</span>, <span class='fl'>1</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://patchwork.data-imaginist.com/reference/plot_annotation.html'>plot_annotation</a></span><span class='op'>(</span>tag_levels <span class='op'>=</span> <span class='st'>'A'</span><span class='op'>)</span>
+</code></pre>
+</div>
+</details>
+<p><img src="gwent_files/figure-html5/fig_serie_temporal-1.png" width="2000" data-distill-preview=1 style="display: block; margin: auto;" /></p>
+</div>
+<p>Outra coisa que achei interessante foi o fato de que parece existir alguma diferença no custo de criação dos decks contribuídos pela comunidade de acordo com a facção. A figura abaixo mostra que parece existir uma tendência de que os decks da facção de Nilfgaard e do Syndicate tenham custos ligeiramente maiores que os demais, enquanto o deck dos monstros tenha um custo ligeiramente menor - tudo isso à julgar apenas pela mediana e o formato da distribuição mas, é claro, caberia alguma análise estatística aqui. Esse padrão é interessante, pois demonstra que o investimento no deck depende muito do quanto você quer gastar em resto (<em>i.e.</em>, a ‘moeda’ utilizada para criar cartas dentro do jogo; você pode comprar essas moedas com dinheiro de verdade, acumulando vitórias nas partidas, cumprindo objetivos e etc.).</p>
+<div class="layout-chunk" data-layout="l-body-outset">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'># preparando os dados para a figura</span>
+<span class='va'>df_metadados</span> <span class='op'>&lt;-</span> <span class='va'>lista_de_decks</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># removendo os decks invalidados</span>
+  <span class='fu'><a href='https://rdrr.io/r/stats/filter.html'>filter</a></span><span class='op'>(</span><span class='op'>!</span><span class='va'>invalid</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
+  <span class='co'># ajustando os dados para plotar</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>
+    <span class='co'># ajustando a string do nome da faccao</span>
+    slug <span class='op'>=</span> <span class='fu'>str_to_title</span><span class='op'>(</span>string <span class='op'>=</span> <span class='va'>slug</span><span class='op'>)</span>,
+    slug <span class='op'>=</span> <span class='fu'>case_when</span><span class='op'>(</span><span class='va'>slug</span> <span class='op'>==</span> <span class='st'>'Northernrealms'</span> <span class='op'>~</span> <span class='st'>'Northern Realms'</span>,
+                     <span class='va'>slug</span> <span class='op'>==</span> <span class='st'>'Scoiatael'</span> <span class='op'>~</span> <span class='st'>"Scoia'Tael"</span>,
+                     <span class='cn'>TRUE</span> <span class='op'>~</span> <span class='va'>slug</span><span class='op'>)</span>,
+    <span class='co'># discretizando a quantidade de votos</span>
+    votes_binned <span class='op'>=</span> <span class='fu'>case_when</span><span class='op'>(</span><span class='va'>votes</span> <span class='op'>&lt;</span> <span class='fl'>0</span> <span class='op'>~</span> <span class='st'>'Negativos'</span>,
+                             <span class='va'>votes</span> <span class='op'>==</span> <span class='fl'>0</span> <span class='op'>~</span> <span class='st'>'Nenhum'</span>,
+                             <span class='fu'>between</span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>votes</span>, left <span class='op'>=</span> <span class='fl'>1</span>, right <span class='op'>=</span> <span class='fl'>40</span><span class='op'>)</span> <span class='op'>~</span> <span class='st'>'Até 40'</span>,
+                             <span class='va'>votes</span> <span class='op'>&gt;=</span> <span class='fl'>41</span> <span class='op'>~</span> <span class='st'>'Tops'</span><span class='op'>)</span>,
+    <span class='co'># ordenando a quantidade discretizada de votos</span>
+    votes_binned <span class='op'>=</span> <span class='fu'>fct_reorder</span><span class='op'>(</span>.f <span class='op'>=</span> <span class='va'>votes_binned</span>, .x <span class='op'>=</span> <span class='va'>votes</span>, .fun <span class='op'>=</span> <span class='va'>median</span>, .desc <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+  <span class='op'>)</span>
+
+<span class='co'># distribuição dos valores de densidade do crafting cost</span>
+<span class='va'>df_metadados</span> <span class='op'>%&gt;%</span> 
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/ggplot.html'>ggplot</a></span><span class='op'>(</span>mapping <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>craftingCost</span>, y <span class='op'>=</span> <span class='va'>slug</span>, fill <span class='op'>=</span> <span class='va'>slug</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://wilkelab.org/ggridges/reference/geom_density_ridges.html'>geom_density_ridges2</a></span><span class='op'>(</span>scale <span class='op'>=</span> <span class='fl'>0.95</span>, quantile_lines <span class='op'>=</span> <span class='cn'>TRUE</span>, quantiles <span class='op'>=</span> <span class='fl'>2</span>, color <span class='op'>=</span> <span class='st'>'white'</span>, show.legend <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_manual.html'>scale_fill_manual</a></span><span class='op'>(</span>values <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>'red'</span>, <span class='st'>'black'</span>, <span class='st'>'deepskyblue2'</span>, <span class='st'>'forestgreen'</span>, <span class='st'>'purple3'</span>, <span class='st'>'orange2'</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_continuous.html'>scale_x_continuous</a></span><span class='op'>(</span>breaks <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/seq.html'>seq</a></span><span class='op'>(</span>from <span class='op'>=</span> <span class='fl'>0</span>, to <span class='op'>=</span> <span class='fl'>11000</span>, by <span class='op'>=</span> <span class='fl'>2000</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/labs.html'>labs</a></span><span class='op'>(</span>
+    title    <span class='op'>=</span> <span class='st'>'Distribuição do custo de criação do deck'</span>,
+    subtitle <span class='op'>=</span> <span class='st'>'A linha vertical branca em cada plot de densidade representa a mediana da distribuição\ndo custo de criação dos decks da respectiva facção'</span>,
+    x     <span class='op'>=</span> <span class='st'>'Custo de criação do deck'</span>
+  <span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/theme.html'>theme</a></span><span class='op'>(</span>
+    plot.title    <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_text</a></span><span class='op'>(</span>size <span class='op'>=</span> <span class='fl'>16</span>, face <span class='op'>=</span> <span class='st'>'bold'</span><span class='op'>)</span>,
+    plot.subtitle <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_text</a></span><span class='op'>(</span>size <span class='op'>=</span> <span class='fl'>14</span><span class='op'>)</span>,
+    axis.title.y  <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_blank</a></span><span class='op'>(</span><span class='op'>)</span>,
+    axis.title.x  <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_text</a></span><span class='op'>(</span>size <span class='op'>=</span> <span class='fl'>14</span><span class='op'>)</span>
+  <span class='op'>)</span>
+</code></pre>
+</div>
+</details>
+<p><img src="gwent_files/figure-html5/fig_custo-1.png" width="2000" style="display: block; margin: auto;" /></p>
+</div>
+<p>Finalmente, estava interessado em tentar entender de que forma os votos estão distribuídos entre os decks das diferentes facções: é possível votar dando <em>likes</em> em cada deck e, também, dando <em>dislikes</em>. Inicialmente, quando olhei esses dados, vi que a maioria esmagadora dos decks possuía nenhum ou apenas um voto, e que isso fazia com que ficasse difícil visualizar o padrão que eu estava buscando entender. Assim, resolvi fazer duas coisas para entender os padrões de votação em torno de cada deck:</p>
+<ol type="1">
+<li>A primeira delas foi discretizar os votos em torno de quatro categorias: (a) <em>dislikes</em>, para juntar os decks que receberam apenas votos negativos, (b) uma categoria para os decks que não receberam nenhum voto, (c) uma outra categoria para decks que receberam até 40 votos e (d) uma última categoria para os decks que receberam mais de 40 (<em>i.e.</em>, os decks mais Tops do ranking);<br />
+</li>
+<li>A segunda coisa que fiz foi calcular o log da razão de probabilidades (<em>i.e.</em>, <em>log odds ratio</em>) com base na quantidade de decks em cada combinação de facção e à categoria de votos. Esta métrica representa o logarítimo da razão entre (a) a probabilidade de que um deck de uma facção esteja associado à uma categoria de voto e (b) e a probabilidade dos decks das outras facções estarem associadas à esta mesma categoria. Em outras palavras, esta métrica vai medir as categorias de votos mais características dos decks de cada uma das facções. Caso o valor desta métrica seja positivo, isto sugere que é muito provável que aquele deck esteja frequentemente associado à uma ocorrência mais frequente de observações naquela categoria de votos; caso contrário, isto sugere que esta associação é pouco provável.</li>
+</ol>
+<p>Os resultados desta análise são apresentados na figura abaixo.</p>
+<div class="layout-chunk" data-layout="l-body-outset">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'># distribuição dos votos mais característicos para cada deck</span>
+<span class='va'>df_metadados</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># contando quantidade de decks em cada categoria por deck</span>
+  <span class='fu'>count</span><span class='op'>(</span><span class='va'>slug</span>, <span class='va'>votes_binned</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># calculando o log odds por deck</span>
+  <span class='fu'>bind_log_odds</span><span class='op'>(</span>set <span class='op'>=</span> <span class='va'>slug</span>, feature <span class='op'>=</span> <span class='va'>votes_binned</span>, n <span class='op'>=</span> <span class='va'>n</span>, uninformative <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># criando a figura</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/ggplot.html'>ggplot</a></span><span class='op'>(</span>mapping <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>log_odds_weighted</span>, y <span class='op'>=</span> <span class='va'>votes_binned</span>, fill <span class='op'>=</span> <span class='va'>slug</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/facet_wrap.html'>facet_wrap</a></span><span class='op'>(</span><span class='op'>~</span> <span class='va'>slug</span>, scales <span class='op'>=</span> <span class='st'>'free'</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_abline.html'>geom_vline</a></span><span class='op'>(</span>xintercept <span class='op'>=</span> <span class='fl'>0</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_bar.html'>geom_col</a></span><span class='op'>(</span>color <span class='op'>=</span> <span class='st'>'black'</span>, show.legend <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>+</span> 
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_manual.html'>scale_fill_manual</a></span><span class='op'>(</span>values <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>'red'</span>, <span class='st'>'black'</span>, <span class='st'>'deepskyblue2'</span>, <span class='st'>'forestgreen'</span>, <span class='st'>'purple3'</span>, <span class='st'>'orange2'</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_continuous.html'>scale_x_continuous</a></span><span class='op'>(</span>n.breaks <span class='op'>=</span> <span class='fl'>5</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/labs.html'>labs</a></span><span class='op'>(</span>
+    title    <span class='op'>=</span> <span class='st'>'Padrão de votação mais característico para os decks de cada facção'</span>,
+    subtitle <span class='op'>=</span> <span class='st'>'Os valores representam o quão mais provável é que um deck pertencente àquela facção tenha mais votos naquela\nfaixa do que aqueles nas outras facções. Valores positivos sugerem que é muito provável que aquele deck esteja\nfrequentemente associado à uma ocorrência mais frequente de observações naquela categoria de votos; caso\ncontrário, isto sugere que esta associação é pouco provável.'</span>,
+    x        <span class='op'>=</span> <span class='st'>'Log da razão de probabilidades (Log Odds Ratio)'</span>
+  <span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/theme.html'>theme</a></span><span class='op'>(</span>
+    plot.title    <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_text</a></span><span class='op'>(</span>size <span class='op'>=</span> <span class='fl'>16</span>, face <span class='op'>=</span> <span class='st'>'bold'</span><span class='op'>)</span>,
+    plot.subtitle <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_text</a></span><span class='op'>(</span>size <span class='op'>=</span> <span class='fl'>12</span><span class='op'>)</span>,
+    axis.title.y  <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_blank</a></span><span class='op'>(</span><span class='op'>)</span>,
+    axis.title.x  <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_text</a></span><span class='op'>(</span>size <span class='op'>=</span> <span class='fl'>14</span><span class='op'>)</span>
+  <span class='op'>)</span>
+</code></pre>
+</div>
+</details>
+<p><img src="gwent_files/figure-html5/fig_odds-1.png" width="2000" style="display: block; margin: auto;" /></p>
+</div>
+<p>Existem alguns padrões muito interessantes identificados na figura acima. É muito provável, por exemplo, que os dislikes e a ausência de votos sejam comuns nos decks das facções dos Monstros e de Nilfgaard. Por outro lado, é pouco provável que os decks destas facções recebam poucos votos (<em>i.e.</em>, até 40 votos), de forma que decks destas facções parecem dominar a lista dos decks mais Tops disponíveis. De forma similar, os decks das facções dos Reinos do Norte, Scoia’Tael e Skellige parecem ser aqueles que sempre recebem alguns votos, mas dificilmente são os decks que estarão lá no topo do ranking dos decks mais votados. Por fim, decks da facção do Sindicato parecem não ser nem ruins, nem bons…apenas estão lá.</p>
 <h1 id="conclusões">Conclusões</h1>
+<p>Neste post eu mostrei de que forma podemos raspar a lista dos decks de Gwent contribuídos pela comunidade, e como utilizar a informação do identificador único de cada deck a fim de também raspar as suas informações. Muito do conteúdo raspado é exibido de forma dinâmica, mas vimos que parte dele era servido através de uma API escondida (<em>i.e.</em>, a lista de decks) e a outra parte estava escondida dentro do código HTML da página uma vez que ela era carregada (<em>i.e.</em>, o deck em si). Estas duas coisas facilitaram (e muito) a tarefa de raspar, parsear e organizar as informações obtidas.</p>
+<p>Para fechar o post, eu ainda olhei três informações sobre os decks contribuídos pela comunidade, e constatei que:</p>
+<ul>
+<li>O jogo ainda está em uma fase de plena atividade, ainda com uma participação e contribuição bastante expressiva da comunidade. Logo, acredito que vale a pena continuar jogando uma partidinha ou outra e investir na construção de novos decks (<em>i.e.</em>, sem monetizar, claro);<br />
+</li>
+<li>Se quisermos montar um deck legalzinho, o ideal é focar nas facções dos Reinos do Norte, Scoia’Tael ou Skellige. Por outro lado, seo objetivo é construir um deck que é super bem avaliado, a estratégia seria partir para um deck da facção dos Monstros ou de Nilfgaard. Se, no entanto, estiver em dúvida, só não invista em um deck da facção do Sindicato;<br />
+</li>
+<li>Os decks das facções que estão mais frequentemente no topo do ranking dos decks mais votados, Monstros e Nilfgaard, são também aqueles que parecem estar em opostos no que diz respeito ao custo de construção dos decks (<em>i.e.</em>, Montros &lt; Nilfgaard). É claro que só uma análise estatística poderia nos ajudar a esclarecer se isto é um padrão mesmo ou só um viés do nosso olhar, mas é algo que ajuda a pensar em estratégia.</li>
+</ul>
 <h1 id="possíveis-extensões">Possíveis Extensões</h1>
+<p>Uma vez que temos o <em>scrapper</em> e, com ele, termos acesso às cartas que compõem cada deck na lista, podemos explorar algumas ideias:</p>
+<ul>
+<li>Determinar se as cartas das diferentes facção formam grupos, de fato, dissimilares com base nas informações de texto do <code>tooltip</code>. Uma forma de fazer isso seria através de uma clusterização e/ou uma análise de dissimilaridade (<em>e.g.</em>, PERMANOVA);<br />
+</li>
+<li>Treinar um algoritmo de <em>embedding</em> utilizando o texto do <code>tooltip</code>, só pelo prazer criar o modelo e praticar um pouco as técnicas de NLP;<br />
+</li>
+<li>Desenvolver um modelo capaz de sugerir uma carta dado outras <em>n</em> cartas no baralho, baseado no texto do <code>tooltip</code> de cada carta. Penso nisso como algo similar a um modelo de previsão de texto, tipo um Bag-of-Words ou um Skip-Gram…até li esses dias um exemplo similar que usava um BERT pré-treinado. De repente, é algo que vale a pena testar;<br />
+</li>
+<li>Ao invés de recorrer a um modelo de texto em si, poderíamos usar algo mais simples para tentar entender as regras de associação entre as cartas (<em>e.g.</em>, o algoritmo <em>apriori</em>);<br />
+</li>
+<li>Poderíamos desenvolver uma aplicação capaz de receber como input um deck que eu tenha e, então, identificar qual o deck mais similar a ele que existe dentro da biblioteca de decks contribuídos pela comunidade. Desta forma, eu poderia utilizar estas informações para buscar montar e/ou modificar cada um dos meus decks de forma a chegar o mais próximo e de forma mais rápida à decks já testados e aprovados pela comunidade.</li>
+</ul>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <section class="footnotes" role="doc-endnotes">
 <hr />
 <ol>
 <li id="fn1" role="doc-endnote"><p>Um dos jogos mais <em>tops</em> que já joguei.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" role="doc-endnote"><p>Esse passo não é obrigatório, mas decidi colocá-lo aqui só para não bombardear o servidor de <em>request</em> uma vez que eu vá usar essa função dentro de um <code>map</code>.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" role="doc-endnote"><p>Esse passo não é obrigatório, mas decidi colocá-lo aqui só para não bombardear o servidor com um monte de <em>requests</em> de uma vez quando formos escalar o seu uso.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3" role="doc-endnote"><p><em>e.g.</em>, <a href="https://www.playgwent.com/pt-BR/decks/2" class="uri">https://www.playgwent.com/pt-BR/decks/2</a>, <a href="https://www.playgwent.com/pt-BR/decks/3" class="uri">https://www.playgwent.com/pt-BR/decks/3</a>,…<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4" role="doc-endnote"><p>Isso pode estar relacionado ao comportamento aparentemente linear que pode ser visto no painel B.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 <!--radix_placeholder_article_footer-->
