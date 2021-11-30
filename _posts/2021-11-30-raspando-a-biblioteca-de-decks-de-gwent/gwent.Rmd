@@ -1,5 +1,5 @@
 ---
-title: "Raspando a biblioteca de baralhos de Gwent"
+title: "Raspando a biblioteca de decks de Gwent"
 description: |
   Gwent é um jogo de cartas que nasceu dentro do universo de The Witcher e, dada a popularidade da franquia, chegou aos smartphones. A comunidade de jogadores é bastante ativa, e existe uma biblioteca de decks contribuídos que está disponível dentro do site oficial do jogo. Meu objetivo neste post será obter os dados desta biblioteca e de seus decks. Isto servirá para montar uma base de dados para fazermos outras análises posteriormente.
 author:
