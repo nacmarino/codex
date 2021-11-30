@@ -3,6 +3,7 @@ title: 'Postagens'
 site: distill::distill_website
 listing: 
   posts:
+    - 2021-11-30-raspando-a-biblioteca-de-decks-de-gwent
     - 2021-11-15-previsao-de-acidentes-com-os-dados-da-formula-1
     - 2021-10-24-raspando-a-pagina-do-ranking-da-ludopedia
     - 2021-10-08-entendendo-os-padroes-de-duracao-das-provas-da-formula-1

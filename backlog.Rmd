@@ -9,7 +9,7 @@ theme: theme.css
 - Como raspar os anúncios do ZapImóveis;
 - Interagindo com a API REST da Ludopedia;
 - Interagindo com a API XML da BoardGameGeek;  
-- [On going] Como raspar os dados dos baralhos de Gwent?
+- [On going] Interagindo com o site da calculadora geográfica no INPE.  
 
 # TidyTuesday
 ### Y2021W36 - BirdBaths 
@@ -25,12 +25,16 @@ O dataset da semana contém uma lista de espécies de pássaros que foram avista
 - Que fatores estão associados ao sucesso de um jogo de tabuleiro?  
 - Podemos prever se um jogo de tabuleiro lançado no Brasil será um big hit?  
 - Como gerar recomendações de um jogo a partir de suas características?  
-- Quais as regras de associação existentes entre as cartas do baralho de Gwent?  
-- Qual o baralho de Gwent mais fácil de montar a partir do baralho que eu tenho?  
+- Quais as regras de associação existentes entre as cartas dos decks de Gwent?  
+- Qual o deck de Gwent mais fácil de montar a partir do baralho que eu tenho?  
+- Cartas de facções diferentes formam grupos distintos com base nas informações de texto do `tooltip`?  
+- Como visualizar a relação entre as cartas de Gwent?  
+- Que carta devo adicionar ao meu deck de Gwent para complementar o que tenho com estas outras _n_ cartas?  
 - [On going] Quão similares são as notas dos rankings de jogos de tabuleiro entre a Ludopedia e o BoardGameGeek?
 
 # Testando Pacotes
 
 - Testando o pacote `modeltime` para modelar séries temporais;  
 - Testando o ecossistema do pacote `fpp3` para modelar séries temporais;  
+- Testando o pacote `arules` para modelar regras de associação;  
 - [On going] Testando o pacote `infer` para a inferência estatística.

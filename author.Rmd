@@ -80,7 +80,7 @@ Aprendi a viver e a fazer ciência ao longo da minha trajetória profissional, a
 - **COURSERA**
     + Learn to Program: Crafting Quality Code | 2021
     + Data Science | Johns Hopkins University | Em andamento
-        + Reproducible Research | Em andamento
+        + Reproducible Research | 2021
         + Exploratory Data Analysis | 2021
         + Getting and Cleaning Data | 2021
         + R Programming | 2021
