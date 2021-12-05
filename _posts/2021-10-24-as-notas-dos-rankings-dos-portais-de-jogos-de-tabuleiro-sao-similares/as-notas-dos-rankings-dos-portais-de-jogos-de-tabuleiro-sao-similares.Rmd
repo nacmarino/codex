@@ -1,14 +1,14 @@
 ---
-title: "As notas dos rankings dos portais de jogos de tabuleiro sao similares?"
+title: "Quão similares são as notas dos jogos de tabuleiro entre os rankings disponíveis?"
 description: |
-  A short description of the post.
+  Meu principal objetivo neste post é analisar as notas dadas aos jogos de tabuleiros nos rankings do portal da Ludopedia e do portal do BoardGameGeek para determinar quão similares são as notas dadas aos títulos nas mesmas posições entre os dois rankings. Isto é, será que a nota dada ao título na i-ésima posição no ranking da Ludopedia é parecida com a nota dada ao título na mesma posição no ranking do BoardGameGeek?
 author:
   - first_name: Nicholas 
     last_name: Marino
     url: https://github.com/nacmarino
 date: 10-08-2021
 categories:
-  - web scraping
+  - estatistica
   - boardgames
   - infer
 output:
@@ -22,7 +22,7 @@ draft: true
 
 ```{r setup, include=FALSE}
 # setando as opções gerais dos code chunks
-knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, fig.align = 'center')
+knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, cache = TRUE, dpi = 200, fig.align = 'center')
 
 # presetando o ggplot2
 library(ggplot2)
@@ -43,345 +43,21 @@ theme_update(
 
 # Motivação
 
-Há algum tempo atrás eu explorei o caminho para raspar os dados do ranking do _BoardGameGeek_^[BGG daqui para a frente], e consolidei o passo-a-passo nesse [post](https://nacmarino.github.io/codex/posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/) e [script](https://github.com/nacmarino/codex/blob/master/_posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/scripts/raspa_ranking_bgg.R). Meu principal interesse naquele momento era que eu precisava obter o código numérico identificador de cada título a fim de poder usar esse valor quando fosse interagir com a API XML do BGG. Como o único lugar em que encontrei essa informação foi no hyperlink para a página de cada título na tabela do ranking, resolvi criar aquele _scrapper_.
+# Preparação dos dados
 
-Uma outra fonte de informação sobre jogos de tabuleiro é o site brasileiro da [Ludopedia](www.ludopedia.com.br). Este portal tem muita coisa em comum com o BGG, inclusive uma API e uma página de ranking. Todavia, diferente do equivalente gringo, a Ludopedia oferece (1) uma REST API e (2) um meio mais fácil de obter o código identificador de cada título a partir da própria API. De toda forma, no momento em que escrevo este post, ainda não é possível obter as informações da página do ranking diretamente pela API. Desta forma, aqui também existe a possibilidade de exercitar um pouco o _web scrapping_ para a extração dessa informação.
-
-Mas criar um _scrapper_ por criar não é muito a minha praia. Na realidade, resolvi mostrar como raspar a página do ranking da Ludopedia a fim de responder a uma pergunta: será que existe alguma diferença entre as notas associadas à uma mesma posição entre os rankings dos dois portais? Isto é, será que as notas para aparecer numa dada posição do ranking precisam ser maiores em um dos portais do que no outro? Caso positivo, isto pode representar um caso no qual o público atendido por um portal é mais 'exigente' do que o do outro ou, ainda, que a régua é mais alta em um portal que no outro para uma mesma posição do ranking. Em contraste, caso as notas sejam similares, é possível que isto esteja relacionado ao fato de que o comportamento de avaliação dos jogos no ranking não depende do público atendido por cada portal. Podem haver outras explicações, claro, e é extremamente provável que eu não chegue à nenhuma delas. Mas ficam aí alguns aspectos do que as respostas àquela pergunta podem representar.
-
-Finalmente, gostaria de aproveitar a oportunidade para continuar construindo uma trilha a partir da qual poderemos responder muitas outras perguntas interessantes, e aplicar técnicas bastante legais de Machine Learning. Falo mais sobre essas idéias ao final desse post.
-
-# Raspando o Ranking
-
-Para começar a nossa tarefa, vamos importar o combo de pacotes tradicionais para fazer o _scrapper_, o _parser_ e tratar os dados.
-
-```{r carrega_pacotes}
+```{r}
+# carregando os pacotes
 library(tidyverse) # core
-library(httr) # web scrapping
-library(xml2) # parsear
-library(fs) # mexer com paths
-library(knitr) # para embbedar as figuras
+library(ggside) # para colocar o density plot ao lado
+library(ggridges) # para plotar o ridge plot
 ```
-
-A seguir, vamos racionalizar o _web scrapping_ usando aquele mesmo [fluxo](https://blog.curso-r.com/posts/2018-02-18-fluxo-scraping/) que o pessoal da Curso-R sugere: (1) identificar, (2) navegar, (3) replicar, (4) _parsear_, (5) validar e (6) iterar. Para arrematar, vamos adicionar uma etapa de (7) faxinar os dados, antes que possamos (8) testar a hipótese apresentada neste post.
-
-## Identificar
-
-A primeira coisa aqui é navegar até a página-alvo e entender como funciona a sua paginação e onde está o conteúdo que queremos raspar. A figura abaixo mostra um _print_ da primeira página do ranking, onde podemos ver a _url_ que precisaremos visitar bem como constatar que a paginação funciona incrementando a contagem da página (_i.e._, `pagina=1`, `pagina=2`,...)^[Essa paginação não estará evidente na primeira vez que você visitar essa página. Entretanto, se você avançar para a próxima página e depois voltar, verá que ela aparecerá na _url_].
-
-Outro ponto importante é que podemos ver que as informação que queremos _parecem_ estar em uma tabela, como foi no caso do BGG. Além disso, cada página contém 50 jogos ordenados de forma sequencial de acordo com a sua posição no ranking.
-
-```{r imagem_identificar, layout = 'l-body-outset', code_folding = TRUE}
-include_graphics(path = 'images/imagem_1.jpg')
-```
-
-## Navegar
-
-O próximo passo é olhar o fluxo de informação da página a partir da aba `Network`, acessível através da ferramenta `Inspecionar` do navegador. Podemos ver que o conteúdo que queremos raspar não é produzido a partir de nenhuma API nem nada parecido, mas totalmente disponível a partir do código HTML mesmo. Além disso, podemos ver que o conteúdo não está organizado dentro de _tags_ de tabela do HTML, mas sim dentro de várias _tags_ `div` associadas à classe `pad-top`. Isto já torna o _parser_ deste _scrapper_ diferente daquele do BGG, onde foi bastante simples tabular as informações a partir do código HTML.
-
-```{r imagem_navegar, layout = 'l-body-outset', code_folding = TRUE}
-include_graphics(path = 'images/imagem_2.jpg')
-```
-
-## Replicar
-
-Vamos então tentar fazer um _request_ da primeira página do ranking e ver o que conseguimos. Vamos fazer isso de forma bem simples, passando apenas a _url_ base para acessar a página e deixando o valor correspondente à página em si como algo a ser determinado separadamente. Faremos isso usando a função `GET` do pacote `httr`. 
-
-```{r replicar}
-## url base do ranking
-base_url <- 'https://www.ludopedia.com.br/ranking?pagina='
-
-# fazendo o GET
-resultado <- GET(url = str_glue(base_url, 1))
-resultado
-```
-
-Apesar da forma como o conteúdo está disponível nesta página ser diferente daquele do BGG, o _request_ em si parace também ser bem simples!
-
-## Parsear
-
-Como vimos anteriormente, as informações que queremos não estão formatadas e organizadas dentro de _tags_ de tabela em HTML. Portanto, precisaremos identificar e _parsear_ cada uma das informações que queremos usando os respectivos `xpath`. Para começar, podemos ver que temos acesso ao hyperlink que contém a imagem da capa do jogo se extrairmos o atributo `src` a partir da classe `img-capa` dentro da tag `img`. Isto pode ser uma informação legal se, depois, _e.g._ quisermos plotar essa imagem como uma célula dentro de uma tabela do `reactable`.
-
-```{r parser_capa, fig.width=6}
-resultado %>% 
-  # pegando o conteudo
-  content() %>% 
-  # pegando a imagem da capa
-  xml_find_all(xpath = '//img[@class="img-capa"]') %>% 
-  # pegando o url
-  xml_attr(attr = 'src') %>% 
-  # pegando a primeira observação
-  head(1) %>% 
-  # plotando a imagem de uma capa
-  magick::image_read() %>% 
-  # aumentando a resolução da imagem
-  magick::image_scale(geometry = '300')
-```
-
-Outra informação legal de buscar é o hyperlink para a página de cada jogo no domínio da Ludopedia. Esta informação esta dentro da _tag_ que contém o nome do título (_i.e._, classe `media-heading` dentro do header `h4`), e pode ser obtida extraindo o atributo `href` de dentro da tag `a`. Como já conheço a API REST da Ludopedia, sei que essa informação pode ser útil para _e.g._ raspar o campo de descrição completa do jogo, a fim de utilizar esse texto em alguma análise.
-
-```{r parser_link_jogo}
-resultado %>% 
-  # pegando o conteudo
-  content() %>% 
-  # pegando o conteudo do titulo do mini-box
-  xml_find_all(xpath = '//h4[@class="media-heading"]') %>% 
-  # pegando todos os links
-  xml_find_all(xpath = 'a') %>% 
-  # extraindo o atributo dos hiperlinks
-  xml_attr(attr = 'href') %>% 
-  # pegando algumas instancias apenas
-  head()
-```
-
-A posição do ranking também pode ser extraída a partir da classe `media-heading` dentro do header `h4`, olhando a classe `rank` dentro da _tag_ `span`...
-
-```{r parser_ranking}
-resultado %>% 
-  # pegando o conteudo
-  content() %>% 
-  # pegando o conteudo do titulo do mini-box
-  xml_find_all(xpath = '//h4[@class="media-heading"]') %>% 
-  # pegando o ranking
-  xml_find_all(xpath = 'span[@class="rank"]') %>% 
-  # pegando o texto
-  xml_text() %>% 
-  # pegando algumas instancias apenas
-  head()
-```
-
-...enquanto o nome do jogo pode ser extraído a partir do atributo `title` dentro da _tag_ `a`...
-
-```{r parser_nome}
-resultado %>% 
-  # pegando o conteudo
-  content() %>% 
-  # pegando o conteudo do titulo do mini-box
-  xml_find_all(xpath = '//h4[@class="media-heading"]') %>% 
-  # pegando o nome do jogo
-  xml_find_all(xpath = 'a[@title]') %>% 
-  # pegando o texto
-  xml_text() %>% 
-  # pegando algumas instancias apenas
-  head()
-```
-
-...o ano de lançamento de cada título vêm do atributo `small`...
-
-```{r parser_ano}
-resultado %>% 
-  # pegando o conteudo
-  content() %>% 
-  # pegando o conteudo do titulo do mini-box
-  xml_find_all(xpath = '//h4[@class="media-heading"]') %>% 
-  # pegando o ano de lançamento do jogo
-  xml_find_all(xpath = 'small') %>% 
-  # pegando o texto
-  xml_text() %>% 
-  # pegando algumas instancias apenas
-  head()
-```
-
-...enquanto, finalmente, todas as informações relacionadas às notas podem ser extraídas a partir da classe `rank-info` dentro da tag `div`.
-
-```{r parser_notas}
-resultado %>% 
-  # pegando o conteudo
-  content() %>% 
-  # pegando o conteudo do titulo do mini-box
-  xml_find_all(xpath = '//h4[@class="media-heading"]') %>% 
-  # pegando as notas do jogo
-  xml_find_all(xpath = '//div[@class="rank-info"]') %>% 
-  # pegando o texto
-  xml_text() %>% 
-  # pegando algumas instancias apenas
-  head() %>% 
-  # tirando um pouco o excesso de whitespace
-  str_squish()
-```
-
-Com isso, temos um sashimi de _parsers_ para pegar todas as informações que queremos a partir da página do ranking. Vamos agora consolidar esse entendimento e validá-lo na segunda página.
-
-## Validar
-
-Para auxiliar na tarefa de raspar e _parsear_ a segunda página do ranking, vamos definir duas funções abaixo - uma para cada tarefa. A função `pega_pagina` recebe a _url_ base do ranking, o número da página que queremos raspar e um _path_ para um diretório, fazendo então o _request_ da página e salvando o HTML resultante em disco. A outra função, `parser_pagina`, recebe como único argumento o _path_ para o arquivo HTML que a função `pega_pagina` salvou, e faz o que o próprio nome da função já diz. Ela está bem verbosa, mas o objetivo é mesmo deixar claro o que estamos fazendo.
-
-```{r funcoes_validar}
-# função para fazer o GET
-pega_pagina <- function(url_base, pagina, save_dir) {
-  ## junta a base url com o numero da pagina e salva no diretorio alvo
-  GET(url = str_glue(url_base, pagina), 
-      write_disk(path = sprintf(fmt = '%s/pagina_%03d.html', save_dir, pagina), 
-                 overwrite = TRUE)
-  )
-  
-  # esperanando antes de prosseguir
-  Sys.sleep(runif(n = 1, min = 1, max = 5))
-}
-
-# função para parsear uma pagina
-parser_pagina <- function(path_to_html){
-  
-  ## lendo a pagina raspada
-  pagina_raspada <- read_html(x = path_to_html)
-  
-  ## infos do heading
-  media_head <- pagina_raspada %>% 
-    xml_find_all(xpath = '//h4[@class="media-heading"]')
-  
-  ## link para a imagem da capa
-  links_da_capa <- pagina_raspada %>% 
-    xml_find_all(xpath = '//img[@class="img-capa"]') %>% 
-    xml_attr(attr = 'src')
-  
-  ## link para a pagina do jogo
-  link_jogo <- media_head %>% 
-    xml_find_all(xpath = 'a') %>% 
-    xml_attr(attr = 'href')
-  
-  ## posicao do ranking de cada titulo
-  posicao_ranking <- media_head %>% 
-    xml_find_all(xpath = 'span[@class="rank"]') %>% 
-    xml_text()
-  
-  ## nome do jogo
-  titulo_jogo <- media_head %>% 
-    xml_find_all(xpath = 'a[@title]') %>% 
-    xml_text()
-  
-  ## ano de lancamento do jogo
-  ano_jogo <- media_head %>% 
-    xml_find_all(xpath = 'small') %>% 
-    xml_text()
-  
-  ## informacoes gerais das notas
-  notas_jogo <- pagina_raspada %>% 
-    xml_find_all(xpath = '//div[@class="rank-info"]') %>% 
-    xml_text()
-  
-  ## colocando rsultados numa tibble
-  tibble(
-    ranking   = posicao_ranking, 
-    titulo    = titulo_jogo, 
-    ano       = ano_jogo, # 
-    notas     = notas_jogo,
-    link_capa = links_da_capa,
-    link_jogo = link_jogo
-  )
-}
-```
-
-Com as funções definidas, agora é hora de utilizá-las! Primeiro, vamos pegar a segunda página e salvá-la em disco...
-
-```{r validar_pagina_2}
-# pegando a segunda pagina do ranking
-pega_pagina(url_base = base_url, pagina = 2, save_dir = 'data/')
-
-# checando para ver se o html foi baixado
-dir_ls(path = 'data/', regexp = '.html')
-```
-
-...agora vamos _parsear_ a página a partir do path para o arquivo salvo em disco!
-
-```{r parser_pagina_2}
-parser_pagina(path_to_html = dir_ls(path = 'data/', regexp = '.html'))
-```
-
-Parece que está tudo ok!
-
-## Iterar
-
-A ideia aqui agora seria repetir o processo acima, da página 1 até a última página disponível no ranking. Lá no post sobre a raspagem do ranking do BGG vimos que poderíamos descobrir qual o número da última página a partir do próprio código HTML que era raspado^[Essa informação estava dentro de um atributo chamado `Last Page` em uma _tag_ `div`, tornando a extração da informação bem fácil]. Faremos algo bem parecido aqui, embora a informação que buscamos não esteja disponível de forma tão clara. Se inspecionarmos o código HTML da página, podemos ver que podemos extrair o número da última página através da _url_ disponível em um dos atributos da classe `pagination` de uma _tag_ `ul`.
-
-```{r imagem_iterar, layout = 'l-body-outset', code_folding = TRUE}
-include_graphics(path = 'images/imagem_3.jpg')
-```
-
-Para facilitar nosso trabalho de extração dessa informação aqui, vamos criar e usar a função `pega_max_paginas`: ela vai olhar dentro daquela classe e extrair o `href` do atributo `title` da _tag_ `a`; a partir daí vamos ter que usar um pouquinho de _regex_ para extrair o número da página em si, uma vez que o resultado original é uma _string_ e o que desejamos são os números que estão após o padrão `pagina=`.  
-
-```{r funcao_ultima_pagina}
-# função para definir o número máximo de páginas para raspar
-pega_max_paginas <- function(url_base) {
-  GET(url = str_glue(url_base, 1)) %>% 
-    # pegando o conteudo do GET
-    content() %>% 
-    # pegando o xpath da paginacao
-    xml_find_all(xpath = '//ul[@class="pagination"]//a[@title="Última Página"]') %>% 
-    # pegando o link que contem o numero da pagina maxima
-    xml_attr('href') %>% 
-    # pegando o numero da pagina
-    str_extract(pattern = '(?<=pagina=)([0-9]+)') %>% 
-    # parseando para numero
-    parse_number()
-}
-
-## definindo qual o numero maximo de paginas para pegar
-ultima_pagina <- pega_max_paginas(url_base = base_url)
-ultima_pagina
-```
-
-Como vimos, temos `r ultima_pagina` para raspar, o que demora um pouquinho. No entanto, como a ideia aqui é ser apenas ilustrativo, vou raspar apenas as 5 primeiras páginas e deixarei uma linha comentada com o que deveria ser passado para a função `walk` caso quiséssemos tudo.
-
-```{r itera_exemplo}
-## pegando as paginas
-walk(
-  .x = 1:5,
-  # .x = 1:ultima_pagina, # descomentar essa linha se for para raspar tudo
-  .f = pega_pagina,
-  url_base = base_url, save_dir = 'data/'
-)
-```
-
-## Faxinar
-
-Com o HTML das páginas, agora devemos organizar e tratar os dados. Para tal, vou extrair o _path_ de todos os arquivos HTML baixados e passá-los para a função `map_dfr`. Esta função vai se encarregar de aplicar a função `parser_pagina` à cada _path_ e retornar um único `tibble` com todos os resultados _parseados_.
-
-```{r parser_paginas_todas, layout = 'l-page'}
-## pegando o path para as paginas
-path_das_paginas <- dir_ls(path = 'data/', regexp = 'html')
-
-## colocando todas as tabelas em um dataframe so
-df <- map_dfr(.x = path_das_paginas, .f = parser_pagina)
-rmarkdown::paged_table(x = df)
-```
-
-Já temos os dados tabulados. Vamos aplicar alguns ajustes a eles: remover o excesso de espaço em branco nas strings, separar as informações sobre as notas em diversas colunas e passar o que for numérico para tal. O código abaixo dá conta disso e nos retorna os dados do ranking tratados.
-
-```{r faxina_paginas, layout = 'l-page'}
-df <- df %>% 
-  mutate(
-    # parseando o ranking para numerico
-    ranking = parse_number(ranking),
-    # tratando o string titulo do jogo
-    titulo  = str_squish(string = titulo),
-    # parseando o ano para numerico
-    ano     = parse_number(ano),
-    # ajustando a string do campo de nota
-    notas   = str_squish(string = notas),
-  ) %>% 
-  # separando a coluna com as informacoes de nota atraves do padrao da barra
-  separate(col = notas, into = c('nota_rank', 'nota_media', 'notas', 'leftover'), sep = '\\|') %>% 
-  # tratando as informacoes da coluna separada
-  mutate(
-    # nota do ranking
-    nota_rank  = parse_number(nota_rank),
-    # nota dos usuarios
-    nota_media = parse_number(nota_media),
-    # quantidade de notas
-    notas      = parse_number(notas) 
-  ) %>% 
-  # removendo colunas que nao serao mais necessarias
-  select(-leftover)
-rmarkdown::paged_table(x = df)
-```
-
-# As notas são similares entre portais?
 
 Uma vez que o _scrapping_ da página do ranking da Ludopedia demora um pouquinho, já deixei preparada uma base com estes dados conforme disponíveis no dia 15 de outubro de 2021. Podemos visualizar o conteúdo do ranking naquela data através da tabela abaixo.
 
 ```{r df_ludopedia, layout = 'l-page'}
 ## lendo os dados raspados da ludopedia
 ludopedia <- read_rds(file = 'data/ranking_ludopedia.rds')
+# ludopedia <- read_rds(file = '_posts/2021-10-24-as-notas-dos-rankings-dos-portais-de-jogos-de-tabuleiro-sao-similares/data/ranking_ludopedia.rds')
 rmarkdown::paged_table(x = ludopedia)
 ```
 
@@ -390,6 +66,7 @@ De forma similar, trago abaixo a tabela com as informações do ranking do BGG, 
 ```{r df_bgg, layout = 'l-page'}
 ## lendo os dados raspados da ludopedia
 bgg <- read_rds(file = 'data/ranking_bgg.rds')
+# bgg <- read_rds(file = '_posts/2021-10-24-as-notas-dos-rankings-dos-portais-de-jogos-de-tabuleiro-sao-similares/data/ranking_bgg.rds')
 rmarkdown::paged_table(x = bgg)
 ```
 
@@ -399,7 +76,7 @@ A primeira delas é que a nossa hipótese está relacionada à _diferença na no
 
 O segundo ponto está relacionado à medida de nota que vamos usar: a nota do ranking, a nota do usuário ou a quantidade de votos. Seguindo o mesmo raciocínio que no parágrafo anterior, a quantidade de notas deve estar relacionada não só à popularidade do título, mas também à quantidade de tempo que ele esteve ali no portal para ser votado; logo, esta não é uma medida muito interessante para endereçar nossa hipótese (além de não falar de forma direta com ela, né). A outra medida é a nota do ranking, que é a nota que posiciona cada título no ranking. Esta nota é uma média bayesiana^[Existe uma excelente explicação sobre a média bayesiana, sua utilização para rankear itens e implementação em código em: https://www.algolia.com/doc/guides/solutions/ecommerce/relevance-optimization/tutorials/bayesian-average/], calculada a partir da média aritmética das notas, da quantidade de votos e um fator de ajuste associado aos quantis de distribuição de votos entre os títulos. Com isto, esta estimativa ajuda _e.g._ a remover potenciais viéses associados à títulos que recebem pouquíssimos votos, mas notas altas - esta é uma das propriedades que torna este tipo de média atrativa para rankear itens. Assim, como esta medida leva em consideração a quantidade de votos, de títulos e a interação entre estes dois, também não é a medida que estamos buscando. Com isto, chegamos à medida que de fato queremos e vamos utilizar: a nota média dada pelos usuários.
 
-A última coisa que é importante pontuar é que apesar da base de dados do ranking do BGG conter `r format(x = nrow(bgg), big.mark = '.', decimal.mark = ',')` títulos, apenas `r format(x = bgg %>% drop_na(rank, nota_usuarios) %>% nrow(), big.mark = '.', decimal.mark = ',')` deles têm a informação de notas. Além disso, este número ainda é muito maior do que o de títulos na base de dados da Ludopedia - `r format(x = nrow(ludopedia), big.mark = '.', decimal.mark = ',')` jogos. Isto ocorre por que o ranking do BGG parece trazer __todos__ os jogos cadastrados no banco de dados deles, enquanto o da Ludopedia apenas aqueles que foram rankeados. Neste contexto, vamos precisar focar apenas nas posições do ranking em comum entre as duas bases de dados.
+A última coisa que é importante pontuar é que apesar da base de dados do ranking do BGG conter `r format(x = nrow(bgg), big.mark = '.', decimal.mark = ',')` títulos, apenas `r format(x = nrow(tidyr::drop_na(bgg, rank, nota_usuarios)), big.mark = '.', decimal.mark = ',')` deles têm a informação de notas. Além disso, este número ainda é muito maior do que o de títulos na base de dados da Ludopedia - `r format(x = nrow(ludopedia), big.mark = '.', decimal.mark = ',')` jogos. Isto ocorre por que o ranking do BGG parece trazer __todos__ os jogos cadastrados no banco de dados deles, enquanto o da Ludopedia apenas aqueles que foram rankeados. Neste contexto, vamos precisar focar apenas nas posições do ranking em comum entre as duas bases de dados.
 
 Com isto em mente, vamos separar os dados que precisamos. O código abaixo cuida de juntar as duas bases usando a posição do ranking como chave primária, além de selecionar apenas a coluna de nota média, renomeá-la de acordo com a fonte de dados e remover as linhas com `NA` dos dados do ranking do BGG antes de juntá-las. Note que juntaremos as duas bases usando um `inner_join`, com os dados da Ludopedia no `left` e do BGG no `right`, a fim de que tenhamos uma base com as posições do ranking que ocorrem no primeiro __e__ no segundo `tibble`.
 
@@ -419,14 +96,14 @@ ranks <- inner_join(
   # juntando pela coluna de ranking em cada base
   by = c('ranking' = 'rank')
 )
-ranks
+rmarkdown::paged_table(x = ranks)
 ```
+
+# Como as notas estão distribuídas entre nos entre os portais?
 
 Uma vez que tenhamos as duas informações juntas, podemos começar a entender os dados com o foco na hipótese que queremos testar. A primeira coisa que podemos ver abaixo é que parece existir uma relação entre entre as notas dos dois portais, de forma que as notas do ranking no portal da Ludopedia parecem ser consistentemente maiores do que àquelas no BGG (_i.e._, os pontos na figura parecem estar majoritamente acima da linha vermelha de 1:1). Outro ponto importante nesta figura é que parece existir uma diferença na distribuição das notas entre os dois portais: (a) as notas seguem uma distribuição bem mais próxima de uma normal no BGG do que na Ludopedia e (b) a distribuição das notas da Ludopedia tem um _skew_ negativo (_i.e._, muitas notas altas e algumas poucas notas baixas - mediana maior que a média da distribuição), enquanto o do BGG é um pouco mais positivo.
 
 ```{r figura_relacao, layout = 'l-body-outset', dpi=200, fig.height=5, code_folding = TRUE}
-library(ggside) # para colocar o density plot ao lado
-
 ## criando a figura da relação entre as notas nos dois portais
 ggplot(data = ranks, mapping = aes(x = bgg, y = ludopedia)) +
   geom_point(alpha = 0.4, size = 1.5, color = 'black') +
@@ -464,8 +141,8 @@ ranks %>%
   scale_y_continuous(breaks = seq(from = -4, to = 3, by = 1)) +
   labs(
     title    = 'Diferença entre as notas de acordo com a posição no ranking',
-    subtitle = 'Valores positivos indicam que a nota para àquela posição do ranking no portal da Ludopedia é maior que àquela no BGG, 
-e o contrário para valores negativos. A linha vermelha marca o valor onde esta diferença é zero.',
+    subtitle = 'Valores negativos indicam que a nota para àquela posição do ranking no portal do BGG é maior que àquela na Ludopedia, 
+e o contrário para valores positivos. A linha vermelha marca o valor onde esta diferença é zero.',
     x        = 'Posição no Ranking',
     y        = 'Diferença entre notas (Ludopedia - BGG)'
   )
@@ -480,16 +157,18 @@ ranks %>%
   mutate(diferenca = ludopedia - bgg) %>% 
   # criando o histograma de distribuição da diferença de notas
   ggplot(mapping = aes(x = diferenca)) +
-  geom_histogram(color = 'black', fill = 'grey60') +
+  geom_histogram(color = 'black', fill = 'grey80') +
   scale_x_continuous(breaks = seq(from = -4, to = 3, by = 1)) +
   labs(
     title    = 'Distribuição da diferença entre notas para uma mesma posição do ranking',
-    subtitle = 'Valores positivos indicam que a nota para àquela posição do ranking no portal da Ludopedia é maior que àquela no BGG, 
-e o contrário para valores negativos.',
+    subtitle = 'Valores negativos indicam que a nota para àquela posição do ranking no portal do BGG é maior que àquela na Ludopedia, 
+e o contrário para valores positivos',
     x        = 'Diferença entre notas (Ludopedia - BGG)',
     y        = 'Observações'
   )
 ```
+
+# As notas são similares entre portais?
 
 ## `stats`
 
@@ -539,7 +218,7 @@ obs_statistic
 
 A próxima coisa que farei será calcular o intervalo de confiança para àquela estimativa. Para tal, vamos gerar 1000 conjuntos de dados reamostrados com substituição (através do verbo `generate`) e calcular o valor da média de cada um deles. Com isso, vamos construir uma distribuição de frequência das médias obtidas através da reamostragem e extrair os valores que estejam nos extremos do percentil de 95% desta distribuição (através da função `infer::get_confidence_interval`). Como podemos ver, tanto a estimativa quanto o intervalo de confiança que obtivemos são similares aqueles reportados pelo `stats::t.test`.
 
-```{r bootstrap_ci, dpi = 200}
+```{r bootstrap_ci}
 ## criando reamostragem para estimar o intervalo de confiança
 boot_ci_tbl <- ranks %>% 
   # especificando a variável analisada para o infer
@@ -553,7 +232,7 @@ boot_ci_tbl <- ranks %>%
 
 ## criando o histograma de distribuição de frequência da médias
 ggplot(data = boot_ci_tbl, mapping = aes(x = stat)) +
-  geom_histogram(color = 'black', fill = 'grey60') +
+  geom_histogram(color = 'black', fill = 'grey80') +
   scale_x_continuous(n.breaks = 8) +
   labs(
     title = 'Distribuição de frequência da diferença média entre notas nos dados reamostrados',
@@ -581,7 +260,7 @@ null_statistic <- ranks %>%
   # não existe diferença entre as notas medias para uma mesma posicao entre rankins
   hypothesize(null = 'point', mu = 0) %>%
   # gerando bootstrap
-  generate(reps = 1000, type = 'bootstrap') %>% 
+  generate(reps = 500, type = 'bootstrap') %>% 
   # calculando estatistica do bootstrap
   calculate(stat = 'mean')
 null_statistic
@@ -611,15 +290,207 @@ confiança, devemos rejeitar a hipótese nula.',
   )
 ```
 
+## Subamostragem
+
+Cria função para fazer a reamostragem.
+
+```{r funcao_reamostragem}
+# criando funcao para fazer a reamostragem
+create_sample <- function(dataset, tamanho, substituicao = FALSE) {
+  dataset %>% 
+    # retira uma amostra aleatoria de um determinado tamanho
+    sample_n(size = tamanho, replace = substituicao)
+}
+```
+
+Rodando a reamostragem.
+
+```{r cria_dataset_reamostrado}
+## criando dataframe reamostrado
+reamostragem <- rerun(.n = 500,
+                      # rodando a funcao para criar amostrar 500 vezes, cada uma das quais amostrando
+                      # 50 observacoes aleatoriamente
+                      create_sample(dataset = ranks, tamanho = 50, substituicao = FALSE)) %>% 
+  # juntando cada um dos dataframes e adicioando um sample id
+  bind_rows(.id = 'sample_id') %>% 
+  # aninhando o dataframe com os dados que vamos usar para ajustar o test-t dentro de cada sample_id
+  nest(data = -sample_id)
+```
+
+Rodando o test-t e extraindo os resultados
+
+```{r ajusta_reamostragem}
+resultados_reamostragem <- reamostragem %>% 
+  mutate(
+    # aplicando um teste-t pareado às amostras de cada sample_id
+    test_t = map(.x = data, 
+                 .f = ~t.test(x = .x$ludopedia, y = .x$bgg, 
+                              alternative = 'two.sided', paired = TRUE, var.equal = FALSE)
+    ),
+    # extraindo as informacoes tidy do ajuste do test-t pareado
+    tidy_t = map(.x = test_t, .f = broom::tidy)
+  ) %>% 
+  # desaninhando os resultados do test-t
+  unnest(tidy_t) %>% 
+  # jogando fora alguma colunas que nao precisaremos mais
+  select(-data, -test_t)
+resultados_reamostragem
+```
+
+Plotando os resultados da reamostragem.
+
+```{r figura_reamostragem, layout = 'l-body-outset', dpi=200, fig.height=4, code_folding = TRUE}
+# pegando os quantis da distribuicao das estimativas das subamostras
+quantis_subamostra <- quantile(x = resultados_reamostragem$estimate, probs = c(0.025, 0.975))
+media_subamostra <- mean(x = resultados_reamostragem$estimate)
+
+## pegando os dados do que o density plot vai usar e retendo apenas as areas
+## que estao fora do quantil
+df_dos_quantis <- tibble(
+  # pegando os valores de x e y que serão usados para o density plot
+  x = density(x = resultados_reamostragem$estimate)$x,
+  y = density(x = resultados_reamostragem$estimate)$y
+) %>% 
+  mutate(
+    # sinalizando os valores de x que estão fora do quantil de 95%
+    lower_quantile = x < quantis_subamostra[1],
+    upper_quantile = x > quantis_subamostra[2]
+  ) %>% 
+  # filtrando apenas as observacoes que estao fora do quantil
+  filter(lower_quantile | upper_quantile)
+
+# criando a figura
+resultados_reamostragem %>% 
+  ggplot(mapping = aes(x = estimate)) +
+  geom_density(fill = 'grey80', color = 'black') +
+  geom_ribbon(data = filter(df_dos_quantis, lower_quantile),
+              mapping = aes(x = x, ymin = 0, ymax = y), fill = 'tomato') +
+  geom_ribbon(data = filter(df_dos_quantis, upper_quantile),
+              mapping = aes(x = x, ymin = 0, ymax = y), fill = 'tomato') +
+  geom_vline(xintercept = 0, color = 'black', alpha = 0.6) +
+  geom_vline(xintercept = media_subamostra, color = 'black', linetype = 2) +
+  labs(
+    title    = 'As notas do ranking da Ludopedia são maiores que as do BoardGameGeek',
+    subtitle = str_glue('A estimativa da diferença através da subamostragem é de que as notas da Ludopedia superam as do BoardGameGeek\nem {round(media_subamostra, digits = 2)} pontos (Intervalo de Confiança: {round(quantis_subamostra[1], digits = 2)} à {round(quantis_subamostra[2], digits = 2)} pontos)'),
+    caption  = 'A área cinza representa o intervalo de confiança de 95% da estimativa da diferença nas notas entre os\ndois portais, obtidas através de 500 estimativas independentes tomadas a partir de 50 amostras aleatórias dos dados.',
+    x        = 'Diferença entre as notas do ranking da Ludopedia e do BoardGameGeek',
+    y        = 'Densidade'
+  ) +
+  theme(axis.title.y = element_blank())
+```
+
+## A milha extra
+
+Ajusta MARS para extrair o hinge.
+
+```{r ajusta_mars}
+# carregando o tidymodels 
+library(tidymodels)
+
+# ajustando um MARS aos dados, forcando apenas 2 termos
+modelo <- mars(mode = 'regression', num_terms = 2) %>% 
+  set_engine(engine = 'earth') %>% 
+  fit(diferenca ~ ranking, data = ranks)
+
+# sumario do modelo
+summary(modelo$fit)
+```
+
+Extrai o hinge.
+
+```{r extrai_hinge}
+ponto_de_corte <- modelo$fit$coefficients %>% 
+  # pegando o nome das linhas
+  rownames %>% 
+  # pegando o segundo elemento - nome do coeficiente da funcao hinge
+  pluck(2) %>% 
+  # extraindo todos os numeros do string
+  str_extract(pattern = '[0-9]+') %>% 
+  # parseando a string para numeric
+  parse_number()
+ponto_de_corte
+```
+
+Cria funcao de reamostragem extratificada.
+
+```{r funcao_reamostragem_estratificada}
+# criando funcao para fazer a reamostragem
+create_stratified_sample <- function(dataset, tamanho, substituicao = FALSE,...) {
+  dataset %>% 
+    # agrupa de acordo com o teste logico que for passado em ...
+    group_by(...) %>% 
+    # retira uma amostra aleatoria de um determinado tamanho de cada grupo 
+    sample_n(size = tamanho, replace = substituicao) %>% 
+    # desagrupa o dataframe
+    ungroup
+}
+```
+
+Roda a funcao de reamostragem estratificada
+
+```{r cria_dataset_reamostrado_estratificado}
+## criando dataframe reamostrado
+reamostragem_estratificada <- rerun(.n = 500,
+                                    # rodando a funcao para criar amostrar 500 vezes, cada
+                                    # uma das quais amostrando 50 observacoes aleatoriamente
+                                    create_stratified_sample(dataset = ranks, tamanho = 50, 
+                                                             substituicao = FALSE,
+                                                             ranking <= ponto_de_corte)) %>% 
+  # juntando cada um dos dataframes e adicioando um sample id
+  bind_rows(.id = 'sample_id') %>% 
+  # renomeando a coluna de estratificacao
+  rename(estratificacao = `ranking <= ponto_de_corte`) %>% 
+  # aninhando o dataframe com os dados que vamos usar para ajustar o test-t dentro de cada sample_id
+  nest(data = -c(sample_id, estratificacao))
+```
+
+Ajustando a reamostragem estratificada.
+
+```{r ajusta_reamostragem_estratificada}
+resultados_reamostragem_estratificada <- reamostragem_estratificada %>% 
+  mutate(
+    # aplicando um teste-t pareado às amostras de cada sample_id
+    test_t = map(.x = data, 
+                 .f = ~t.test(x = .x$ludopedia, y = .x$bgg, 
+                              alternative = 'two.sided', paired = TRUE, var.equal = FALSE)
+    ),
+    # extraindo as informacoes tidy do ajuste do test-t pareado
+    tidy_t = map(.x = test_t, .f = broom::tidy)
+  ) %>% 
+  # desaninhando os resultados do test-t
+  unnest(tidy_t) %>% 
+  # jogando fora alguma colunas que nao precisaremos mais
+  select(-data, -test_t)
+resultados_reamostragem_estratificada
+```
+
+Plota figura do resultado.
+
+```{r figura_reamostragem_estratificada, layout = 'l-body-outset', dpi=200, fig.height=4, code_folding = TRUE}
+# criando a figura
+resultados_reamostragem_estratificada %>% 
+  # estilizando o texto que aparecerá no eixo y
+  mutate(
+    estratificacao = ifelse(test = estratificacao, 
+    yes = str_glue('Até a {ponto_de_corte}º posição'), 
+    no = str_glue('Acima da {ponto_de_corte}º posição'))
+  ) %>% 
+  # plotando a figura
+  ggplot(mapping = aes(x = estimate, y = estratificacao, fill = factor(stat(quantile)))) +
+  stat_density_ridges(geom = 'density_ridges_gradient', scale = 0.95, 
+                      calc_ecdf = TRUE, quantiles = c(0.025, 0.975), 
+                      show.legend = FALSE) +
+  scale_fill_manual(values = c('tomato', 'grey80', 'tomato')) +
+  geom_vline(xintercept = 0, color = 'black', alpha = 0.5) +
+  labs(
+    title    = 'A diferença na nota entre os dois portais depende da posição do ranking',
+    subtitle = str_glue('O ranking da Ludopedia tem notas maiores que aquele do BoardGameGeek para os títulos que ocupem\naté a {ponto_de_corte}º posição, a partir de onde eles passam a ser melhores avaliados neste último'),
+    caption  = 'A área cinza representa o intervalo de confiança de 95% da estimativa da diferença nas notas entre os\ndois portais, obtidas através de 500 estimativas independentes tomadas a partir de 50 amostras aleatórias dos dados.',
+    x        = 'Diferença entre as notas do ranking da Ludopedia e do BoardGameGeek'
+  ) +
+  theme(axis.title.y = element_blank())
+```
+
 # Conclusões
 
-+ Scrapping
-+ Notas
-+ infer é verboso
-+ infer poderia ter melhorias
-
 # Possíveis Extensões
-
-+ Comparação com melhorias
-+ Usar infos para enriquecer REST API
-+ Uar infos para comparar através do nome do jogo
