@@ -22,7 +22,7 @@ draft: false
 
 ```{r setup, include=FALSE}
 # setando as opções gerais dos code chunks
-knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, cache = TRUE, dpi = 200, fig.align = 'center')
+knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, cache = FALSE, dpi = 200, fig.align = 'center')
 
 # presetando o ggplot2
 library(ggplot2)
