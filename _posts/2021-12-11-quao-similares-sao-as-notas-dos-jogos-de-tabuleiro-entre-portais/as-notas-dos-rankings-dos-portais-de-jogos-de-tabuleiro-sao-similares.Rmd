@@ -1,0 +1,582 @@
+---
+title: "Quão similares são as notas dos jogos de tabuleiro entre os portais especializados?"
+description: |
+  Meu principal objetivo neste post é analisar as notas dadas aos jogos de tabuleiros nos rankings do portal da Ludopedia e do portal do BoardGameGeek para determinar quão similares são as notas dadas aos títulos nas mesmas posições entre os dois rankings. Isto é, será que a nota dada ao título na i-ésima posição no ranking da Ludopedia é parecida com a nota dada ao título na mesma posição no ranking do BoardGameGeek?
+author:
+  - first_name: Nicholas 
+    last_name: Marino
+    url: https://github.com/nacmarino
+date: 12-11-2021
+categories:
+  - estatistica
+  - boardgames
+  - infer
+output:
+  distill::distill_article:
+    self_contained: false
+    toc: true
+    code_folding: true
+    highlight: rstudio
+draft: false
+---
+
+```{r setup, include=FALSE}
+# setando as opções gerais dos code chunks
+knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, cache = TRUE, dpi = 200, fig.align = 'center')
+
+# presetando o ggplot2
+library(ggplot2)
+
+# setando o tema geral do ggplot2
+theme_set(new = theme_minimal(base_family = 'IBM Plex Sans'))
+
+# atualizando o tema
+theme_update(
+  plot.title    = element_text(face = 'bold', size = 10),
+  plot.subtitle = element_text(size = 8),
+  plot.caption  = element_text(size = 8),
+  axis.title    = element_text(face = 'bold', size = 8),
+  axis.text     = element_text(color = 'black', size = 8),
+  strip.text    = element_text(face = 'bold', size = 8)
+)
+```
+
+# Motivação
+
+Se você quiser saber quão legal pode ser um jogo de tabuleiro específico, uma opção seria recorrer aos sites especializados no assunto para ter uma ideia. Dois destes portais são a [Ludopedia](https://www.ludopedia.com.br/ranking) e o [BoardGameGeek](https://boardgamegeek.com/browse/boardgame): o primeiro é um site brasileiro e o segundo é internacional. Apesar de compartilharem muitas similaridades em torno do conteúdo, uma diferença fundamental entre eles está na quantidade de títulos disponíveis, onde o BoardGameGeek (BGG, daqui em diante) tem quase 50 vezes mais títulos registrados do que a Ludopedia. Outro ponto que à princípio pode nos enganar está no próprio ranking dos jogos que estes sites possuem: se você reparar bem, apesar de muitos títulos se repetirem entre eles, as notas não são exatamente próximas. Desta forma, quão similar será que os rankings e as notas dadas aos títulos são entre eles?
+
+Existem muitas formas de pensar nessa pergunta, mas uma que aguçou a minha curiosidade foi a possibilidade do público de um dos portais tender a ser mais 'bonzinho' do que o do outro no momento de avaliar os jogos. Isto se manifestaria como um viés quando comparássemos a média das notas dos rankings entre os dois portais - isto é, a diferença na média das notas no portal _x_ é sempre maior do que àquela no portal _y_. Neste contexto, seria interessante entender não só se existe viés existe mas, caso positivo, qual a direção e o tamanho do mesmo. Não que eu espere que isso vá interferir de alguma forma em uma decisão de compra ou de jogar um título específico...mas às vezes é legal saber se as informações que estamos recebendo possuem algum tipo de viés quando comparado com outras fontes disponíveis.
+
+Os dados que nos permitem ganhar àquela compreensão estão prontamente disponíveis nos respectivos portais e, ao longo dos últimos posts, já construímos uma compreensão de como obtê-los. Você pode buscar o código para raspar a página do ranking da Ludopedia [aqui](https://github.com/nacmarino/codex/blob/ad0198d4181180e3674cb3ac6b9cfb04e8dec6cd/_posts/2021-10-24-raspando-a-pagina-do-ranking-da-ludopedia/scripts/raspa_ranking_ludopedia.R) e o do ranking do BGG [aqui](https://github.com/nacmarino/codex/blob/ad0198d4181180e3674cb3ac6b9cfb04e8dec6cd/_posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/scripts/raspa_ranking_bgg.R) e, se quiser, também ganhar uma compreensão de como eles funcionam [aqui](https://nacmarino.github.io/codex/posts/2021-10-24-raspando-a-pagina-do-ranking-da-ludopedia/) e [aqui](https://nacmarino.github.io/codex/posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/). Como eu já havia adiantado naqueles posts anteriores, meu intuito é utilizar as informações extraídas a partir dos _scrappers_ não só pela prática, mas também para responder à alguma pergunta, entender algum padrão interessante ou testar algum pacote.
+
+Falando nisso, um objetivo secundário deste post é, de fato, testar o pacote `infer`^[https://infer.netlify.app/index.html]. De acordo com o próprio site, o `infer` tem por objetivo implementar a inferência estatística utilizando uma gramática estatística expressiva que seja coerente com o framework existente no `tidyverse`. Esse pacote traz algumas funções para atingir este objetivo e, através de sua documentação, podemos ver que a análise acaba ficando bastante verbosa - mas bem aderente às idéias e conceitos da estatística inferencial. O R já possui muitas funcionalidades nativas orientadas à mesma finalidade, mas acho interessante testar essa outra opção que parece conversar tão bem com o universo `tidy`.
+
+Vamos começar preparando os dados e entendendo de que forma vamos avaliar a similaridades nas notas dos rankings. A partir daí, avançaremos para ganhar um entendimento geral do padrão estudado e concluiremos mostrando três formas através das quais podemos analisar este mesmo dado - sendo àquela do pacote `infer` uma delas.
+
+# Preparação dos dados
+
+Vamos começar carregando os dados com as informações da página do ranking dos jogos de tabuleiro disponíveis na Ludopedia, raspados no dia 1º de dezembro de 2021.
+
+```{r df_ludopedia, layout = 'l-page'}
+# carregando os pacotes
+library(tidyverse) # core
+library(ggside) # para colocar o density plot ao lado
+library(ggridges) # para plotar o ridge plot
+
+## lendo os dados raspados da ludopedia
+ludopedia <- read_rds(file = 'data/ranking_ludopedia.rds')
+# ludopedia <- read_rds(file = '_posts/2021-10-24-as-notas-dos-rankings-dos-portais-de-jogos-de-tabuleiro-sao-similares/data/ranking_ludopedia.rds')
+rmarkdown::paged_table(x = ludopedia)
+```
+
+De forma similar, vamos carregar os dados com as informações da página do ranking do BGG, raspados naquele mesmo dia!
+
+```{r df_bgg, layout = 'l-page'}
+## lendo os dados raspados da ludopedia
+bgg <- read_rds(file = 'data/ranking_bgg.rds')
+# bgg <- read_rds(file = '_posts/2021-10-24-as-notas-dos-rankings-dos-portais-de-jogos-de-tabuleiro-sao-similares/data/ranking_bgg.rds')
+rmarkdown::paged_table(x = bgg)
+```
+
+Como podemos ver, existem muitas similaridades entre os dois conjuntos de dados (_e.g._, título, ano de lançamentos, nota do ranking, quantidade de notas,...), de forma que um quase que parece uma cópia do outro. Entretanto, existem algumas pequenas diferenças entre as notas para uma mesma posição do ranking, bem como diferenças na forma como os nomes de títulos similares estão grafados - simplesmente porque um portal está em português e o outro em inglês. Dado estes dois últimos padrões, é necessário fazer três considerações sobre aquilo que queremos analisar e de que forma faremos isso.
+
+A primeira consideração é a forma pela qual vamos juntar as informações das notas de ambos os conjuntos de dados:  
+
++ Uma alternativa seria juntar as bases de dados de acordo com o nome do título mas, como vimos, o nome de alguns títulos mudam um pouquinho do inglês para o português (_e.g._, Projeto Gaia _vs_ Gaia Project). Até existem jeitos de resolver essa duplicidade, como através das funções dos pacotes `fuzzywuzzyR` - muito parecido com a _lib_ `fuzzywuzzy` do Python - e `stringdist`, ou, ainda, através de algum método de aprendizado de máquina _per se_. Todavia, implementar estas soluções não é o meu foco aqui, e isso por si só já daria para ser o tema de um post.  
++ Outra alternativa seria simplesmente o de concatenar as duas bases, indicando que nota vem de que portal e fazer as análise a partir daí. Entretanto, esta abordagem focaria na diferença na distribuição dos valores das notas em si, ignorando o fato de termos duas notas caracterizando uma mesma posição do ranking (_i.e._, uma para cada portal). Além disso, o ranking do BGG é muito maior que o da Ludopedia, e diferenças no tamanho das amostras poderiam acabar enviesando alguma estimativa;  
++ Finalmente, uma outra opção seria a de parear as notas para uma mesma posição do ranking e comparar a diferença par a par entre as posições. Isto nos permitiria avaliar o tamanho do desvio nas notas para cada posição do ranking compartilhada entre os dois portais, e determinar qual o tamanho do viés existente entre os portais para cada uma delas Dentre as três opções, essa é àquela que me parece mais razoável e justa para a finalidade de comparação entre os dois portais. Neste contexto, trabalharemos nossa pergunta entorno da determinação do tamanho estimado da diferença nas notas para uma mesma posição do ranking entre os dois portais.
+
+A segunda consideração, que já mencionei brevemente, é a diferença na quantidade de observações disponíveis entre as duas bases de dados: `r format(x = nrow(bgg), big.mark = '.', decimal.mark = ',')` títulos no BGG _vs_ `r format(x = nrow(ludopedia), big.mark = '.', decimal.mark = ',')` na Ludopedia. Além disso, apenas `r format(x = nrow(tidyr::drop_na(bgg, rank, nota_usuarios)), big.mark = '.', decimal.mark = ',')` títulos na base do BGG têm a informação de notas, então ainda assim ficariam faltando dados importantes para a comparação. O principal motivo para esta disparidade no volume de títulos nos rankings entre os portais ocorre porque o ranking do BGG parece trazer __todos__ os jogos cadastrados no banco de dados deles, enquanto o da Ludopedia apenas aqueles que foram rankeados. Neste contexto, vamos precisar focar apenas nas posições do ranking em comum entre as duas bases de dados.
+
+O último ponto está relacionado à medida de nota que vamos usar: a nota do ranking ou a nota do usuário? A nota do ranking é àquela utilizada para posicionar cada título no ranking, e é quantificada através de uma média bayesiana^[Existe uma excelente explicação sobre a média bayesiana, sua utilização para rankear itens e implementação em código em: https://www.algolia.com/doc/guides/solutions/ecommerce/relevance-optimization/tutorials/bayesian-average/], calculada a partir da média aritmética das notas, da quantidade de votos e um fator de ajuste associado aos quantis de distribuição de votos entre os títulos. Com isto, esta estimativa ajuda _e.g._ a remover potenciais viéses associados à títulos que recebem pouquíssimos votos, mas notas altas - esta é uma das propriedades que torna este tipo de média atrativa para rankear itens. Assim, como esta medida leva em consideração a quantidade de votos, de títulos e a interação entre estes dois, e todas estas coisas estão confundidas entre os dois portais, esta não é a medida ideal que estamos buscando. Desta forma, nosso foca será mesmo a nota média dada pelos usuários, que acredito representar de forma mais próxima os gostos de cada público.
+
+Com isto em mente, vamos separar os dados que precisamos. O código abaixo cuida de juntar as duas bases usando a posição do ranking como chave primária, além de selecionar apenas a coluna de nota média, renomeá-la de acordo com a fonte de dados e remover as linhas com `NA` dos dados do ranking do BGG antes de juntá-las. Note que juntaremos as duas bases usando um `inner_join`, com os dados da Ludopedia no `left` e do BGG no `right`, a fim de que tenhamos uma base com as posições do ranking que ocorrem no primeiro __e__ no segundo `tibble`.
+
+```{r junta_ranks}
+# usando um inner_join para juntar as posicoes que existem na pagina da ludopedia
+ranks <- inner_join(
+  # ludopedia no left
+  x = ludopedia %>% 
+    # selecionando e renomeando colunas
+    select(ranking, ludopedia = nota_media),
+  # bgg no right
+  y = bgg %>% 
+    # selecionando e renomeando colunas
+    select(rank, bgg = nota_usuarios) %>% 
+    # dropando os NAs
+    drop_na(),
+  # juntando pela coluna de ranking em cada base
+  by = c('ranking' = 'rank')
+)
+rmarkdown::paged_table(x = ranks)
+```
+
+# Como as notas estão distribuídas entre nos entre os portais?
+
+Uma vez que tenhamos as duas informações juntas, podemos começar a entender os dados com o foco na pergunta que definimos: existem diferenças nas notas para uma mesma posição do ranking entre os dois portais? 
+
+A primeira coisa que podemos ver abaixo é que parece existir uma relação entre entre as notas dos dois portais, de forma que as notas do ranking no portal da Ludopedia parecem ser consistentemente maiores do que àquelas no BGG (_i.e._, os pontos na figura parecem estar majoritamente acima da linha vermelha de 1:1). Outro ponto importante nesta figura é que parece existir uma diferença na distribuição das notas entre os dois portais: (a) as notas seguem uma distribuição bem mais próxima de uma normal no BGG do que na Ludopedia e (b) a distribuição das notas da Ludopedia tem um _skew_ negativo (_i.e._, muitas notas altas e algumas poucas notas baixas - mediana maior que a média da distribuição), enquanto o do BGG é um pouco mais positivo.
+
+```{r figura_relacao, layout = 'l-body-outset', dpi=200, fig.height=5, code_folding = TRUE}
+## criando a figura da relação entre as notas nos dois portais
+ggplot(data = ranks, mapping = aes(x = bgg, y = ludopedia)) +
+  geom_point(alpha = 0.4, size = 1.5, color = 'black') +
+  geom_abline(slope = 1, intercept = 0, size = 0.8, color = 'tomato') +
+  geom_xsidehistogram(color = 'black', fill = 'dodgerblue') +
+  geom_ysidehistogram(color = 'black', fill = 'mediumseagreen') +
+  scale_x_continuous(breaks = seq(from = 3, to = 9.5, by = 0.5)) +
+  scale_xsidey_continuous(breaks = NULL) +
+  scale_y_continuous(breaks = seq(from = 3, to = 9.5, by = 1)) +
+  scale_ysidex_continuous(breaks = NULL) +
+  labs(
+    title    = 'Relação entre a nota média para uma mesma posição do ranking entre os dois portais',
+    subtitle = 'A linha vermelha representa a relação 1:1 entre as notas. Pontos acima da curva representam notas que tendem a ser 
+maiores na Ludopedia do que no BGG - e o contrário para os pontos abaixo da curva. Os histogramas nas laterais da figura 
+representam a distribuição dos valores das notas para os dados da Ludopedia (em verde) e BGG (em azul).',
+    x        = 'Nota no portal do BoardGameGeek',
+    y        = 'Nota no portal da Ludopedia'
+  )
+```
+
+Um outro padrão interessante é que a diferença nas notas entre os portais parece variar ao longo do ranking: (a) os jogos posicionados até o Top 200 parecem receber consistentemente notas maiores na Ludopedia do que no BGG, (b) aqueles entre o Top 200 e o Top 2100 tendem à receber notas maiores na Ludopedia também (embora hajam muitas exceções) e (c) os jogos posicionados mais ao final do ranking recebem notas consistentemente piores na Ludopedia do que no BGG. Parece que quando o jogo não é bem avaliado, os ~brasileiros~ usuários do portal da Ludopedia tendem à avaliá-los muito mal mesmo. De uma forma ou de outra, podemos ver que a distribuição da diferença entre notas tende a ficar majoritamente acima do valor 0, o que reforça o padrão observado até aqui de que as notas dadas aos jogos que acabam estando no ranking na Ludopedia tendem a ser maiores do que no BGG.
+
+```{r figura_posicao_ranking, layout = 'l-body-outset', dpi=200, fig.height=4, code_folding = TRUE}
+# criando a figura para mostrar a variação na diferença entre notas de acordo com o ranking
+ranks %>% 
+  # calculando a coluna de diferenca
+  mutate(
+    diferenca = ludopedia - bgg
+  ) %>% 
+  # calculando a figura da diferenca pela posicao no ranking
+  ggplot(mapping = aes(x = ranking, y = diferenca)) +
+  geom_line(color = 'grey30') +
+  geom_hline(yintercept = 0, size = 1, color = 'tomato') +
+  scale_x_continuous(breaks = seq(from = 0, to = nrow(ranks), by = 300)) +
+  scale_y_continuous(breaks = seq(from = -4, to = 3, by = 1)) +
+  labs(
+    title    = 'Diferença entre as notas de acordo com a posição no ranking',
+    subtitle = 'Valores positivos indicam que a nota para àquela posição do ranking no portal da Ludopedia é maior que àquela no 
+BoardGameGeek, e o contrário para valores negativos A linha vermelha marca o valor onde esta diferença é zero.',
+    x        = 'Posição no Ranking',
+    y        = 'Diferença entre notas (Ludopedia - BGG)'
+  )
+```
+
+Finalmente, olhando a distribuição da diferença entre as notas, também podemos ver que existe uma tendência de que as notas da Ludopedia sejam maiores do que àquelas do BGG - ainda que hajam algumas exceções. Dado os padrões observados até aqui, é muito claro que existe uma diferença entre os dois portais quanto às notas para uma mesma posição do ranking, com as notas na Ludopedia normalmente sendo maiores que as do BGG. Apesar de não precisamos usar nenhuma análise estatística para constatar isto, vou fazer continuar com o exercício aqui.
+
+```{r figura_distribuicao, layout = 'l-body-outset', dpi=200, fig.height=4, code_folding = TRUE}
+# criando figura para mostrar o histograma de distribuição da diferença entre as notas
+ranks %>% 
+  # calculando a coluna de diferenca
+  mutate(diferenca = ludopedia - bgg) %>% 
+  # criando o histograma de distribuição da diferença de notas
+  ggplot(mapping = aes(x = diferenca)) +
+  geom_histogram(color = 'black', fill = 'grey80') +
+  scale_x_continuous(breaks = seq(from = -4, to = 3, by = 1)) +
+  labs(
+    title    = 'Distribuição da diferença entre notas para uma mesma posição do ranking',
+    subtitle = 'Valores negativos indicam que a nota para àquela posição do ranking no portal do BGG é maior que àquela na Ludopedia, 
+e o contrário para valores positivos',
+    x        = 'Diferença entre notas (Ludopedia - BGG)',
+    y        = 'Observações'
+  )
+```
+
+# As notas são similares entre portais?
+
+## `stats`
+
+A pergunta que estamos abordando é se existe alguma diferença entre as notas associadas à uma mesma posição entre os rankings da Ludopedia e do BGG. A hipótese estatística aqui seria a de que a diferença média entre as duas notas seria igual a zero; posto de outra forma, a diferença entre cada par de notas associada à cada uma das posições do ranking de _i_ à `r nrow(ranks)` tenderia à zero. Como estamos considerando a diferença de notas entre um par de observações, o teste estatístico que precisamos utilizar é um [teste-t pareado](https://pt.wikipedia.org/wiki/Teste_t_de_Student). Este teste é implementado no R através da função `stats::t.test`.
+
+Quando formos especificar o teste abaixo, é importante estar atento à duas coisas. Uma delas é que a hipótese que estamos testando diz que a diferença média deve ser diferente 0, ou seja, um número maior ou menor que 0. Neste contexto, precisamos especificar que a nossa hipótese alternativa é bicaudal - argumento `alternative = 'two.sided'`. O segundo ponto é que a variância nas notas entre os dois portais é diferente, conforme pode ser visto em uma das figura acima onde apresentamos a distribuição dos valores de nota para cada portal^[A variância calculada é de `r round(x = var(ranks$ludopedia), digits = 4)` na Ludopedia _vs_ `r round(x = var(ranks$bgg), digits = 4)` no BGG]. Poderíamos fazer um teste estatístico para confirmar o fato de que as variâncias não são homogêneas (_e.g._, o [teste de Barttlet](https://en.wikipedia.org/wiki/Bartlett%27s_test)), mas podemos dispensar essa formalidade aqui pois o padrão já é muito claro naquela figura que mencionei - ainda assim, esse seria um passo importante a se tomar em uma análise mais formal. Para considerar que as variâncias não são homogêneas, basta utilizar `var.equal = FALSE`.
+
+Vamos implementar o teste-t pareado abaixo.
+
+```{r test_t_base_r}
+# teste-t pareado com variancias diferentes conforme disponivel no base R
+t_test_stats <- t.test(x = ranks$ludopedia, y = ranks$bgg, 
+                       alternative = 'two.sided', paired = TRUE, var.equal = FALSE)
+t_test_stats
+```
+
+O resultado desta análise sugere que devemos rejeitar a hipótese nula, sugerindo que a diferença média entre as notas da Ludopedia e do BGG para uma mesma posição do ranking não tende à zero. Na realidade, podemos ver que a estimativa da diferença média estimada entre as notas é de `r round(x = t_test_stats$estimate[[1]], digits = 3)` pontos, com um intervalo de confiança de 95% de `r round(x = t_test_stats$conf.int[[1]], digits = 3)` à `r round(x = t_test_stats$conf.int[[2]], digits = 3)` pontos. Isto seria o tanto, em média, que as notas do ranking da Ludopedia superam àquelas do BGG. Vamos agora examinar o que o pacote `infer` nos oferece.
+
+## `infer`
+
+O `infer` não possui uma implementação explícita do teste-t pareado, mas isso não é necessariamente um problema. Como a própria [documentação](https://infer.netlify.app/articles/t_test.html) do pacote mostra, o que o teste-t pareado faz por baixo dos panos é calcular a diferença entre os valores de _x_ e _y_, e calcular a estatística em cima desta diferença. Ou seja, este teste seria um caso especial de um teste-t univariado. Assim, para utilizarmos o teste-t pareado no `infer`, precisaremos adicionar uma coluna no `tibble` original com a diferença par a par entre as notas já calculada. 
+
+```{r calcula_diferenca_infer}
+library(infer) # para fazer o teste de hipótese
+
+# colocando a diferenca no tibble
+ranks <- ranks %>% 
+  # calculando a coluna de diferenca
+  mutate(
+    diferenca = ludopedia - bgg
+  )
+```
+
+A partir daqui, usaremos os verbos do `infer` para especificar (`specify`) a variável resposta e calcular (`calculate`) a estatística de teste que vamos usar. Como estamos utilizando um teste-t, o ideal seria focarmos no valor de t como a nossa estatísticade de teste. No entanto, nosso maior interesse está na estimativa da diferença média entre as notas e o seu intervalo de confiança. Por conta disso, vamos especificar que a nossa estatística de teste será o valor da média. O problema ao fazermos isso é que qualquer cálculo relacionado à nossa estatística de teste deverá ser feito criando uma distribuição de probabilidade a partir da própria amostra estudada. Para isso, o pacote `infer` faz uso de técnicas de permutação e reamostragem. Antes de passar para esse ponto, no entanto, vamos medir o valor observado da nossa estatística de teste - a diferença média entre as notas associadas à uma mesma posição entre os rankings da Ludopedia e do BGG.
+
+```{r obs_moment}
+# rodando um teste-t pareado original
+obs_statistic <- ranks %>% 
+  # especificando a variável analisada para o infer
+  specify(
+    response = diferenca
+  ) %>% 
+  # calculando estatistica de teste
+  calculate(stat = 'mean') %>% 
+  # extraindo a coluna com a estatistica
+  pull(stat)
+obs_statistic
+```
+
+As técnicas de reamostragem são uma ferramenta muito útil em diversas situações. Alguns exemplos de casos de aplicação são quando:
+
++ Não sabemos a que família de distribuição estatística a variável resposta e/ou seus resíduos pertence;  
++ Precisamos fazer uma inferência ou estimar intervalos de confiança;  
++ Temos uma hipótese específica sobre o processo gerador dos dados e queremos testá-lo explicitamente;  
++ Precisamos realizar comparações entre duas ou mais amostras e temos um número diferente de observações entre elas;  
++ Precisamos realizar comparações entre duas ou mais amostras e temos um número muito grande de observações;  
++ ...  
+
+Como a nossa estatística de teste é a diferença média entre as notas, utilizaremos a reamostragem para criar uma estimativa de seu intervalo de confiança. Isto vai nos permitir dizer se existe ou não uma diferença nas notas entre os portais no caso onde a estimativa deste intervalo não contenha o valor 0. Para implementar a reamostragem no `infer`, utilizaremos o verbo `generate` para gerar 1.000 amostras aleatórias a partir dos dados originais utilizando a técnica de _bootstrap_. Através deste técnica, o algoritmo gera uma amostra com substituição a partir de um conjunto de dados e com o mesmo número de observações que ele - _i.e._, a mesma observação pode aparecer mais de uma vez em uma mesma amostra, e cada amostra tem o mesmo número de observações que os dados que o geraram. Uma vez que tenhamos as 1.000 amostras do _bootstrap_, vamos calcular (`calculate`) o valor da média da diferença entre as notas para cada uma delas, e vamos determinar o intervalo que contém 95% das estimativas. Este será o intervalo de confiança na estatística de teste, e que será obtido através do verbo `get_confidence_interval`.
+
+```{r bootstrap_ci}
+## criando reamostragem para estimar o intervalo de confiança
+boot_ci_tbl <- ranks %>% 
+  # especificando a variável analisada para o infer
+  specify(
+    response = diferenca
+  ) %>% 
+  # gerando bootstrap
+  generate(reps = 1000, type = 'bootstrap') %>% 
+  # calculando estatistica do bootstrap
+  calculate(stat = 'mean')
+
+## criando o histograma de distribuição de frequência da médias
+ggplot(data = boot_ci_tbl, mapping = aes(x = stat)) +
+  geom_histogram(color = 'black', fill = 'grey80') +
+  scale_x_continuous(n.breaks = 8) +
+  labs(
+    title = 'Distribuição de frequência da diferença média entre notas nos dados reamostrados',
+    x     = 'Diferença média entre as notas (Ludopedia - BGG)',
+    y     = 'Frequência'
+  )
+
+## calculando o intervalo de confiança
+boot_ci <- boot_ci_tbl %>% 
+  # pegando o intervalo de confianca
+  get_confidence_interval(type = 'percentile')
+boot_ci
+```
+
+Como podemos ver, a estatística de teste e o intervalo de confiança extraído do _bootstrap_ são muito parecidos com aqueles que tínhamos observado com a função `stats::t.test`. Muito bom!
+
+### Mas e se eu tivesse outra hipótese nula?
+
+Uma coisa que achei legal no `infer` é que ele também deixa você criar uma distribuição de valores que sigam uma hipótese nula específica. Isso pode ser útil, por exemplo, caso tivéssemos declarado que a hipótese nula que queremos testar é que a diferença entre as notas é um outro valor que não 0. No caso abaixo, podemos utilizar o verbo `hypothesize` para declarar qual é a hipótese nula que queremos testar e o valor esperado para a estatística de teste de acordo com a nossa hipótese nula. Neste exemplo, testarei se a diferença média entre as notas é diferente de 0,2 pontos, usando o verbo `generate` para gerar 500 amostras aleatórias usando a técnica de _boostrap_ a partir de **algum conjunto de dados** - não ficou claro para mim de que distribuição o pacote está tirando essa estimativa...assumo que seja de uma distribuição normal, com a média que definimos na chamada da função e desvio padrão igual a 1...mas o pacote falhou em documentar isso direito.
+
+```{r null_moment}
+## calculando a distribuicao da estatistica de teste com o bootstrap
+null_statistic <- ranks %>% 
+  # especificando a variável analisada para o infer
+  specify(
+    response = diferenca
+  ) %>% 
+  # especificando a hipotese nula que queremos testar
+  # não existe diferença entre as notas medias para uma mesma posicao entre rankins
+  hypothesize(null = 'point', mu = 0.2) %>%
+  # gerando bootstrap
+  generate(reps = 500, type = 'bootstrap') %>% 
+  # calculando estatistica do bootstrap
+  calculate(stat = 'mean')
+null_statistic
+```
+
+Uma vez que tenhamos montado a distribuição de valores que descreve a hipótese nula, podemos usar um outro conjunto de verbos para visualizar os resultados. O verbo `visualize` vai plotar a distribuição dos valores relacionados à hipótese nula, enquanto que os verbos `shade_confidence_interval` e `shade_p_value` servem para plotar na mesma figura o intervalo de confiança e a estatística de teste original - caso a tenhamos calculado anteriormente. 
+
+```{r visualiza_infer, layout = 'l-body-outset', fig.height=4, dpi = 200, code_folding = TRUE}
+null_statistic %>% 
+  # criando a visualização
+  visualize() +
+  # sombreando o intervalo de confianca
+  shade_confidence_interval(endpoints = boot_ci, color = 'white', fill = 'tomato') +
+  # colocar uma linha para a estimativa
+  shade_p_value(obs_stat = obs_statistic, direction = 'two-sided', color = 'tomato', size = 1) +
+  # ediitando a figura
+  scale_x_continuous(breaks = seq(from = -0.05, to = 0.4, by = 0.05)) +
+  labs(
+    title    = 'Distribuição dos valores nulos e observados',
+    subtitle = 'O histograma representa a distribuição dos valores da diferença entre médias de acordo com a hipótese nula. A linha
+vertical vermelha indica a estimativa da diferença média entre as notas, enquanto a barra vertical o intervalo de
+confiança 95%. Como não há sobreposição entre a distribuição dos dados de acordo com a hipótese nula e o intervalo de
+confiança, devemos rejeitar a hipótese nula.',
+    caption  = 'Utilizamos o método de reamostragem por bootstrap para a estimativa do intervalo de confiança, onde o calculamos através
+do percentil de distribuição das médias reamostradas.',
+    x        = 'Diferença entre médias (Ludopedia - BGG)',
+    y        = 'Frequência'
+  )
+```
+
+Tá aí uma forma fácil de implementar um _bootstrap_ e testar diferenças entre médias. Vamos agora à mais uma forma que eu pensei para tentar abordar a pergunta proposta.
+
+## Subamostragem
+
+Um ponto importante e comum à todos esses métodos estatísticos é que tanto maior for o tamanho da amostra, mais estreitos serão as estimativas de intervalo de confiança e maior a probabilidade de rejeitarmos a hipótese nula quando não deveríamos ter feito isso (_i.e._, um erro do Tipo II ou um falso positivo). Nossa base de dados não é tão grande assim (`r format(x = nrow(x = ranks), big.mark = '.', decimal.mark = ',')` observações), mas acredito já ser grande o suficiente para que estes tipos de problema comecem a se manifestar - especialmente para um teste estatístico como o teste-t, que foi concebido sob a ideia de amostras contendo até umas 30 observações. É claro que isto não invalida o que fizemos até aqui, mas é bastante provável que isto esteja tornando as estimativas feitas muito otimistas.
+
+Para resolver este problema, podemos buscar uma inspiração nas técnicas de reamostragem descritas anteriormente, e implementar uma subamostragem da base de dados seguida de diversas reamostragens. Isto é, vamos amostrar aleatoriamente uma fração de tamanho muito pequeno _n_ dos dados sem substituição, e repetir este procedimento _m_ vezes. Daí então vamos calcular a estatística de teste para cada uma das _m_ amostras e combiná-las de alguma forma - pode ser através de uma média, de um percentil ou até mesmo utilizando uma técnica de [meta-análise](https://nacmarino.github.io/codex/posts/2021-10-08-entendendo-os-padroes-de-duracao-das-provas-da-formula-1/).
+
+Vamos começar construindo a solução através da função que vai criar uma subamostra.
+
+```{r funcao_reamostragem}
+# criando funcao para fazer a reamostragem
+create_sample <- function(dataset, tamanho) {
+  dataset %>% 
+    # retira uma amostra aleatoria de um determinado tamanho
+    slice_sample(n = tamanho)
+}
+```
+
+Podemos então utilizar a função `purrr::rerun` para repetir a execução da função `create_sample` 500 vezes, sendo que amostraremos apenas 30 das `r format(x = nrow(x = ranks), big.mark = '.', decimal.mark = ',')` observações disponíveis em cada uma delas. Esta função retornará uma lista de listas e, portanto, utilizaremos a função `bind_rows` para juntá-las em um `tibble` e aninhar todas as colunas utilizando um `nest`, deixando de fora apenas a coluna com a identidade da amostra.
+
+```{r cria_dataset_reamostrado}
+## criando dataframe reamostrado
+reamostragem <- rerun(.n = 500,
+                      # rodando a funcao para criar amostrar 500 vezes, cada uma 
+                      # das quais amostrando 50 observacoes aleatoriamente
+                      create_sample(dataset = ranks, tamanho = 30)) %>% 
+  # juntando cada um dos dataframes e adicioando um sample id
+  bind_rows(.id = 'sample_id') %>% 
+  # aninhando o dataframe com os dados que vamos usar para ajustar o test-t dentro 
+  # de cada sample_id
+  nest(data = -sample_id)
+reamostragem
+```
+
+Com estas amostras, podemos agora ajustar um teste-t pareado similar aquele implementado usando a função `stats::t.test` à cada amostra, e extrair os resultados de cada uma delas. Para isso, precisaremos também fazer uso das funções `purrr::map`, `broom::tidy` e `tidyr::unnest`. Os resultados abaixo representam os resultados de cada um dos testes-t pareados aplicados à cada uma das _m_ subamostras criadas.
+
+```{r ajusta_reamostragem}
+resultados_reamostragem <- reamostragem %>% 
+  mutate(
+    # aplicando um teste-t pareado às amostras de cada sample_id
+    test_t = map(.x = data, 
+                 .f = ~t.test(x = .x$ludopedia, y = .x$bgg, 
+                              alternative = 'two.sided', paired = TRUE, var.equal = FALSE)
+    ),
+    # extraindo as informacoes tidy do ajuste do test-t pareado
+    tidy_t = map(.x = test_t, .f = broom::tidy)
+  ) %>% 
+  # desaninhando os resultados do test-t
+  unnest(tidy_t) %>% 
+  # jogando fora alguma colunas que nao precisaremos mais
+  select(-data, -test_t)
+resultados_reamostragem
+```
+
+Finalmente, vamos extrair a média da estimativa da diferença entre as notas (_i.e._, a média da coluna `estimate`) para ser a nossa estatística de teste, e calcular os quantis de 2.5% e 97.5% da distribuição destes valores para serem os limites inferior e superior, respectivamente, do intervalo de confiança de 95%. Com isso, podemos visualizar os resultados obtidos através da reamostragem abaixo.
+
+```{r figura_reamostragem, layout = 'l-body-outset', dpi=200, fig.height=4, code_folding = TRUE}
+# pegando os quantis da distribuicao das estimativas das subamostras
+quantis_subamostra <- quantile(x = resultados_reamostragem$estimate, probs = c(0.025, 0.975))
+media_subamostra <- mean(x = resultados_reamostragem$estimate)
+
+## pegando os dados do que o density plot vai usar e retendo apenas as areas
+## que estao fora do quantil
+df_dos_quantis <- tibble(
+  # pegando os valores de x e y que serão usados para o density plot
+  x = density(x = resultados_reamostragem$estimate)$x,
+  y = density(x = resultados_reamostragem$estimate)$y
+) %>% 
+  mutate(
+    # sinalizando os valores de x que estão fora do quantil de 95%
+    lower_quantile = x < quantis_subamostra[1],
+    upper_quantile = x > quantis_subamostra[2]
+  ) %>% 
+  # filtrando apenas as observacoes que estao fora do quantil
+  filter(lower_quantile | upper_quantile)
+
+# criando a figura
+resultados_reamostragem %>% 
+  ggplot(mapping = aes(x = estimate)) +
+  geom_density(fill = 'grey80', color = 'black') +
+  geom_ribbon(data = filter(df_dos_quantis, lower_quantile),
+              mapping = aes(x = x, ymin = 0, ymax = y), fill = 'tomato') +
+  geom_ribbon(data = filter(df_dos_quantis, upper_quantile),
+              mapping = aes(x = x, ymin = 0, ymax = y), fill = 'tomato') +
+  geom_vline(xintercept = 0, color = 'black', alpha = 0.6) +
+  geom_vline(xintercept = media_subamostra, color = 'black', linetype = 2) +
+  labs(
+    title    = 'As notas do ranking da Ludopedia são maiores que as do BoardGameGeek',
+    subtitle = str_glue('A estimativa da diferença através da subamostragem é de que as notas da Ludopedia superam as do BoardGameGeek\nem {round(media_subamostra, digits = 2)} pontos (Intervalo de Confiança de 95%: {round(quantis_subamostra[1], digits = 2)} à {round(quantis_subamostra[2], digits = 2)} pontos)'),
+    caption  = 'A área cinza representa o intervalo de confiança de 95% da estimativa da diferença nas notas entre os\ndois portais, obtidas através de 500 estimativas independentes tomadas a partir de 30 amostras aleatórias dos dados.',
+    x        = 'Diferença entre as notas do ranking da Ludopedia e do BoardGameGeek',
+    y        = 'Densidade'
+  ) +
+  theme(axis.title.y = element_blank())
+```
+
+Já é possível reparar que a diferença média estimada entre as notas associadas à uma mesma posição entre os rankings da Ludopedia e do BGG é bastante similar àquela dos dois testes anteriores - as notas na Ludopedia são `r round(x = media_subamostra, digits = 2)` pontos maiores, em média, do que no BGG. No entanto, o intervalo de confiança ficou bem maior: `r round(x = quantis_subamostra[1], digits = 2)` à `r round(quantis_subamostra[2], digits = 2)` pontos de diferença em favor da Ludopedia. Como podemos ver, o grande número de amostras nos dados tinha algum impacto sobre estas últimas estimativas, e ela me parece muito mais realista agora do que àquelas obtidas anteriormente. Falo isso principalmente pensando na figura que mostra a variação na diferença entre as notas de acordo com a posição do ranking: podemos ver que a diferença se mantém num patamar elevado até certo ponto e de repente despenca. Assim, a diferença que estimamos estava longe de ser tão pequena quanto àquela calculada anteriormente.
+
+Mas, calma aí...tinha esse padrão que eu acabei de falar...será que essa estimativa que tomamos agora faz mesmo sentido, então?
+
+## A milha extra
+
+Fiquei um bocado incomodado com os resultados que encontrei e os padrões observados naquela figura mostrando a variação na diferença entre as notas de acordo com a posição dos rankings. Fica muito claro ali que as notas dos títulos tendem a ser maiores na Ludopedia até certo ponto, a partir do qual o padrão contrário passa a valer. Assim, me parece mais razoável assumir que existam duas populações distintas dentro da nossa amostra, e que seria importante considerar isso na análise.
+
+Para tentar achar o ponto onde parece existir uma mudança de tendência nas notas de acordo com a posição do ranking, utilizei o algoritmo de regressão MARS (_Multivariate adaptative regression splines_). Eu acho esse algoritmo bastante legal: ele segmenta a feature em vários _bins_ e vai vendo a partir de qual _bin_ a relação entre a feature e o target muda; quando isto ocorre, ele cria uma função _hinge_, dando um coeficiente _beta_ para valores da feature menores ou iguais ao limite daquele _bin_ e um outro coeficiente _beta_ para valores maiores que aquele limite. Tomei vantagem deste aspecto do algoritmo e ajustei o mesmo aos dados especificando, propositalmente, que gostaria de apenas dois termos no modelo - um coeficiente para a nota até a posição do ranking em que ele se mantém em um nível, e outro para o coeficiente a partir do qual o comportamento da relação muda. Esse modelo está super _underfitado_, mas isso foi mesmo proposital: eu só quero o valor que aparece nos nomes dos coeficientes, e nada mais.
+
+```{r ajusta_mars}
+# carregando o tidymodels 
+library(tidymodels)
+
+# ajustando um MARS aos dados, forcando apenas 2 termos
+modelo <- mars(mode = 'regression', num_terms = 2) %>% 
+  set_engine(engine = 'earth') %>% 
+  fit(diferenca ~ ranking, data = ranks)
+
+# sumario do modelo
+summary(modelo$fit)
+```
+
+O output acima traz dois coeficientes, o `(Intercept)` e o `h(ranking-2254)`, que representam o valor dos _betas_ quando a posição do ranking é menor ou igual a 2.254 e maior que esta posição, respectivamente. Ou seja, se pegarmos os dígitos associados à _string_ do segundo coeficiente, podemos definir exatamente onde que o algoritmo encontrou o ponto a partir do qual a relação entre a diferença nas notas e a posição do ranking mudou.
+
+```{r extrai_hinge}
+ponto_de_corte <- modelo$fit$coefficients %>% 
+  # pegando o nome das linhas
+  rownames %>% 
+  # pegando o segundo elemento - nome do coeficiente da funcao hinge
+  pluck(2) %>% 
+  # extraindo todos os numeros do string
+  str_extract(pattern = '[0-9]+') %>% 
+  # parseando a string para numeric
+  parse_number()
+ponto_de_corte
+```
+
+Agora que temos o ponto de corte para definir as duas populações com que vamos trabalhar, vou repetir o procedimento feito no item anterior em que subamostramos os dados. No entanto, vamos fazer apenas uma pequena modificação na função que cria as subamostras para que ela aceite um argumento que vai nos ajudar a fazer a subamostragem para cada uma das duas populações separadamente. Para fazer isso, vamos passar o teste lógico para saber se a posição do ranking é menor ou igual ao ponto de corte para `group_by`, que já dará conta de estratificar a subamostragem. Com isso, podemos então proceder normalmente, e ajustar um teste-t pareado para cada subamostra de cada uma das duas populações^[Ou seriam sub-populações, nesse caso?].
+
+```{r repete_amostragem_estratificada}
+# criando funcao para fazer a reamostragem
+create_stratified_sample <- function(dataset, tamanho,...) {
+  dataset %>% 
+    # agrupa de acordo com o teste logico que for passado em ...
+    group_by(...) %>% 
+    # retira uma amostra aleatoria de um determinado tamanho de cada grupo 
+    slice_sample(n = tamanho) %>% 
+    # desagrupa o dataframe
+    ungroup
+}
+
+## criando dataframe reamostrado
+reamostragem_estratificada <- rerun(.n = 500,
+                                    # rodando a funcao para criar amostrar 500 vezes, cada
+                                    # uma das quais amostrando 50 observacoes aleatoriamente
+                                    create_stratified_sample(dataset = ranks, tamanho = 30, 
+                                                             ranking <= ponto_de_corte)) %>% 
+  # juntando cada um dos dataframes e adicioando um sample id
+  bind_rows(.id = 'sample_id') %>% 
+  # renomeando a coluna de estratificacao
+  rename(estratificacao = `ranking <= ponto_de_corte`) %>% 
+  # aninhando o dataframe com os dados que vamos usar para ajustar o test-t
+  # dentro de cada sample_id
+  nest(data = -c(sample_id, estratificacao))
+
+# ajustando o teste-t pareado à cada amostra pertencente à cada grupo
+resultados_reamostragem_estratificada <- reamostragem_estratificada %>% 
+  mutate(
+    # aplicando um teste-t pareado às amostras de cada sample_id
+    test_t = map(.x = data, 
+                 .f = ~t.test(x = .x$ludopedia, y = .x$bgg, 
+                              alternative = 'two.sided', paired = TRUE, var.equal = FALSE)
+    ),
+    # extraindo as informacoes tidy do ajuste do test-t pareado
+    tidy_t = map(.x = test_t, .f = broom::tidy)
+  ) %>% 
+  # desaninhando os resultados do test-t
+  unnest(tidy_t) %>% 
+  # jogando fora alguma colunas que nao precisaremos mais
+  select(-data, -test_t)
+resultados_reamostragem_estratificada
+```
+
+Uma vez que já temos os resultados das estimativas das diferenças para cada subamostra de cada uma das duas populações, podemos agora extrair o valor da tendência central da distribuição, bem como o intervalo de confiança associado à cada grupo. Eu optei aqui por usar uma média e os quantis da distribuição para estas duas últimas informações mas, de novo, daria para usar uma meta-análise também. O resultado disso pode ser visto na tabela abaixo, em que fica muito clara que a diferença entre as notas associadas à uma mesma posição entre os rankings da Ludopedia e do BGG é muito dependente da porção da lista que estamos analisando: as avaliações dos jogos são mais enviesadas para notas maiores no portal da Ludopedia até a posição 2.254, e depois daí o viés inverte de forma muito forte.
+
+```{r resultados_estratificacao, code_folding = TRUE}
+resultados_reamostragem_estratificada %>% 
+  # agrupando pelo grupo de posicao do ranking
+  group_by(estratificacao) %>% 
+  # calculando a estimativa central e intervalo de confianca por grupo
+  summarise(
+    'Diferença estimada' = mean(x = estimate),
+    'IC inferior'        = quantile(x = estimate, probs = 0.025),
+    'IC superior'        = quantile(x = estimate, probs = 0.975)
+  ) %>% 
+  # ajustando o texto da coluna de estratificacao
+  mutate(
+    estratificacao = ifelse(test = estratificacao, 
+                            yes = str_glue('Até a {ponto_de_corte}º posição'), 
+                            no = str_glue('Acima da {ponto_de_corte}º posição'))
+  ) %>% 
+  # arredondando tudo o que for numerico para duas casas decimais
+  mutate(across(where(is.numeric), round, digits = 2)) %>% 
+  # renomeando a coluna do grupo de posicao
+  rename(Grupo = estratificacao) %>% 
+  # organizando a tabela em ordem decrescente
+  arrange(desc(`Diferença estimada`)) %>% 
+  # printando a tabela
+  rmarkdown::paged_table()
+```
+
+Também podemos visualizar estes mesmos resultados através da figura abaixo - focando aqui não só no intervalo de confiança em si, mas também nos valores que ficaram abaixo e cima do intervalo de confiança.
+
+```{r figura_reamostragem_estratificada, layout = 'l-body-outset', dpi=200, fig.height=4, code_folding = TRUE, preview = TRUE}
+# criando a figura
+resultados_reamostragem_estratificada %>% 
+  # estilizando o texto que aparecerá no eixo y
+  mutate(
+    estratificacao = ifelse(test = estratificacao, 
+    yes = str_glue('Até a {ponto_de_corte}º posição'), 
+    no = str_glue('Acima da {ponto_de_corte}º posição'))
+  ) %>% 
+  # plotando a figura
+  ggplot(mapping = aes(x = estimate, y = estratificacao, fill = factor(stat(quantile)))) +
+  stat_density_ridges(geom = 'density_ridges_gradient', scale = 0.95, 
+                      calc_ecdf = TRUE, quantiles = c(0.025, 0.975), 
+                      show.legend = FALSE) +
+  scale_fill_manual(values = c('tomato', 'grey80', 'tomato')) +
+  geom_vline(xintercept = 0, color = 'black', alpha = 0.5) +
+  labs(
+    title    = 'A diferença na nota entre os dois portais depende da posição do ranking',
+    subtitle = str_glue('O ranking da Ludopedia tem notas maiores que aquele do BoardGameGeek para os títulos que ocupem\naté a {ponto_de_corte}º posição, a partir de onde eles passam a ser melhores avaliados neste último'),
+    caption  = 'A área cinza representa o intervalo de confiança de 95% da estimativa da diferença nas notas entre os\ndois portais, obtidas através de 500 estimativas independentes tomadas a partir de 30 amostras aleatórias dos dados.',
+    x        = 'Diferença entre as notas do ranking da Ludopedia e do BoardGameGeek'
+  ) +
+  theme(axis.title.y = element_blank())
+```
+
+Uma coisa que podemos perceber com estes resultados é que eles parecem retratar muito melhor a tendência apresentada por àquela figura que mostra relação entre a diferença entre as notas e a posição do ranking. Acho que, com isso, já posso me dar por satisfeito com as análises que fizemos, e parar por aqui.
+
+# Conclusões
+
+Minha ideia original nesse post era entender se existe algum viés nas notas dadas aos jogos de tabuleiro pelos usuários dos portais da Ludopedia e do BoardGameGeek e, caso positivo, qual a direção e o tamanho do mesmo. Para isso, utilizei os dados que já havíamos raspado com as notas dos rankings disponíveis para ambos os portais, e pareei as notas associadas à uma mesma posição de forma a analisar a diferença entre elas controlando a posição do ranking. Para realizar esta análise, eu utilizei um teste-t pareado, aproveitando para testar as funcionalidades e implementações disponíveis no pacote `infer`, além daquela disponíveis na `base` do R . Durante este exercício, apliquei também uma técnica de subamostragem aos dados da análise estatística em si, na tentativa de reduzir o impacto do grande número de amostras sobre as estimativas da estatística de teste e dos intervalos de confiança. Finalmente, como identificamos um padrão na distribuição da diferença das notas de acordo com a posição do ranking, resolvi utilizar um modelo de aprendizado de máquina para segmentar os dados entre duas populações e analisá-las separadamente. E o que foi que encontramos?
+
+Todos os modelos estatísticos ajustados aqui sugerem que as notas dadas aos jogos de tabuleiro no portal da Ludopedia tende a ser maior do que àquelas no BGG. Isto parece ser particularmente verdade até a posição `r format(x = ponto_de_corte, big.mark = '.', decimal.mark = ',')`, a partir de onde as notas dadas no portal da Ludopedia tendem a ser menores do que àquelas no BGG. Um ponto importante aqui é que a melhor estimativa para o tamanho dessa diferença foi aquela obtida quando combinamos as diferenças calculadas através de várias subamostras dos dados originais. Achei bastante interessante implementar este tipo de abordagem aqui, uma vez que existe muita discussão sobre o uso de técnicas estatísticas aplicadas à grandes volumes de dados, e já escutei mais de uma vez que elas não devem ser aplicadas nestes casos - o que não faz o menor sentido para mim (_e.g._, pense em estudos clínicos, testes de medicamentos e vacinas...todas essas coisas exigem um número enorme de participantes, e todas elas fazem uso intenso de estatística). Nesse contexto, acredito que o mais relevante mesmo é saber não se enganar frente a um resultado que parece bater com o que se espera de antemão.
+
+Um ponto importante é que embora tenhamos identificado um padrão, não está claro o porquê dele. Isto é, o que faz com que os títulos a partir da posição próximo à 2.200 passem a ter notas menores na Ludopedia do que no BGG? É muito fácil ficar tentado à concluir que os jogos no fim do ranking tendem a ser pior avaliados na Ludopedia do que no BGG mas...(a) será que são os mesmos jogos? (b) será que os jogos no fim do ranking são aqueles menos conhecidos no Brasil do que no exterior e, por isso, têm notas menores? (c) será que é uma questão de gostos e preferências mesmo? Não tenho uma resposta para essas perguntas, e isto está fora do escopo da análise que fizemos.
+
+Finalmente, esse post também serviu para eu testar o pacote `infer` e formar uma opinião sobre ele:
+
++ Acho que uma primeira impressão que tive é que ele é verboso demais: você precisa declarar, função a função, exatamente o teste de hipótese que você quer fazer e como ele deve funcionar (_i.e._, `specify`, `hypothesize`, `generate`, `calculate`,...). Acredito que isso tem as vantagens de maior flexibilidade para adequar a inferência de ponta a ponta às suas necessidades, além de deixar mais claro cada uma das decisões tomadas para implementar a análise. Por outro lado, acredito que se a pessoa não tiver uma bagagem teórica de estatística boa, ela vai acabar se perdendo - e aí ou vai usar alguma outra implementação mais fácil ou, simplesmente, vai acabar usando errado;  
++ Uma boa documentação do pacote e das funções são indispensáveis para reduzir as chances de alguém usar a ferramenta de forma errada. O site do pacote traz muitas _vignettes_, exemplos de uso e outras informações úteis, mas achei que faltou um pouco de clareza para uma ou outra coisinha ali (_e.g._, de que distribuição o _bootstrap_ é criado quando vamos criar uma distribuição nula?). É claro que olhando os resultados e quebrando um pouquinho a cabeça, dá para descobrir a resposta para algumas coisas...mas o ideal é que a gente não precisasse fazer isso, né?  
++ Finalmente, achei muito positivo o fato do pacote implementar de forma tão fácil e intuitiva vários tipos de técnicas de reamostragem. Fazer isso na mão pode ser bem doloroso e complicado, e achei muito ok a forma que trataram isso dentro da função `generate`. É claro que ainda teriam coisas para melhorar ali como, por exemplo, permitir que o usuário selecione o tamanho das amostras que serão geradas (_i.e._, exatamente o que acabamos tendo que fazer criando a função de subamostragem) ou definir a família de distribuição de probabilidades de onde serão criadas as distribuições nulas. Entretanto, acredito que a ausência dessas coisas dentro do pacote neste momento não machuquem o que ele já entrega aqui.  
+
+Dadas as considerações, acho que posso dizer que o pacote `infer` é bastante OK. Talvez eu não vá usar ele no dia a dia para fazer o feijão com arroz, mas definitivamente é uma ferramenta útil quando o assunto for (a) reamostragem (_e.g._, _bootstrap_, permutação,...) e (b) implementar testes de hipóteses que fogem do convencional (_i.e._, diferença na variância, hipótese nula é um valor específico que nao seja o 0,...).
+
+# Possíveis Extensões
+
++ Eu optei por analisar a diferenças entre as notas focando na posição do ranking, mas seria muito razoável repetir as análises focando em diferenças nas notas dos títulos em si: _e.g._ nota do Projeto Gaia na Ludopedia _vs_ BGG, do Pandemic na Ludopedia _vs_ BGG e etc. Como já havia discutido, o desafio aqui seria casar as _strings_ com os nomes dos títulos entre as duas bases com os dados que temos. Felizmente, não precisamos fazer isso: veremos em outros posts que as respectivas APIs disponibilizam os nomes de cada título em outras línguas, o que facilita e muito qualquer _join_.
++ Um ponto que nem mencionei aqui foi o por quê da variação das notas. Isto é: o que faz com que um jogo seja melhor avaliado do que outro? Que fatores explicam a variação nas notas entre e dentro dos portais? É claro que não dá para encontrar a causa raíz dessas coisas assim tão fácil, mas ponderar sobre alguns fatores que podem estar contribuindo para isso é algo bem razoável...
+
+Dúvidas, sugestões ou críticas? É só me procurar pelo e-mail ou GitHub!
