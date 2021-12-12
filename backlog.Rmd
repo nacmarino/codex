@@ -30,11 +30,9 @@ O dataset da semana contém uma lista de espécies de pássaros que foram avista
 - Cartas de facções diferentes formam grupos distintos com base nas informações de texto do `tooltip`?  
 - Como visualizar a relação entre as cartas de Gwent?  
 - Que carta devo adicionar ao meu deck de Gwent para complementar o que tenho com estas outras _n_ cartas?  
-- [On going] Quão similares são as notas dos rankings de jogos de tabuleiro entre a Ludopedia e o BoardGameGeek?
 
 # Testando Pacotes
 
 - Testando o pacote `modeltime` para modelar séries temporais;  
 - Testando o ecossistema do pacote `fpp3` para modelar séries temporais;  
-- Testando o pacote `arules` para modelar regras de associação;  
-- [On going] Testando o pacote `infer` para a inferência estatística.
+- Testando o pacote `arules` para modelar regras de associação.  
