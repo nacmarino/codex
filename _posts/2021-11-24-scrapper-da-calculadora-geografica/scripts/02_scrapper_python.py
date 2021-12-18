@@ -29,10 +29,10 @@ seletor_projecao_entrada = Select(driver.find_element(by = 'xpath', value='//bod
 seletor_projecao_entrada.select_by_value(value = 'latlong_gd')
 ## imputando o valor da longitude
 input_X = driver.find_element(by = 'xpath', value='//body//div//center//table//tbody//tr[5]//td//input')
-input_X.send_keys('46.8')
+input_X.send_keys('-43.1034')
 ## imputando o valor da latitude
 input_Y = driver.find_element(by = 'xpath', value='//body//div//center//table//tbody//tr[7]//td//input')
-input_Y.send_keys('-22.8')
+input_Y.send_keys('-22.8822')
 # selecionando o datum de entrada
 seletor_datum_entrada = Select(driver.find_element(by = 'xpath', value='//body//div//center//table//tbody//tr[9]//select'))
 seletor_datum_entrada.select_by_value(value = '1')
@@ -52,7 +52,7 @@ seletor_projecao_saida = Select(driver.find_element(by = 'xpath', value='//html/
 seletor_projecao_saida.select_by_value(value = 'latlong')
 # selecionando o datum de saida
 seletor_datum_entrada = Select(driver.find_element(by = 'xpath', value='//html//body//table//tbody//tr[4]//td//select'))
-seletor_datum_entrada.select_by_value(value = '4')
+seletor_datum_entrada.select_by_value(value = '5')
 ## clicando no avancar
 driver.find_element(by = 'xpath', value='//html//body//table//tbody//tr[5]//td').click()
 

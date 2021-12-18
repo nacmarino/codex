@@ -65,7 +65,7 @@ remDr$switchToFrame(Id = second_frame)
 proj_out = remDr$findElement(using = 'xpath', value='/html/body/table/tbody/tr[2]/td/select/option[@value="latlong"]')
 proj_out$clickElement()
 # selecionando o datum de saida
-datum_out = remDr$findElement(using = 'xpath', value='/html/body/table/tbody/tr[4]/td/select/option[@value="4"]')
+datum_out = remDr$findElement(using = 'xpath', value='/html/body/table/tbody/tr[4]/td/select/option[@value="5"]')
 datum_out$clickElement()
 ## clicando no avancar
 botao_avancar <- remDr$findElement(using = 'xpath', value = '/html/body/table/tbody/tr[5]/td')
