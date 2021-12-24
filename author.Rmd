@@ -85,9 +85,10 @@ Aprendi a viver e a fazer ciência ao longo da minha trajetória profissional, a
         + Getting and Cleaning Data | 2021
         + R Programming | 2021
         + The Data Scientist's Toolbox | 2021
-    + Introduction to Mathematical Thinking | Em andamento
+    + Introduction to Mathematical Thinking | 2021
     + Mathematics for Machine Learning
-        + Multivariate Calculus | Em andamento
+        + Principal Component Analysis | Em andamento
+        + Multivariate Calculus | 2021
         + Linear Algebra | 2021  
   
 # Experiência
