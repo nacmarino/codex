@@ -1,5 +1,5 @@
 ---
-title: "Convertendo coordenadas atraves da calculadora geografica do INPE"
+title: "Convertendo coordenadas através da calculadora geográfica do INPE"
 description: |
   Nesse post eu mostro a solução que propus para resolver um problema: converter coordenadas de uma projeção e datum qualquer para SIRGAS2000. Como não encontrei um bom suporte para a conversão no R, tive que recorrer à calculadora geográfica do INPE, criando uma automação para interagir com ela e realizar esta tarefa.
 author:
@@ -18,7 +18,7 @@ output:
     toc: true
     code_folding: true
     highlight: rstudio
-draft: true
+draft: false
 ---
 
 ```{r setup, include=FALSE}
@@ -243,6 +243,6 @@ Dúvidas, sugestões ou críticas? É só me procurar que a gente conversa!
 
 # Possíveis extensões
 
-Eu usei um misto de R e Python para fins de demonstração neste post. Todavia, você pode encontrar essa automação escrita toda em R neste link [aqui](https://github.com/nacmarino/codex/blob/57d2c6872ee826ec128c88cee3d22c0a385ecda8/_posts/2021-11-24-scrapper-da-calculadora-geografica/scripts/01_scrapper_r.R), e toda em Python neste outro [aqui](https://github.com/nacmarino/codex/blob/57d2c6872ee826ec128c88cee3d22c0a385ecda8/_posts/2021-11-24-scrapper-da-calculadora-geografica/scripts/02_scrapper_python.py). Uma coisa que seria interessante fazer também é criar uma classe no Python, que pudesse ser usada de forma mais reprodutível para fazer essa conversão. Eu nunca havia chegado a construir uma, e acabei tentando fazer isso [aqui](https://github.com/nacmarino/codex/blob/57d2c6872ee826ec128c88cee3d22c0a385ecda8/_posts/2021-11-24-scrapper-da-calculadora-geografica/scripts/03_CalculadoraINPE.py) pela primeira vez. A ideia é que ela fosse útil para converter não só como mostrei aqui, mas também outras que eu julguei serem comuns em aplicações do nosso dia a dia (e.g., UTM para grau decimal). Eu não cheguei a testar essa classe de forma exaustiva, então sugiro cuidado ao usar ela. De forma similar, sei que ela está longe de estar bem escrita - e estou muito aberto à sugestões de como melhorá-la e oportunidades de aprender mais!
+Eu usei um misto de R e Python para fins de demonstração neste post. Todavia, você pode encontrar essa automação escrita toda em R neste link [aqui](https://github.com/nacmarino/codex/blob/94448a97396c3b65ce51191837b6b51379559ac5/_posts/2021-12-23-convertendo-coordenadas-atraves-da-calculadora-geografica-do-inpe/scripts/01_scrapper_r.R), e toda em Python neste outro [aqui](https://github.com/nacmarino/codex/blob/94448a97396c3b65ce51191837b6b51379559ac5/_posts/2021-12-23-convertendo-coordenadas-atraves-da-calculadora-geografica-do-inpe/scripts/02_scrapper_python.py). Uma coisa que seria interessante fazer também é criar uma classe no Python, que pudesse ser usada de forma mais reprodutível para fazer essa conversão. Eu nunca havia chegado a construir uma, e acabei tentando fazer isso [aqui](https://github.com/nacmarino/codex/blob/94448a97396c3b65ce51191837b6b51379559ac5/_posts/2021-12-23-convertendo-coordenadas-atraves-da-calculadora-geografica-do-inpe/scripts/03_CalculadoraINPE.py) pela primeira vez. A ideia é que ela fosse útil para converter não só como mostrei aqui, mas também outras que eu julguei serem comuns em aplicações do nosso dia a dia (e.g., UTM para grau decimal). Eu não cheguei a testar essa classe de forma exaustiva, então sugiro cuidado ao usar ela. De forma similar, sei que ela está longe de estar bem escrita - e estou muito aberto à sugestões de como melhorá-la e oportunidades de aprender mais!
 
 Finalmente, uma outra extensão que vejo seria de pegar o código PHP que faz a conversão das coordenadas e portá-lo para R e Python. Esse código está disponível para download no próprio site da calculadora geográfica do INPE, e seria uma alternativa muito viável para escalar essa conversão.

@@ -50,38 +50,36 @@ pre.numberSource code > span > a:first-child::before
   }
 pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
 div.sourceCode
-  {  background-color: #f8f8f8; }
+  {   }
 @media screen {
 pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
-code span.al { color: #ef2929; } /* Alert */
-code span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
-code span.at { color: #c4a000; } /* Attribute */
-code span.bn { color: #0000cf; } /* BaseN */
-code span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
-code span.ch { color: #4e9a06; } /* Char */
-code span.cn { color: #000000; } /* Constant */
-code span.co { color: #8f5902; font-style: italic; } /* Comment */
-code span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
-code span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
-code span.dt { color: #204a87; } /* DataType */
-code span.dv { color: #0000cf; } /* DecVal */
-code span.er { color: #a40000; font-weight: bold; } /* Error */
+code span.al { color: #ff0000; } /* Alert */
+code span.an { color: #008000; } /* Annotation */
+code span.at { } /* Attribute */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #0000ff; } /* ControlFlow */
+code span.ch { color: #008080; } /* Char */
+code span.cn { color: #585cf6; } /* Constant */
+code span.co { color: #4c886b; } /* Comment */
+code span.cv { color: #008000; } /* CommentVar */
+code span.do { color: #008000; } /* Documentation */
+code span.dv { color: #0000cd; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
 code span.ex { } /* Extension */
-code span.fl { color: #0000cf; } /* Float */
-code span.fu { color: #000000; } /* Function */
+code span.fl { color: #0000cd; } /* Float */
 code span.im { } /* Import */
-code span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
-code span.kw { color: #204a87; font-weight: bold; } /* Keyword */
-code span.op { color: #ce5c00; font-weight: bold; } /* Operator */
-code span.ot { color: #8f5902; } /* Other */
-code span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
-code span.sc { color: #000000; } /* SpecialChar */
-code span.ss { color: #4e9a06; } /* SpecialString */
-code span.st { color: #4e9a06; } /* String */
-code span.va { color: #000000; } /* Variable */
-code span.vs { color: #4e9a06; } /* VerbatimString */
-code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code span.in { color: #008000; } /* Information */
+code span.kw { color: #0000ff; } /* Keyword */
+code span.op { color: #687687; } /* Operator */
+code span.ot { color: #ff4000; } /* Other */
+code span.pp { color: #ff4000; } /* Preprocessor */
+code span.sc { color: #008080; } /* SpecialChar */
+code span.ss { color: #008080; } /* SpecialString */
+code span.st { color: #036a07; } /* String */
+code span.va { } /* Variable */
+code span.vs { color: #008080; } /* VerbatimString */
+code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </style>
 
   <!--radix_placeholder_meta_tags-->
@@ -91,8 +89,8 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
 
 
   <!--  https://schema.org/Article -->
-  <meta property="article:published" itemprop="datePublished" content="2021-11-24"/>
-  <meta property="article:created" itemprop="dateCreated" content="2021-11-24"/>
+  <meta property="article:published" itemprop="datePublished" content="2021-12-23"/>
+  <meta property="article:created" itemprop="dateCreated" content="2021-12-23"/>
   <meta name="article:author" content="Nicholas Marino"/>
 
   <!--  https://developers.facebook.com/docs/sharing/webmasters#markup -->
@@ -110,12 +108,12 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
   <!--radix_placeholder_rmarkdown_metadata-->
 
   <script type="text/json" id="radix-rmarkdown-metadata">
-  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","author","date","categories","output","draft"]}},"value":[{"type":"character","attributes":{},"value":["Convertendo coordenadas através da calculadora geográfica do INPE"]},{"type":"character","attributes":{},"value":["Nesse post eu mostro a solução que propus para resolver um problema: converter coordenadas de uma projeção e datum qualquer para SIRGAS2000. Como não encontrei um bom suporte para a conversão no R, tive que recorrer à calculadora geográfica do INPE, criando uma automação para interagir com ela e realizar esta tarefa.\n"]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["first_name","last_name","url"]}},"value":[{"type":"character","attributes":{},"value":["Nicholas"]},{"type":"character","attributes":{},"value":["Marino"]},{"type":"character","attributes":{},"value":["https://github.com/nacmarino"]}]}]},{"type":"character","attributes":{},"value":["11-24-2021"]},{"type":"character","attributes":{},"value":["web scraping","selenium","python"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["self_contained","toc","code_folding","highlight"]}},"value":[{"type":"logical","attributes":{},"value":[false]},{"type":"logical","attributes":{},"value":[true]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["tango"]}]}]},{"type":"logical","attributes":{},"value":[true]}]}
+  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","author","date","preview","categories","output","draft"]}},"value":[{"type":"character","attributes":{},"value":["Convertendo coordenadas através da calculadora geográfica do INPE"]},{"type":"character","attributes":{},"value":["Nesse post eu mostro a solução que propus para resolver um problema: converter coordenadas de uma projeção e datum qualquer para SIRGAS2000. Como não encontrei um bom suporte para a conversão no R, tive que recorrer à calculadora geográfica do INPE, criando uma automação para interagir com ela e realizar esta tarefa.\n"]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["first_name","last_name","url"]}},"value":[{"type":"character","attributes":{},"value":["Nicholas"]},{"type":"character","attributes":{},"value":["Marino"]},{"type":"character","attributes":{},"value":["https://github.com/nacmarino"]}]}]},{"type":"character","attributes":{},"value":["12-23-2021"]},{"type":"character","attributes":{},"value":["images/cartografia.jpeg"]},{"type":"character","attributes":{},"value":["web scraping","selenium","python"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["self_contained","toc","code_folding","highlight"]}},"value":[{"type":"logical","attributes":{},"value":[false]},{"type":"logical","attributes":{},"value":[true]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["rstudio"]}]}]},{"type":"logical","attributes":{},"value":[false]}]}
   </script>
   <!--/radix_placeholder_rmarkdown_metadata-->
   
   <script type="text/json" id="radix-resource-manifest">
-  {"type":"character","attributes":{},"value":["images/interatividade_1.gif","images/interatividade_2.gif","images/navegacao.gif","images/screenshot_1.png","images/screenshot_2.png","images/screenshot_3.png","images/screenshot_4.png","scrapper-da-calculadora-geografica_files/anchor-4.2.2/anchor.min.js","scrapper-da-calculadora-geografica_files/bowser-1.9.3/bowser.min.js","scrapper-da-calculadora-geografica_files/distill-2.2.21/template.v2.js","scrapper-da-calculadora-geografica_files/figure-html5/carrega_python_libs-1.png","scrapper-da-calculadora-geografica_files/figure-html5/carrega_python_libs-3.png","scrapper-da-calculadora-geografica_files/figure-html5/carrega_python_libs-5.png","scrapper-da-calculadora-geografica_files/figure-html5/carrega_python_libs-7.png","scrapper-da-calculadora-geografica_files/header-attrs-2.10/header-attrs.js","scrapper-da-calculadora-geografica_files/jquery-1.11.3/jquery.min.js","scrapper-da-calculadora-geografica_files/pagedtable-1.1/css/pagedtable.css","scrapper-da-calculadora-geografica_files/pagedtable-1.1/js/pagedtable.js","scrapper-da-calculadora-geografica_files/popper-2.6.0/popper.min.js","scrapper-da-calculadora-geografica_files/tippy-6.2.7/tippy-bundle.umd.min.js","scrapper-da-calculadora-geografica_files/tippy-6.2.7/tippy-light-border.css","scrapper-da-calculadora-geografica_files/tippy-6.2.7/tippy.css","scrapper-da-calculadora-geografica_files/tippy-6.2.7/tippy.umd.min.js","scrapper-da-calculadora-geografica_files/webcomponents-2.0.0/webcomponents.js","scripts/01_scrapper_r.R","scripts/02_scrapper_python.py","scripts/03_CalculadoraINPE.py"]}
+  {"type":"character","attributes":{},"value":["images/cartografia.jpeg","images/interatividade_1.gif","images/interatividade_2.gif","images/navegacao.gif","images/screenshot_1.png","images/screenshot_2.png","images/screenshot_3.png","images/screenshot_4.png","scrapper-da-calculadora-geografica_files/anchor-4.2.2/anchor.min.js","scrapper-da-calculadora-geografica_files/bowser-1.9.3/bowser.min.js","scrapper-da-calculadora-geografica_files/distill-2.2.21/template.v2.js","scrapper-da-calculadora-geografica_files/figure-html5/carrega_python_libs-1.png","scrapper-da-calculadora-geografica_files/figure-html5/carrega_python_libs-3.png","scrapper-da-calculadora-geografica_files/figure-html5/carrega_python_libs-5.png","scrapper-da-calculadora-geografica_files/figure-html5/carrega_python_libs-7.png","scrapper-da-calculadora-geografica_files/header-attrs-2.10/header-attrs.js","scrapper-da-calculadora-geografica_files/jquery-1.11.3/jquery.min.js","scrapper-da-calculadora-geografica_files/pagedtable-1.1/css/pagedtable.css","scrapper-da-calculadora-geografica_files/pagedtable-1.1/js/pagedtable.js","scrapper-da-calculadora-geografica_files/popper-2.6.0/popper.min.js","scrapper-da-calculadora-geografica_files/tippy-6.2.7/tippy-bundle.umd.min.js","scrapper-da-calculadora-geografica_files/tippy-6.2.7/tippy-light-border.css","scrapper-da-calculadora-geografica_files/tippy-6.2.7/tippy.css","scrapper-da-calculadora-geografica_files/tippy-6.2.7/tippy.umd.min.js","scrapper-da-calculadora-geografica_files/webcomponents-2.0.0/webcomponents.js","scripts/01_scrapper_r.R","scripts/02_scrapper_python.py","scripts/03_CalculadoraINPE.py"]}
   </script>
   <!--radix_placeholder_navigation_in_header-->
   <!--/radix_placeholder_navigation_in_header-->
@@ -1456,7 +1454,7 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
 <!--radix_placeholder_front_matter-->
 
 <script id="distill-front-matter" type="text/json">
-{"title":"Convertendo coordenadas através da calculadora geográfica do INPE","description":"Nesse post eu mostro a solução que propus para resolver um problema: converter coordenadas de uma projeção e datum qualquer para SIRGAS2000. Como não encontrei um bom suporte para a conversão no R, tive que recorrer à calculadora geográfica do INPE, criando uma automação para interagir com ela e realizar esta tarefa.","authors":[{"author":"Nicholas Marino","authorURL":"https://github.com/nacmarino","affiliation":"&nbsp;","affiliationURL":"#","orcidID":""}],"publishedDate":"2021-11-24T00:00:00.000+00:00","citationText":"Marino, 2021"}
+{"title":"Convertendo coordenadas através da calculadora geográfica do INPE","description":"Nesse post eu mostro a solução que propus para resolver um problema: converter coordenadas de uma projeção e datum qualquer para SIRGAS2000. Como não encontrei um bom suporte para a conversão no R, tive que recorrer à calculadora geográfica do INPE, criando uma automação para interagir com ela e realizar esta tarefa.","authors":[{"author":"Nicholas Marino","authorURL":"https://github.com/nacmarino","affiliation":"&nbsp;","affiliationURL":"#","orcidID":""}],"publishedDate":"2021-12-23T00:00:00.000+00:00","citationText":"Marino, 2021"}
 </script>
 
 <!--/radix_placeholder_front_matter-->
@@ -1481,7 +1479,7 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
   
   true
   
-<br/>11-24-2021
+<br/>12-23-2021
 </div>
 
 <div class="d-article">
@@ -1705,9 +1703,12 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>driver.close()</span></code></pre></div>
 </div>
 <h1 id="conclusões">Conclusões</h1>
+<p>Neste post eu tentei mostrar uma solução que propus para resolver um problema pontual: converter um conjunto de coordenadas para o datum SIRGAS2000 de forma reprodutível, uma vez que não encontrei muito suporte para isso no R, e a conversão através do Python me pareceu meio estranha. A implementação da solução é baseada na automação da operação de conversão de coordenadas através do site da calculadora geográfica do INPE, usando o <code>Selenium</code>. Assim, toda a conversão ocorre através de um navegador e múltiplas requisições para um servidor, e não através do processamento na sua máquina <em>per se</em>. Isto quer dizer que esta solução não é muito escalável se tivermos que converter um grande número de coordenadas, e deve ser usada com moderação.</p>
+<p>O desenvolvimento dessa solução veio muito no sentido de automar uma etapa de um <em>pipeline</em> de dados, que não usa um volume tão grande de observações assim. Além disso, essa solução também nasceu da necessidade de resolver uma questão onde não encontramos uma alternativa mais simples e pré-existente. Com isso, essa solução está OK para endereçar problemas que envolvam aqueles mesmos tipos de contextos, mas está longe de ser o melhor caminho caso eles sejam diferentes. Um exemplo disto seria caso a conversão de datum fosse entre SAD69 e WGS84, onde as funções do pacote <code>sf</code> do R parecem funcionar bem - além de ser uma alternativa muito mais simples do que a que mostro aqui! E, por sinal, acho que no fim do dia é isso que realmente importa: resolver o problema de forma rápida, simples, objetiva e reprodutível.</p>
 <p>Dúvidas, sugestões ou críticas? É só me procurar que a gente conversa!</p>
 <h1 id="possíveis-extensões">Possíveis extensões</h1>
-<p>Eu usei um misto de R e Python para fins de demonstração neste post. Todavia, você pode encontrar essa automação escrita toda em R neste link <a href="https://github.com/nacmarino/codex/blob/57d2c6872ee826ec128c88cee3d22c0a385ecda8/_posts/2021-11-24-scrapper-da-calculadora-geografica/scripts/01_scrapper_r.R">aqui</a> e toda em Python neste outro <a href="https://github.com/nacmarino/codex/blob/57d2c6872ee826ec128c88cee3d22c0a385ecda8/_posts/2021-11-24-scrapper-da-calculadora-geografica/scripts/02_scrapper_python.py">aqui</a>. Uma coisa que seria interessante fazer também é criar uma classe no Python, que pudesse ser usada de forma mais reprodutível para fazer essa conversão. Eu nunca havia chegado a construir uma, e acabei tentando fazer isso <a href="https://github.com/nacmarino/codex/blob/57d2c6872ee826ec128c88cee3d22c0a385ecda8/_posts/2021-11-24-scrapper-da-calculadora-geografica/scripts/03_CalculadoraINPE.py">aqui</a> pela primeira vez. Eu tentei fazer com que ela fosse útil para converter não só as coordenadas na projeção e datum de entrada como mostrei aqui, mas também outras que eu julguei serem comuns em aplicações do nosso dia a dia (e.g., UTM para grau decimal). Eu não cheguei a testar essa classe de forma exaustiva, então sugiro cuidado ao usar ela. De forma similar, sei que ela está longe de estar bem escrita - e estou muito aberto à sugestões de como melhorá-la e oportunidades de aprender mais!</p>
+<p>Eu usei um misto de R e Python para fins de demonstração neste post. Todavia, você pode encontrar essa automação escrita toda em R neste link <a href="https://github.com/nacmarino/codex/blob/94448a97396c3b65ce51191837b6b51379559ac5/_posts/2021-12-23-convertendo-coordenadas-atraves-da-calculadora-geografica-do-inpe/scripts/01_scrapper_r.R">aqui</a>, e toda em Python neste outro <a href="https://github.com/nacmarino/codex/blob/94448a97396c3b65ce51191837b6b51379559ac5/_posts/2021-12-23-convertendo-coordenadas-atraves-da-calculadora-geografica-do-inpe/scripts/02_scrapper_python.py">aqui</a>. Uma coisa que seria interessante fazer também é criar uma classe no Python, que pudesse ser usada de forma mais reprodutível para fazer essa conversão. Eu nunca havia chegado a construir uma, e acabei tentando fazer isso <a href="https://github.com/nacmarino/codex/blob/94448a97396c3b65ce51191837b6b51379559ac5/_posts/2021-12-23-convertendo-coordenadas-atraves-da-calculadora-geografica-do-inpe/scripts/03_CalculadoraINPE.py">aqui</a> pela primeira vez. A ideia é que ela fosse útil para converter não só como mostrei aqui, mas também outras que eu julguei serem comuns em aplicações do nosso dia a dia (e.g., UTM para grau decimal). Eu não cheguei a testar essa classe de forma exaustiva, então sugiro cuidado ao usar ela. De forma similar, sei que ela está longe de estar bem escrita - e estou muito aberto à sugestões de como melhorá-la e oportunidades de aprender mais!</p>
+<p>Finalmente, uma outra extensão que vejo seria de pegar o código PHP que faz a conversão das coordenadas e portá-lo para R e Python. Esse código está disponível para download no próprio site da calculadora geográfica do INPE, e seria uma alternativa muito viável para escalar essa conversão.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <section class="footnotes" role="doc-endnotes">
 <hr />
