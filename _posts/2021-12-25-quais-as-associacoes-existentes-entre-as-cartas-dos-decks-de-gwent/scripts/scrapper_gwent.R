@@ -242,7 +242,7 @@ decks <- decks %>%
 
 ## salvando os decks
 decks %>% 
-  select(-where(is.list)) %>% slice(1:10) %>% 
+  select(-where(is.list)) %>% 
   write_rds(file = str_glue('_posts/2021-12-25-quais-as-associacoes-existentes-entre-as-cartas-dos-decks-de-gwent/data/decks.rds'))
 
 ## salvando a lista de decks
