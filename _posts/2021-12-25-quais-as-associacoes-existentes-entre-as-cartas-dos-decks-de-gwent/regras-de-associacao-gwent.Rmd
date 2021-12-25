@@ -1,0 +1,36 @@
+---
+title: "Quais as associacoes existentes entre as cartas dos decks de Gwent?"
+description: |
+  Enter description.
+author:
+  - first_name: Nicholas 
+    last_name: Marino
+    url: https://github.com/nacmarino
+date: 12-25-2021
+categories:
+  - boardgames
+  - arules
+output:
+  distill::distill_article:
+    self_contained: false
+    toc: true
+    code_folding: true
+    highlight: rstudio
+draft: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE)
+```
+
+# Motivação
+
+# Análise Exploratória de Dados
+
+# `arules`
+
+# Conclusões
+
+Dúvidas, sugestões ou críticas? É só me procurar que a gente conversa!
+
+# Possíveis extensões
