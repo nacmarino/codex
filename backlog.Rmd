@@ -32,9 +32,11 @@ O dataset da semana trata das características de vários drinks e cafés produz
 - Cartas de facções diferentes formam grupos distintos com base nas informações de texto do `tooltip`?  
 - Como visualizar a relação entre as cartas de Gwent?  
 - Que carta devo adicionar ao meu deck de Gwent para complementar o que tenho com estas outras _n_ cartas?  
+- A que facção pertence uma carta de acordo com a sua ilustração?
+- Como gerar nos cartas de Gwent a partir das já existentes?
 
 # Testando Pacotes
 
 - Testando o pacote `modeltime` para modelar séries temporais;  
 - Testando o ecossistema do pacote `fpp3` para modelar séries temporais;  
-- Testando o pacote `arules` para modelar regras de associação.  
+- [On going] Testando o pacote `arules` para modelar regras de associação.  
