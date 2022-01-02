@@ -12,7 +12,7 @@ categories:
   - arules
 output:
   distill::distill_article:
-    self_contained: false
+    self_contained: true
     toc: true
     code_folding: true
     highlight: rstudio
@@ -20,14 +20,1016 @@ draft: true
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE)
+# setando as opções gerais dos code chunks
+knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, cache = TRUE, dpi = 200, fig.align = 'center')
+
+# presetando o ggplot2
+library(ggplot2)
+
+# setando o tema geral do ggplot2
+theme_set(new = theme_minimal(base_family = 'Fira Sans'))
+
+# atualizando o tema
+theme_update(
+  plot.title    = element_text(face = 'bold', size = 10),
+  plot.subtitle = element_text(size = 8),
+  plot.caption  = element_text(size = 8),
+  axis.title    = element_text(face = 'bold', size = 8),
+  axis.text     = element_text(color = 'black', size = 8),
+  strip.text    = element_text(face = 'bold', size = 8)
+)
+
+# cores por faccao
+cores_por_faccao <- c('Monsters' = 'red', 'Nilfgaard' = 'grey30', 'Northern Realms' = 'deepskyblue2', 
+                      "Scoia'tael" = 'forestgreen', 'Skellige' = 'purple3', 'Syndicate' = 'orange2')
 ```
 
 # Motivação
 
-# Análise Exploratória de Dados
+```{r cartas_exemplo, code_folding = TRUE}
+# carrega os pacotes
+library(tidyverse) # core
+library(reactable) # para tabelas interativas
+library(reactablefmtr) # para embedar imagens no reactable
+
+# carrega o exemplo
+read_rds(file = 'data/decks.rds') %>% 
+  # pegando quatro cartas de exemplo
+  filter(localizedName %in% c('Malena', 'Brigada Vrihedd', 
+                              'Dol Blathanna: Guarda' , 'Bruxo Gato')) %>% 
+  # extraindo um exemplo único de cada carta
+  distinct(small, localizedName, texto) %>% 
+  # juntando o prefixo do link da imagem
+  mutate(small = paste0('https://www.playgwent.com/', small)) %>% 
+  # colocando os exemplos em um reactable
+  reactable(
+    compact = TRUE, borderless = TRUE, defaultColDef = colDef(align = 'left'), 
+    style = list(fontFamily = "Fira Sans", fontSize = "12px"),
+    columns = list(
+      small         = colDef(name = '', cell = embed_img(height = 80, width = 60), maxWidth = 80),
+      localizedName = colDef(name = 'Carta', maxWidth = 140),
+      texto         = colDef(name = 'Descrição')
+    )
+  )
+```
+
+# Preparação dos dados
+
+Carregando os metadados.
+
+```{r carrega_metadados, layout = 'l-body-outset', code_folding = TRUE}
+# carregando os pacotes
+#library(rmarkdown) # para o rmarkdown
+library(tidytext) # para ajudar a trabalhar com texto
+library(ggridges) # para os ridge plots
+library(plotly) # para visualizacao com interatividade
+library(igraph) # para plotar grafos
+library(fs) # para manipular os paths
+
+# carregando os metadados de cada deck
+metadados <- read_rds(file = 'data/lista_de_decks.rds')
+# metadados <- read_rds(file = '_posts/2021-12-25-quais-as-associacoes-existentes-entre-as-cartas-dos-decks-de-gwent/data/lista_de_decks.rds')
+
+# fazendo alguns ajustes à base dos metadados
+metadados <- metadados %>% 
+  # selecionando apenas as colunas desejadas
+  select(deck = id, name, faccao = slug, language, votes, craftingCost) %>% 
+  # ajustando coluna de slug
+  mutate(
+    faccao = str_to_title(string = faccao),
+    faccao = case_when(faccao == 'Northernrealms' ~ 'Northern Realms',
+                       faccao == 'Scoiatael' ~ "Scoia'tael",
+                       TRUE ~ faccao)
+  )
+
+# printando a tabela
+metadados %>% 
+  reactable(
+    sortable = TRUE, filterable = TRUE, compact = TRUE,
+    highlight = TRUE, borderless = TRUE, showPageSizeOptions = TRUE,
+    defaultColDef = colDef(align = 'center'), defaultPageSize = 5,
+    style = list(fontFamily = "Fira Sans", fontSize = "12px"),
+    columns = list(
+      deck         = colDef(name = 'Deck'),
+      name         = colDef(name = 'Nome'),
+      faccao       = colDef(name = 'Facção'),
+      language     = colDef(name = 'Origem'),
+      votes        = colDef(name = 'Votos'),
+      craftingCost = colDef(name = 'Custo de Criação')
+    )
+  )
+```
+
+Carregando os decks.
+
+```{r carrega_decks, layout = 'l-page', code_folding = TRUE}
+# carregando os dados dos decks
+decks <- read_rds(file = 'data/decks.rds')
+# decks <- read_rds(file = '_posts/2021-12-25-quais-as-associacoes-existentes-entre-as-cartas-dos-decks-de-gwent/data/decks.rds')
+
+# fazendo alguns ajustes aos dados dos decks
+decks <- decks %>% 
+  # removendo algumas informacoes que nao precisamos
+  select(-small, -big, -fluff, -ownable, -short, -categoryName, -primaryCategoryId, -name) %>% 
+  # ajustando as colunas
+  mutate(
+    # passando o id do deck para um inteiro, para bater com os metadados
+    deck = as.integer(deck),
+    # ajustando coluna do slug
+    slug = str_to_title(string = slug),
+    slug = case_when(slug == 'Northernrealms' ~ 'Northern Realms',
+                     slug == 'Scoiatael' ~ "Scoia'tael",
+                     TRUE ~ slug),
+    # ajustando coluna do repeat count - quantidade daquela carta no deck
+    repeatCount = repeatCount + 1,
+    # contando quantidade de habilidade de cada carta
+    habilidades = case_when(is.na(keywords) ~ 0,
+                            TRUE ~ str_count(string = keywords, pattern = ';') + 1)
+  ) %>% 
+  # passando os outros strings para maiusculo
+  mutate(across(.cols = c(rarity, cardGroup, type), .fns = ~ str_to_title(string = .x))) %>% 
+  # juntando com id da faccao
+  left_join(y = select(metadados, deck, faccao), by = 'deck')
+
+# printando a tabela
+decks %>% 
+  select(deck, faccao, card_in_seq, localizedName, repeatCount, slug, type) %>% 
+  reactable(
+    sortable = TRUE, filterable = TRUE, compact = TRUE,
+    highlight = TRUE, borderless = TRUE, showPageSizeOptions = TRUE,
+    defaultColDef = colDef(align = 'center'), defaultPageSize = 5,
+    style = list(fontFamily = "Fira Sans", fontSize = "12px"),
+    columns = list(
+      deck          = colDef(name = 'Deck'),
+      faccao        = colDef(name = 'Facção'),
+      card_in_seq   = colDef(name = 'Sequência'),
+      localizedName = colDef(name = 'Carta'),
+      repeatCount   = colDef(name = 'Unidades'),
+      slug          = colDef(name = 'Facção da Carta'),
+      type          = colDef(name = 'Tipo')
+    )
+  )
+```
+
+Cria uma base de-para com as cartas
+
+```{r cria_de_para_cartas, layout = 'l-body-outset', code_folding = TRUE}
+cartas <- decks %>% 
+  # removendo colunas que nao tem muito haver com as cartas individualmente
+  select(-c(deck, card_in_seq, repeatCount, id, habilidades, faccao)) %>% 
+  # pegando as cartas distintas
+  distinct() %>% 
+  # colocando o nome da carta na frente de tudo
+  relocate(localizedName, .before = craftingCost) %>% 
+  # colocando em ordem alfabetica por slug
+  arrange(slug, localizedName)
+
+# printando a tabela
+cartas %>% 
+  reactable(
+    sortable = TRUE, filterable = TRUE, compact = TRUE,
+    highlight = TRUE, borderless = TRUE, showPageSizeOptions = TRUE,
+    defaultColDef = colDef(align = 'left'), defaultPageSize = 5,
+    style = list(fontFamily = "Fira Sans", fontSize = "12px"),
+    columns = list(
+      localizedName  = colDef(name = 'Carta'),
+      craftingCost   = colDef(name = 'Custo de Criação'),
+      rarity         = colDef(name = 'Raridade'),
+      slug           = colDef(name = 'Facção'),
+      cardGroup      = colDef(name = 'Grupo'),
+      power          = colDef(name = 'Poder'),
+      provisionsCost = colDef(name = 'Custo de Provisão'),
+      type           = colDef(name = 'Tipo'),
+      armour         = colDef(name = 'Armadura'),
+      keywords       = colDef(name = 'Habilidades'),
+      texto          = colDef(name = 'Descrição', minWidth = 200)
+    )
+  )
+```
+
+# Análise exploratória dos dados
+
+Quantidade de decks na base.
+
+```{r figura_quantidade_decks, code_folding = TRUE}
+# criando figura da quantidade de decks na base
+decks %>% 
+  # pegando os decks distintos
+  distinct(deck, faccao) %>% 
+  # contando quantos decks existem por faccao
+  count(faccao, name = 'observacoes') %>% 
+  # plotando a figura
+  ggplot(mapping = aes(x = observacoes, y = faccao, fill = faccao)) +
+  geom_col(color = 'black', size = 0.2, show.legend = FALSE) +
+  geom_text(
+    mapping = aes(label = format(x = observacoes, big.mark = '.', decimal.mark = ',')),
+    nudge_x = 100,
+    size = 3,
+    fontface = 'bold'
+  ) +
+  scale_x_continuous(
+    breaks = seq(from = 0, to = 2600, by = 300),
+    limits = c(0, 2200)
+  ) +
+  scale_fill_manual(values = cores_por_faccao) +
+  labs(
+    title    = 'Quantidade de decks por facção na base de dados',
+    subtitle = 'A maior parte dos decks pertence à facção de Nilfgaard, enquanto a minoria a do Sindicato',
+    x        = 'Quantidade de decks'
+  ) +
+  theme(axis.title.y = element_blank())
+```
+
+## Estrutura dos decks
+
+Quantidade de cartas por deck entre faccoes.
+
+```{r tabela_n_cartas_por_deck, code_folding = TRUE}
+# criando a tabela
+decks %>%
+  # agrupando por deck
+  group_by(faccao, deck) %>% 
+  # contando o total de cartas existentes em cada deck, e tirando as cartas obrigatorias
+  # correspondente à habilidade do lider e estrategia
+  summarise(
+    n_cartas = sum(repeatCount, na.rm = TRUE) - 2
+  ) %>% 
+  # pegando a mediana, o minimo e maximo por faccao
+  summarise(
+    minimo  = min(n_cartas),
+    mediana = median(x = n_cartas),
+    maximo  = max(n_cartas)
+  ) 
+```
+
+Quantidade de cartas unicas.
+
+```{r figura_cartas_distintas, layout = 'l-page', fig.width=7, code_folding = TRUE}
+decks %>%
+  # agrupando por deck
+  group_by(faccao, deck) %>% 
+  # contando o total de cartas existentes em cada deck, e tirando as cartas obrigatorias
+  # correspondente à habilidade do lider e estrategia
+  summarise(
+    n_cartas = n() - 2,
+    .groups = 'drop'
+  ) %>% 
+  # contando quantas vezes ocorrem cada combinacao
+  count(faccao, n_cartas, name = 'observacoes') %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = n_cartas, y = observacoes, fill = faccao)) +
+  facet_wrap(~ faccao, scales = 'free') +
+  geom_col(color = 'black', size = 0.3, show.legend = FALSE) +
+  scale_x_continuous(breaks = seq(from = 10, to = 40, by = 2)) +
+  scale_y_continuous(breaks = seq(from = 0, to = 1000, by = 100)) +
+  scale_fill_manual(values = cores_por_faccao) +
+  labs(
+    title    = 'Distribuição da quantidade de cartas distintas no deck',
+    subtitle = 'A maior parte dos decks é composta por 19 ou 20 cartas distintas',
+    x        = 'Quantidade de cartas distintas',
+    y        = 'Observações'
+  )
+```
+
+Custo de construção de cada deck.
+
+```{r figura_custo_construcao, layout = 'l-body-outset', code_folding = TRUE}
+decks %>% 
+  # agrupando pela faccao e pelo deck
+  group_by(faccao, deck) %>% 
+  # calculando o custo total de cada deck como o custo de cada carta multiplicado
+  # pela quantidade de vezes que aquela carta aparece no deck
+  summarise(
+    custo = sum(craftingCost * repeatCount),
+    .groups = 'drop'
+  ) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = custo, y = faccao, fill = faccao)) +
+  geom_boxplot(size = 0.3, show.legend = FALSE) +
+  scale_x_continuous(breaks = seq(from = 0, to = 12000, by = 2000)) +
+  scale_fill_manual(values = cores_por_faccao) +
+  labs(
+    title    = 'Distribuição do custo de fabricação dos decks por facção',
+    subtitle = 'Existe alguma similaridade entre as facções em termos do custo de fabricação dos decks',
+    x        = 'Custo de fabricação (restos)'
+  ) +
+  theme(axis.title.y = element_blank())
+```
+
+Padrão de raridade nas cartas por deck.
+
+```{r figura_custo_carta, layout = 'l-body-outset', fig.width=8, fig.height=6, code_folding = TRUE}
+decks %>% 
+  # removendo as cartas de habilidade de lider e estrategia
+  filter(!type %in% c('Leader', 'Stratagem')) %>% 
+  # contando o status de raridade das cartas em cada deck de cada faccao
+  count(faccao, deck, rarity, name = 'observacoes') %>% 
+  # agrupando pelo deck
+  group_by(deck) %>% 
+  # calculando a proporcao de cartas de cada raridade por deck 
+  mutate(
+    prop   = observacoes / sum(observacoes)
+  ) %>% 
+  # desagrupando o tibble
+  ungroup %>% 
+  # colocando os niveis de raridade em ordem de custo
+  mutate(
+    rarity = fct_relevel(.f = rarity, 'Common', 'Rare', 'Epic')
+  ) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = prop, y = rarity, fill = faccao)) +
+  facet_wrap(~ faccao, scales = 'free') +
+  geom_boxplot(size = 0.3, show.legend = FALSE) +
+  scale_fill_manual(values = cores_por_faccao) +
+  scale_x_continuous(
+    breaks = seq(from = 0, to = 1, by = 0.2),
+    labels = scales::percent_format(accuracy = 1)
+  ) +
+  labs(
+    title    = 'Proporção de cartas em cada nível de raridade nos decks de cada facção',
+    subtitle = 'Cartas lendárias parecem ser as mais frequentes nos decks para todas as facções',
+    caption  = 'Cartas comuns: 30 restos; cartas raras: 80 restos; cartas épicas: 200 restos; cartas lendárias: 800 restos',
+    y        = 'Raridade ou custo de criação da carta',
+    x        = 'Proporção de cartas no deck'
+  )
+```
+
+Quantidade de `type` por deck.
+
+```{r figura_tipos_cartas, layout = 'l-page', fig.width = 8, fig.height=5, code_folding = TRUE}
+decks %>% 
+  # removendo as cartas de habilidade de lider e estrategia
+  filter(!type %in% c('Leader', 'Stratagem')) %>% 
+  # contando quantas cartas de cada tipo existem em cada deck de cada faccao
+  count(deck, faccao, type) %>% 
+  # passando os dados para o formato largo
+  pivot_wider(
+    id_cols = c(deck, faccao), 
+    names_from = 'type', values_from = 'n', values_fill = 0
+  ) %>% 
+  # agrupando por faccao
+  group_by(faccao) %>% 
+  # calculando a proporcao de cartas de artefato nos decks por faccao
+  mutate(p_Artifact = Artifact / max(Artifact)) %>% 
+  # criando a figura
+  ggplot(mapping = aes(y = Special, x = Unit, fill = p_Artifact)) +
+  facet_wrap(~ faccao, scales = 'free') +
+  geom_tile() +
+  scale_fill_viridis_c() +
+  guides(fill = guide_colorbar(title.theme = element_text(size = 8), 
+                               title.vjust = 1, 
+                               barwidth    = unit(x = 3, units = 'mm'), 
+                               barheight   = unit(x = 25, units = 'mm'))
+  ) +
+  labs(
+    title     = 'Estrutura dos decks de acordo com o tipo de carta por facção',
+    subtitle  = "Quanto maior o número de unidades em um deck, menor a quantidade de cartas especiais. Esta relação não é tão clara para os artefatos,\n excetuando-se a facção Scoia'tael",
+    fill      = 'Proporção\nde artefatos\na partir do\nmáximo para\naquela facção',
+    caption   = "Quantidade máxima de artefatos nos decks entre as facções: 6 (Nilfgaard), 10 (Scoia'tael) e 4 (todas as demais)",
+    x         = 'Cartas de unidade',
+    y         = 'Cartas especiais'
+  )
+```
+
+Faccoes das cartas.
+
+```{r figura_faccao_cartas, layout = 'l-body-outset', code_folding = TRUE}
+decks %>% 
+  # removendo a carta de habilidade de lider
+  filter(type != 'Leader') %>% 
+  # contando quantas vezes as cartas de cada faccao aparecem 
+  # nos decks de cada outra faccao
+  count(faccao, slug, name = 'ocorrencias') %>% 
+  #
+  mutate(
+    slug = fct_relevel(.f = slug, 'Neutral', 'Syndicate')
+  ) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = ocorrencias, y = faccao, fill = slug)) +
+  geom_bar(position = 'fill', stat = 'identity', color = 'black', size = 0.3, show.legend = FALSE) +
+  scale_fill_manual(values = c(cores_por_faccao, 'Neutral' = 'burlywood4')) +
+  scale_x_continuous(
+    breaks = seq(from = 0, to = 1, by = 0.2),
+    labels = scales::percent_format(accuracy = 1)
+  ) +
+  labs(
+    title    = 'Proporção de cartas de cada facção entre os decks de cada outra facção',
+    subtitle = "Cartas neutras (marrom) são igualmente frequentes entre os decks de praticamente todas as facções,
+e cartas do Sindicato (laranja) aparentam ser um pouco mais frequentes nos decks da facção Scoia'tael",
+    caption  = 'Cada barra representa os decks de uma dada facção, enquanto cada porção preenchida de uma barra representa
+a proporção de cartas de cada outra facção encontradas nos decks daquela facção. O mapa de cores das
+facções segue aquele utilizado até aqui.',
+    x        = 'Proporção de cartas'
+  ) +
+  theme(axis.title.y = element_blank())
+```
+
+## Composição dos decks
+
+Habilidades do lider.
+
+```{r figura_habilidade_lider, layout = 'l-page', fig.width = 10, fig.height = 4, code_folding = TRUE}
+## criando a figura
+fig <- decks %>% 
+  # filtrando apenas as cartas de habilidade de lider
+  filter(type == 'Leader') %>% 
+  # contando em quantos decks cada carta aparece
+  count(faccao, localizedName, name = 'n_decks') %>% 
+  # agrupando pela faccao
+  group_by(faccao) %>% 
+  # juntando a quantidade de decks
+  left_join(
+    y = distinct(decks, deck, faccao) %>% 
+      count(faccao, name = 'total'),
+    by = 'faccao'
+  ) %>% 
+  # ajustando algumas informacoes
+  mutate(
+    # calculando a proporcao de decks que contem cada carta
+    proporcao     = n_decks / total,
+    # colocando o nome original em um string
+    original = localizedName,
+    # reordenando os nomes das cartas
+    localizedName = reorder_within(x = localizedName, by = proporcao, within = faccao)
+  ) %>% 
+  # juntando texto das habilidades
+  left_join(y = select(cartas, localizedName, texto), by = c('original' = 'localizedName')) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = proporcao, y = localizedName, fill = faccao, 
+                       text = paste('Habilidade do líder: ', original,
+                                    '<br>Decks:', n_decks,
+                                    '<br>Proporção: ', scales::percent(x = proporcao, accuracy = 0.1),
+                                    '<br>', str_wrap(string = texto, width = 40)))
+  ) +
+  facet_wrap(~ faccao, scales = 'free') +
+  geom_col(color = 'black', size = 0.3, show.legend = FALSE) +
+  scale_fill_manual(values = cores_por_faccao) +
+  scale_y_reordered() +
+  scale_x_continuous(
+    breaks = seq(from = 0, to = 0.8, by = 0.1),
+    labels = scales::percent_format(accuracy = 1)
+  ) +
+  labs(
+    title    = 'Habilidades do líder mais populares entre os decks de cada facção',
+    x        = 'Proporção dos decks com a habilidade do líder'
+  ) +
+  theme(legend.position = 'none',
+        axis.title.y = element_blank())
+ggplotly(p = fig, tooltip = 'text', height = 500, width = 1000)
+```
+
+Carta de estrategia.
+
+```{r figura_estrategia, layout = 'l-page', fig.width = 10, fig.height = 4, code_folding = TRUE}
+## criando a figura
+fig <- decks %>% 
+  # filtrando apenas as cartas de estrategia
+  filter(type == 'Stratagem') %>% 
+  # contando em quantos decks cada carta aparece
+  count(faccao, localizedName, name = 'n_decks') %>% 
+  # agrupando pela faccao
+  group_by(faccao) %>% 
+  # juntando a quantidade de decks
+  left_join(
+    y = distinct(decks, deck, faccao) %>% 
+      count(faccao, name = 'total'),
+    by = 'faccao'
+  ) %>% 
+  # ajustando algumas informacoes
+  mutate(
+    # calculando a proporcao de decks que contem cada carta
+    proporcao     = n_decks / total,
+    # colocando o nome original em um string
+    original = localizedName,
+    # reordenando os nomes das cartas
+    localizedName = reorder_within(x = localizedName, by = proporcao, within = faccao)
+  ) %>% 
+  # juntando texto da estrategia
+  left_join(y = select(cartas, localizedName, texto), by = c('original' = 'localizedName')) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = proporcao, y = localizedName, fill = faccao, 
+                       text = paste('Habilidade do líder: ', original,
+                                    '<br>Decks:', n_decks,
+                                    '<br>Proporção: ', scales::percent(x = proporcao, accuracy = 0.1),
+                                    '<br>', str_wrap(string = texto, width = 40)))
+  ) +
+  facet_wrap(~ faccao, scales = 'free') +
+  geom_col(color = 'black', size = 0.3, show.legend = FALSE) +
+  scale_fill_manual(values = cores_por_faccao) +
+  scale_y_reordered() +
+  scale_x_continuous(
+    breaks = seq(from = 0, to = 0.8, by = 0.1),
+    labels = scales::percent_format(accuracy = 1)
+  ) +
+  labs(
+    title    = 'Cartas de estratégia mais populares entre os decks de cada facção',
+    x        = 'Proporção dos decks que usam a estratégia'
+  ) +
+  theme(legend.position = 'none',
+        axis.title.y = element_blank())
+ggplotly(p = fig, tooltip = 'text', height = 500, width = 1000)
+```
+
+Cartas mais comuns por faccao.
+
+```{r figura_cartas_comuns_faccao, layout = 'l-page', fig.width=10, fig.height=4, code_folding = TRUE}
+## criando a figura
+fig <- decks %>% 
+  # pegando apenas as cartas que pertençam ao deck da propria faccao
+  filter(slug == faccao) %>% 
+  # removendo as cartas de habilidade de lider e estrategia
+  filter(!type %in% c('Leader', 'Stratagem')) %>% 
+  # contando em quantos decks cada carta aparece
+  count(faccao, localizedName, name = 'n_decks') %>% 
+  # agrupando pela faccao
+  group_by(faccao) %>% 
+  # pegando as 15 cartas mais comuns por faccao
+  top_n(n = 15, wt = n_decks) %>% 
+  # juntando a quantidade de decks
+  left_join(
+    y = distinct(decks, deck, faccao) %>% 
+      count(faccao, name = 'total'),
+    by = 'faccao'
+  ) %>% 
+  # ajustando algumas informacoes
+  mutate(
+    # calculando a proporcao de decks que contem cada carta
+    proporcao     = n_decks / total,
+    # colocando o nome original em um string
+    original = localizedName,
+    # reordenando os nomes das cartas
+    localizedName = reorder_within(x = localizedName, by = proporcao, within = faccao)
+  ) %>% 
+  # juntando texto das cartas
+  left_join(y = select(cartas, localizedName, texto), by = c('original' = 'localizedName')) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = proporcao, y = localizedName, fill = faccao, 
+                       text = paste('Carta: ', original,
+                                    '<br>Decks:', n_decks,
+                                    '<br>Proporção: ', scales::percent(x = proporcao, accuracy = 0.1),
+                                    '<br>', str_wrap(string = texto, width = 40)))
+  ) +
+  facet_wrap(~ faccao, scales = 'free_y') +
+  geom_col(color = 'black', size = 0.3, show.legend = FALSE) +
+  scale_fill_manual(values = cores_por_faccao) +
+  scale_y_reordered() +
+  scale_x_continuous(
+    breaks = seq(from = 0, to = 0.8, by = 0.2),
+    labels = scales::percent_format(accuracy = 1)
+  ) +
+  labs(
+    title    = 'Cartas mais frequentes entre os decks de cada facção',
+    subtitle = 'Cada painel apresenta as 15 cartas que aparecem com mais frequência entre os decks das respectivas facções',
+    x        = 'Proporção de decks com a carta'
+  ) +
+  theme(legend.position = 'none',
+        axis.title.y = element_blank())
+ggplotly(p = fig, tooltip = 'text', height = 500, width = 1000)
+```
+
+Cartas neutras mais comuns por faccao.
+
+```{r figura_cartas_comuns_neutras, layout = 'l-page', fig.width = 10, fig.height = 4, code_folding = TRUE}
+## criando a figura
+fig <- decks %>% 
+  # pegando apenas as cartas que pertençam ao deck da propria faccao
+  filter(slug == 'Neutral') %>% 
+  # removendo as cartas de habilidade de lider e estrategia
+  filter(!type %in% c('Leader', 'Stratagem')) %>% 
+  # contando em quantos decks cada carta aparece
+  count(faccao, localizedName, name = 'n_decks') %>% 
+  # agrupando pela faccao
+  group_by(faccao) %>% 
+  # pegando as 15 cartas mais comuns por faccao
+  top_n(n = 15, wt = n_decks) %>% 
+  # juntando a quantidade de decks
+  left_join(
+    y = distinct(decks, deck, faccao) %>% 
+      count(faccao, name = 'total'),
+    by = 'faccao'
+  ) %>% 
+  # ajustando algumas informacoes
+  mutate(
+    # calculando a proporcao de decks que contem cada carta
+    proporcao     = n_decks / total,
+    # colocando o nome original em um string
+    original = localizedName,
+    # reordenando os nomes das cartas
+    localizedName = reorder_within(x = localizedName, by = proporcao, within = faccao)
+  ) %>% 
+  # juntando texto das cartas
+  left_join(y = select(cartas, localizedName, texto), by = c('original' = 'localizedName')) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = proporcao, y = localizedName, fill = faccao, 
+                       text = paste('Carta: ', original,
+                                    '<br>Decks:', n_decks,
+                                    '<br>Proporção: ', scales::percent(x = proporcao, accuracy = 0.1),
+                                    '<br>', str_wrap(string = texto, width = 40)))
+  ) +
+  facet_wrap(~ faccao, scales = 'free') +
+  geom_col(color = 'black', size = 0.3, show.legend = FALSE) +
+  scale_fill_manual(values = cores_por_faccao) +
+  scale_y_reordered() +
+  scale_x_continuous(
+    breaks = seq(from = 0, to = 0.8, by = 0.1),
+    labels = scales::percent_format(accuracy = 1)
+  ) +
+  labs(
+    title    = 'Cartas neutras mais frequentes entre os decks de cada facção',
+    subtitle = 'Cada painel apresenta as 15 cartas neutras que aparecem com mais frequência entre os decks de cada facção',
+    x        = 'Proporção de decks com a carta'
+  ) +
+  theme(legend.position = 'none',
+        axis.title.y = element_blank())
+ggplotly(p = fig, tooltip = 'text', height = 500, width = 1000)
+```
+
+Diferencas nas habilidades entre os decks.
+
+```{r figura_habilidade_faccao, layout = 'l-page', fig.width = 9, fig.height = 4, code_folding = TRUE}
+## criando a figura
+fig <- decks %>% 
+  # removendo os NAs
+  filter(!is.na(keywords)) %>% 
+  # selecionando as habilidades por deck de cada faccao
+  select(deck, faccao, keywords) %>% 
+  # tokenizando as habilidades 
+  unnest_tokens(input = keywords, output = tokens) %>% 
+  # contando quantas vezes cada habilidade aparece nos decks de cada faccao
+  count(faccao, tokens, name = 'observacoes') %>% 
+  # removendo tudo o que for habilidade de deploy, melee e ranged, pois são desinteressantes
+  filter(!tokens %in% c('deploy', 'melee', 'ranged')) %>% 
+  # juntando a quantidade de cartas por faccao
+  left_join(
+    y = filter(decks, !type %in% c('Leader', 'Stratagem')) %>% 
+      count(faccao, name = 'total'),
+    by = 'faccao'
+  ) %>% 
+  # ajustando tabela antes de plotar
+  mutate(
+    proporcao = observacoes / total,
+    # colocando o nome original em um string
+    original = tokens,
+    # reordenando as habilidades mais frequentes dentro de cada faccao
+    tokens    = reorder_within(x = tokens, by = proporcao, within = faccao)
+  ) %>% 
+  # agrupando pela faccao
+  group_by(faccao) %>% 
+  # pegando as 10 habilidades mais frequentes por faccao
+  top_n(n = 10, wt = proporcao) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = proporcao, y = tokens, fill = faccao,
+                       text = paste('Habilidade: ', original,
+                                    '<br>Ocorrências:', observacoes,
+                                    '<br>Proporção: ', scales::percent(x = proporcao, accuracy = 0.1)))
+  ) +
+  facet_wrap(~ faccao, scales = 'free') +
+  geom_col(color = 'black', size = 0.3, show.legend = FALSE) +
+  scale_y_reordered() +
+  scale_x_continuous(
+    breaks = seq(from = 0, to = 0.8, by = 0.1),
+    labels = scales::percent_format(accuracy = 1)
+  ) +
+  scale_fill_manual(values = cores_por_faccao) +
+  labs(
+    title    = 'Habilidades mais frequentes das cartas entre os decks de cada facção',
+    subtitle = 'Cada painel apresenta as 10 habilidades que aparecem com mais frequência entre as cartas nos decks de cada facção',
+    x        = 'Habilidades mais frequentes entre as cartas'
+  ) +
+  theme(legend.position = 'none',
+        axis.title.y = element_blank())
+ggplotly(p = fig, tooltip = 'text', height = 500, width = 1000)
+```
 
 # `arules`
+
+## Preparação dos dados
+
+Cria a estrutura de dados.
+
+```{r carrega_arules_dados, layout = 'l-body-outset'}
+# carregando mais pacotes
+library(arules) # para as analises
+library(vegan) # para a ordenacao
+
+# criando a estrutura de dados necessarias para criar os dados das transacoes
+regras_por_faccao <- decks %>% 
+  # pegando apenas as colunas alvo
+  select(faccao, deck, localizedName) %>% 
+  # colocando cartas em ordem alfabetica por deck
+  arrange(deck, localizedName) %>% 
+  # aninhando os dados por faccao
+  nest(data = -faccao) %>% 
+  # criando named list column para cada deck
+  mutate(
+    data = map(.x = data, 
+               # pega cada um dos conjuntos de dados de cada faccao e agrupa pelo deck id
+               .f = ~ group_by(.x, deck) %>% 
+                 # transforma a coluna com o nome das cartas por deck em uma lista
+                 summarise(cartas = list(localizedName)) %>% 
+                 # seta o nome de cada uma das listas de cartas para o deck id
+                 mutate(cartas = setNames(object = cartas, nm = deck)) %>% 
+                 # extrai a named list column
+                 pull(cartas)
+    )
+  ) 
+
+# exemplo da estrutura de dados
+regras_por_faccao %>% 
+  slice(1) %>% 
+  pull(data) %>% 
+  pluck(1) %>% 
+  .[1:3]
+```
+
+Parseia para transacoes.
+
+```{r cria_transacoes, layout = 'l-body-outset'}
+# parser das listas para as transacoes
+regras_por_faccao <- regras_por_faccao %>% 
+  # cria as transacoes a partir de cada uma das listas
+  mutate(
+    transacoes = map(.x = data, .f = transactions)
+  )
+
+# visualiza o resultado como a transacao para uma das faccoes
+regras_por_faccao %>% 
+  slice(3) %>% 
+  pull(transacoes) %>% 
+  pluck(1) %>% 
+  summary()
+```
+
+## Ajuste do algoritmo
+
+Ajusta o algoritmo.
+
+```{r ajusta_algoritmo_apriori, layout = 'l-body-outset'}
+# ajustando o algoritmo a priori aos dados de cada faccao
+regras_por_faccao <- regras_por_faccao %>% 
+  mutate(
+    regras = map(.x = transacoes, .f = apriori,
+                 # pelo menos 2 cartas e no maximo 10 cartas em cada regra 
+                 # cada regra deve cobrir no minimo 10% dos casos que ocorrem
+                 # na base de dados, e regras detectadas devem representar
+                 # no minimo 30% dos casos em que a condicao do LHS ocorre
+                 parameter = list(minlen = 2, maxlen = 10, support = 0.1, 
+                                  conf = 0.3, target = 'rules'), 
+                 # desligando a verbosidade do algoritmo
+                 control  = list(verbose = FALSE)
+    )
+  )
+regras_por_faccao
+```
+
+## Extraindo os resultados
+
+Calcula a dissimilaridade entre regras.
+
+```{r calcula_dissimilaridade}
+# calculando a dissimilaridade entre as regras para cada faccao
+regras_por_faccao <- regras_por_faccao %>% 
+  mutate(
+    dissimilaridade = map2(.x = regras, 
+                           .y = transacoes, 
+                           .f = ~ dissimilarity(x = .x, 
+                                                method = 'gupta',
+                                                args = list(transactions = .y)
+                           )
+    )
+  )
+```
+
+Ajusta PCoA.
+
+```{r ajusta_pcoa}
+# ajusta a PCoA e extrai os escores para a projecao
+regras_por_faccao <- regras_por_faccao %>% 
+  mutate(
+    # ajustando a PCoA
+    pcoa = map(.x = dissimilaridade, .f = cmdscale),
+    # setando o nome das colunas com os escores da PCoA
+    pcoa = map(.x = pcoa, .f = ~ `colnames<-`(x = .x, value = c('x', 'y')))
+  )
+```
+
+Extrai informacoes das regras.
+
+```{r extrai_informacoes_algoritmo}
+# extraindo informacoes das regras
+regras_por_faccao <- regras_por_faccao %>% 
+  # extraindo informacoes a partir das regras
+  mutate(
+    # definindo se cada uma das regras eh um maximal frequent itemset
+    maximal_itemset = map(.x = regras, .f = is.maximal),
+    # extraindo as regras como um dataframe
+    regras_df       = map(.x = regras, .f = DATAFRAME,
+                          setStart = '', setEnd = '', itemSep = ';'),
+    # adicionando ao data frame das regras a informacao se cada linha eh um
+    # maximal frequent itemset out nao
+    regras_df       = map2(.x = regras_df, .y = maximal_itemset, 
+                           .f = ~ mutate(.x, maximal = .y)
+    ),
+    # adicionando x e y de cada regra na PCoA 
+    regras_df       = map2(.x = regras_df, .y = pcoa, .f = cbind)
+  )
+regras_por_faccao
+```
+
+Coloca as regras em um dataframe a parte.
+
+```{r cria_df_regras}
+# colocando as regras encontradas em um dataframe
+df_regras <- regras_por_faccao %>% 
+  # selecionando apenas as colunas necessarias
+  select(faccao, regras_df) %>% 
+  # desaninhando a list column com o dataframe das regras
+  unnest(regras_df) %>% 
+  # ajustando o dataframe
+  mutate(
+    # parseando as colunas de fator para caractere
+    LHS        = as.character(LHS),
+    RHS        = as.character(RHS),
+    # definindo o tamanho de cada regra: cada ';' separa duas cartas dentro de uma
+    # regra no LHS, e ainda temos a regra no RHS. Portanto, o tamanho de cada regra
+    # são 2 acrescido da quantidade de separadores existentes no LHS
+    tamanho    = str_count(string = LHS, pattern = ';') + 2,
+    # criando identificador unico para cada deck
+    combinacao = str_split(string = paste0(LHS, ';', RHS), pattern = ';'),
+    combinacao = map_chr(.x = combinacao, .f = ~ paste0(sort(.x), collapse = ' + '))
+  )
+```
+
+## Visão geral dos resultados
+
+Distribuição da quantidade de regras.
+
+```{r figura_quantidade_regras, layout = 'l-body-outset', fig.width = 9, fig.height = 6, code_folding = TRUE}
+# criando figura para entender quantas regras foram detectadas 
+df_regras %>% 
+  ggplot(mapping = aes(x = tamanho, y = faccao, fill = faccao)) +
+  geom_density_ridges(stat = 'binline', scale = 0.90, bins = 15, draw_baseline = FALSE,
+                      show.legend = FALSE) +
+  scale_fill_manual(values = cores_por_faccao) +
+  scale_x_continuous(breaks = seq(from = 0, to = 10, by = 1)) +
+  labs(
+    title    = 'Quantidade de regras identificadas por facção',
+    subtitle = 'A maior parte das regras identificadas envolvem 3 ou 4 cartas',
+    x        = 'Quantidade de regras'
+  ) +
+  theme(axis.title.y = element_blank())
+```
+
+Variação no lift.
+
+```{r figura_lift, layout = 'l-body-outset', fig.width = 9, fig.height = 6, code_folding = TRUE}
+# examinando a variação no lift entre as regrass
+df_regras %>% 
+  # ordenando as linhas do dataframe por faccao e em ordem decrescente de lift
+  arrange(faccao, -lift) %>% 
+  # agrupando pela faccao
+  group_by(faccao) %>% 
+  # adicionando a sequencia de observacoes
+  mutate(sequencia = 1:n()) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = sequencia, y = lift, color = faccao)) +
+  facet_wrap(~ faccao, scales = 'free') +
+  geom_line(show.legend = FALSE) +
+  scale_color_manual(values = cores_por_faccao) +
+  scale_y_continuous(breaks = seq(from = 0, to = 10, by = 1)) +
+  labs(
+    title    = 'Variação do lift entre as regras para cada facção',
+    subtitle = 'As regras foram organizadas em ordem decrescente de lift, e podemos ver que a minoria das regras possuem os valores mais altos',
+    x        = '# Regra',
+    y        = 'Lift'
+  )
+```
+
+## Relação entre cartas
+
+Tabela com as regras.
+
+```{r tabela_das_regras, layout = 'l-page', code_folding = TRUE}
+df_regras %>% 
+  mutate(across(.cols = c(support, confidence, coverage, lift, x, y), round, digits = 3)) %>% 
+  relocate(combinacao, .before = LHS) %>% 
+  reactable(
+    sortable = TRUE, filterable = TRUE, searchable = TRUE, compact = TRUE,
+    highlight = TRUE, borderless = TRUE, showPageSizeOptions = TRUE, 
+    defaultColDef = colDef(align = 'center'), defaultPageSize = 5,
+    style = list(fontFamily = "Fira Sans", fontSize = "12px"),
+    columns = list(
+      faccao     = colDef(name = 'Facção'),
+      combinacao = colDef(name = 'Combinação'),
+      support    = colDef(name = 'Suporte'),
+      confidence = colDef(name = 'Confiança'),
+      coverage   = colDef(name = 'Cobertura'),
+      lift       = colDef(name = 'Lift'),
+      count      = colDef(name = 'Ocorrências'),
+      tamanho    = colDef(name = 'Regras'),
+      maximal    = colDef(name = 'MFI'),
+      x          = colDef(name = 'PCoA #1'),
+      y          = colDef(name = 'PCoA #2')
+    )
+  )
+```
+
+Rede para Nilfgaard.
+
+```{r figura_rede, layout = 'l-body-outset', code_folding = TRUE}
+# carregando pacotes
+library(networkD3) # para plotar o grafo
+
+## filtrando o dataframe de acordo com o input
+df_filtered <- df_regras %>% 
+  # pegando todas as regras com duas cartas só, pertencentes à facção desejada
+  filter(tamanho == 2, faccao == 'Nilfgaard') %>% 
+  # selecionando apenas as colunas que usaremos
+  select(LHS, RHS, lift, combinacao) %>% 
+  # agrupando pelo identificador unico da regra
+  group_by(combinacao) %>% 
+  # organizando a base pela regra e em ordem decrescente de lift
+  arrange(combinacao, desc(lift)) %>% 
+  # pegando apenas a primeira ocorrencia de cada regra
+  filter(row_number() == 1) %>% 
+  # desagrupando a tabela
+  ungroup() %>% 
+  # removendo a coluna do identificador unico da tabela
+  select(-combinacao)
+
+## criando o dataframe dos nos
+df_nodes <- tibble(localizedName = unique(x = c(df_filtered$LHS, df_filtered$RHS))) %>% 
+  # juntando metadados de cada carta
+  left_join(y = cartas, by = 'localizedName') %>% 
+  # adicionando um identificador unico para cada no
+  mutate(node_id = row_number() - 1,
+         grupo   = 1) %>% 
+  # colocando o identificador unico na frente de tudo
+  relocate(node_id, .before = localizedName) %>% 
+  # convertendo para um dataframe
+  data.frame
+
+## criando o dataframe dos links
+df_links <- df_filtered %>% 
+  # juntando o identificador unico de cada carta na origem
+  left_join(y = select(df_nodes, node_id, localizedName), by = c('LHS' = 'localizedName')) %>% 
+  # juntando o identificador unico de cada carta no destino
+  left_join(y = select(df_nodes, node_id, localizedName), by = c('RHS' = 'localizedName')) %>% 
+  # renomeando as colunas de origem e destino
+  rename(source = node_id.x, target = node_id.y) %>% 
+  # transformando lift
+  mutate(log_lift = log(lift)) %>% 
+  # convertendo para um dataframe
+  data.frame
+
+## criando o grafo
+forceNetwork(Links = df_links, Nodes = df_nodes, Source = 'source', 
+             Target = 'target',  Value = 'lift',  NodeID = 'localizedName', 
+             Group = 'grupo', zoom = TRUE, arrows = TRUE, 
+             fontFamily = 'Fira Sans', opacityNoHover = 1, opacity = 1,
+             fontSize = 10, charge = -100)
+```
+
+## Diferença entre regras
+
+```{r figura_ordenacao, layout = 'l-body-outset', code_folding = TRUE, fig.height = 3, fig.width = 3}
+df_regras %>% 
+  filter(faccao == 'Nilfgaard') %>% 
+  plot_ly(x = ~ x, y = ~ y, type = 'scatter', mode = 'markers', 
+          marker = list(color = ~ log10(lift), colorscale = 'RdBu', reversescale = TRUE),
+          hoverinfo = 'text', 
+          hovertext = ~ paste0('<b>', str_wrap(string = combinacao, width = 50), '</b><br>',
+                               'LHS: ', str_wrap(string = LHS, width = 50), '<br>',
+                               'RHS: ', str_wrap(string = RHS, width = 50), '<br>',
+                               'Regras: ', tamanho, '<br>',
+                               'Lift: ', round(x = lift, digits = 3))) %>% 
+  layout(
+    title = '<b>Projeção das diferenças entre as regras para os decks da facção de Nilfgaard</b>',
+    xaxis = list(title = '', showgrid = FALSE, showticklabels = FALSE),
+    yaxis = list(title = '', showgrid = FALSE, showticklabels = FALSE)
+  )
+```
+
+## Salvando os outputs
+
+```{r salva_outputs}
+# checando se o diretorio para guardar os modelos existe, e criando caso necessario
+if(!dir_exists(path = 'models')){
+  dir_create(path = 'models')
+}
+
+# salvando o dataframe com os modelos
+write_rds(x = select(regras_por_faccao, faccao, transacoes, regras),
+          file = 'models/regras_por_faccao.rds')
+
+# checando se o diretorio para guardar outros outputs existe, e criando caso necessario
+if(!dir_exists(path = 'outputs')){
+  dir_create(path = 'outputs')
+}
+
+# salvando o dataframe com as regras
+write_rds(x = df_regras, file = 'outputs/regras.rds')
+```
 
 # Conclusões
 
