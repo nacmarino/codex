@@ -78,16 +78,18 @@ Aprendi a viver e a fazer ciência ao longo da minha trajetória profissional, a
     + Deep Learning | 2020  
 </br>
 - **COURSERA**
-    + Learn to Program: Crafting Quality Code | 2021
     + Data Science | Johns Hopkins University | Em andamento
         + Reproducible Research | 2021
         + Exploratory Data Analysis | 2021
         + Getting and Cleaning Data | 2021
         + R Programming | 2021
         + The Data Scientist's Toolbox | 2021
+    + Deep Learning Specialization | Em andamento
+        + Neural Networks and Deep Learning
     + Introduction to Mathematical Thinking | 2021
-    + Mathematics for Machine Learning
-        + Principal Component Analysis | Em andamento
+    + Learn to Program: Crafting Quality Code | 2021
+    + Mathematics for Machine Learning 
+        + Principal Component Analysis | 2022
         + Multivariate Calculus | 2021
         + Linear Algebra | 2021  
   
