@@ -1,5 +1,5 @@
 ---
-title: "Quais as associacoes existentes entre as cartas dos decks de Gwent?"
+title: "Quais as associações entre as cartas de Gwent nos decks existentes?"
 description: |
   Eu tenho jogado Gwent: the Witcher Card Game há algum tempo, e é impressionante a quantidade de combos e sinergias que podem haver entre as cartas de acordo com o deck que você monta. Neste post, eu tento identificar as combinações de cartas que aparecem com maior frequência através de uma análise das regras de associação entre elas.
 author:
@@ -11,18 +11,19 @@ categories:
   - boardgames
   - arules
 bibliography: bibliografia.bib
+preview: images/rede.png
 output:
   distill::distill_article:
     self_contained: true
     toc: true
     code_folding: true
     highlight: rstudio
-draft: true
+draft: false
 ---
 
 ```{r setup, include=FALSE}
 # setando as opções gerais dos code chunks
-knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, cache = TRUE, dpi = 200, fig.align = 'center')
+knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, cache = FALSE, dpi = 200, fig.align = 'center')
 
 # presetando o ggplot2
 library(ggplot2)
