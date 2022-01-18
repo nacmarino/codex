@@ -42,9 +42,13 @@ theme_update(
 
 # Motivação
 
+Um dos primeiros [posts](https://nacmarino.github.io/codex/posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/) do blog foi sobre a criação de um _scrapper_ para obtermos as informações da página do ranking do [BoardGameGeek](https://boardgamegeek.com/browse/boardgame), um portal especializado em jogos de tabuleiro. Meu principal objetivo com isso não foi o de extrair o ranking em si, mas o de obter o identificador único de cada jogo para usá-lo junto à API XML oferecida pelo portal. Essa API oferece (praticamente) todas as informações sobre os jogos que estão disponíveis em suas respectivas páginas e, portanto, fornece um caminho mais simples para obtermos os dados sobre cada um deles de forma programática. No entanto, o mais importante para mim é que essas informações vindas da API têm o potencial de facilitar uma das coisas que eu mais tenho dificuldade: encontrar os jogos que mais combinam com aquilo que eu curto.
+
+Neste post eu mostro como interagir com a API XML do BGG e, também, fazer o _parser_ das informações que obtemos a partir dela. Esse processo vai ser importante para entendermos os tipos de dados que temos disponíveis e as possíveis formas de usá-los nos próximos posts.
+
 # Funcionamento da API
 
-Carrega os dados do ranking.
+A primeira coisa que precisaremos fazer para interagir com a API oferecida pelo BGG é a base com o identificador único de cada jogo. Esta informação pode ser obtida a partir do _scrapper_ disponível neste [link](https://nacmarino.github.io/codex/posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/), e eu reproduzo a base que você deve conseguir aqui abaixo. Na tabela a seguir, as informações que precisamos são àquelas na coluna `id`.
 
 ```{r carrega_dados}
 # carregando os pacotes
@@ -54,14 +58,21 @@ library(xml2) # para o parser
 library(fs) # para manipular paths
 
 ## lendo os dados do ranking da BGG para pegar o identificador unico de cada jogo
-ranking <- read_rds(file = 'data/ranking_bgg.rds')
-# ranking <- read_rds(file = '_posts/2022-01-09-interagindo-com-a-api-do-boardgamegeek/data/ranking_bgg.rds')
+ranking <- read_rds(file = 'data/ranking_bgg.rds') %>% 
+  # dropando os jogos que não possuem game_id
+  drop_na(id)
+# ranking <- read_rds(file = '_posts/2022-01-09-interagindo-com-a-api-do-boardgamegeek/data/ranking_bgg.rds') %>%
+#   drop_na(id)
 
 ## visualizando a tabela
 rmarkdown::paged_table(x = ranking)
 ```
 
-Cria função para pegar um jogo.
+A API oferecida pelo BGG funciona através de requisições do tipo `GET`, que retornam um arquivo `xml` (e**X**tensible **M**arkup **L**anguage) cujos parâmetros e valores seguem o padrão de _tags_ e atributos comum à páginas `HTML`. Acredito que essa API não segue a arquitetura do tipo REST (**RE**presentational **S**tate **T**ransfer), uma vez que (1) as requisições para um determinado tipo de informação são todas feitas através de um único _endpoint_ e (2) os nomes dos métodos utilizados devem ser passados diretamente para a `url` da requisição. De toda forma, essa API é bastante simples de usar - mas mais trabalhosa de _parsear_, como veremos mais adiante.
+
+Podemos pegar diversos tipos de informação através dessa API, tais como as informações dos jogos (_i.e._, `thing`), das coleções (_i.e._, `collection`) e dos próprios usuários (_i.e._, `user`) e do fórum (_i.e._, `forum`). Neste post vamos focar apenas as informações dos jogos e, portanto, vamos usar o _endpoint_ `https://www.boardgamegeek.com/xmlapi2/thing` e passar alguns métodos para ela - separando o _endpoint_ dos métodos através de um `?` e cada método do outro usando o `&`. Os métodos que vamos usar aqui são o `id` do jogo (que vamos extrair da tabela que carregamos acima), as estatísticas relacionadas à cada jogo (setando `stats=1`) e uma amostra de, no máximo,  100 comentários associados à cada jogo (setando `ratingcomments=1` e `pagesize=100`). Com isso, a `url` que vamos passar para o `GET` tomará a forma `https://www.boardgamegeek.com/xmlapi2/thing?id=game_id&stats=1&ratingcomments=1&pagesize=100`, onde o `game_id` vai ser um número correspondente ao identificador numérico do jogo. 
+
+A função cuidará de fazer essa requisição, salvando uma cópia do HTML da resposta em disco, caso o valor passado para o argumento `path_to_save` não seja `NULL`.
 
 ```{r funcao_pega_jogo}
 ## funcao para pegar o XML de um jogo

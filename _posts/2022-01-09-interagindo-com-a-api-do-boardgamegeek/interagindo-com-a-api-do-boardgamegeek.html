@@ -1497,8 +1497,10 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </nav>
 </div>
 <h1 id="motivação">Motivação</h1>
+<p>Um dos primeiros <a href="https://nacmarino.github.io/codex/posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/">posts</a> do blog foi sobre a criação de um <em>scrapper</em> para obtermos as informações da página do ranking do <a href="https://boardgamegeek.com/browse/boardgame">BoardGameGeek</a>, um portal especializado em jogos de tabuleiro. Meu principal objetivo com isso não foi o de extrair o ranking em si, mas o de obter o identificador único de cada jogo para usá-lo junto à API XML oferecida pelo portal. Essa API oferece (praticamente) todas as informações sobre os jogos que estão disponíveis em suas respectivas páginas e, portanto, fornece um caminho mais simples para obtermos os dados sobre cada um deles de forma programática. No entanto, o mais importante para mim é que essas informações vindas da API têm o potencial de facilitar uma das coisas que eu mais tenho dificuldade: encontrar os jogos que mais combinam com aquilo que eu curto.</p>
+<p>Neste post eu mostro como interagir com a API XML do BGG e, também, fazer o <em>parser</em> das informações que obtemos a partir dela. Esse processo vai ser importante para entendermos os tipos de dados que temos disponíveis e as possíveis formas de usá-los nos próximos posts.</p>
 <h1 id="funcionamento-da-api">Funcionamento da API</h1>
-<p>Carrega os dados do ranking.</p>
+<p>A primeira coisa que precisaremos fazer para interagir com a API oferecida pelo BGG é a base com o identificador único de cada jogo. Esta informação pode ser obtida a partir do <em>scrapper</em> disponível neste <a href="https://nacmarino.github.io/codex/posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/">link</a>, e eu reproduzo a base que você deve conseguir aqui abaixo. Na tabela a seguir, as informações que precisamos são àquelas na coluna <code>id</code>.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'># carregando os pacotes</span>
@@ -1508,8 +1510,11 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='http://fs.r-lib.org'>fs</a></span><span class='op'>)</span> <span class='co'># para manipular paths</span>
 
 <span class='co'>## lendo os dados do ranking da BGG para pegar o identificador unico de cada jogo</span>
-<span class='va'>ranking</span> <span class='op'>&lt;-</span> <span class='fu'>read_rds</span><span class='op'>(</span>file <span class='op'>=</span> <span class='st'>'data/ranking_bgg.rds'</span><span class='op'>)</span>
-<span class='co'># ranking &lt;- read_rds(file = '_posts/2022-01-09-interagindo-com-a-api-do-boardgamegeek/data/ranking_bgg.rds')</span>
+<span class='va'>ranking</span> <span class='op'>&lt;-</span> <span class='fu'>read_rds</span><span class='op'>(</span>file <span class='op'>=</span> <span class='st'>'data/ranking_bgg.rds'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># dropando os jogos que não possuem game_id</span>
+  <span class='fu'>drop_na</span><span class='op'>(</span><span class='va'>id</span><span class='op'>)</span>
+<span class='co'># ranking &lt;- read_rds(file = '_posts/2022-01-09-interagindo-com-a-api-do-boardgamegeek/data/ranking_bgg.rds') %&gt;%</span>
+<span class='co'>#   drop_na(id)</span>
 
 <span class='co'>## visualizando a tabela</span>
 <span class='fu'>rmarkdown</span><span class='fu'>::</span><span class='fu'><a href='https://pkgs.rstudio.com/rmarkdown/reference/paged_table.html'>paged_table</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>ranking</span><span class='op'>)</span>
@@ -1521,7 +1526,9 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
   </script>
 </div>
 </div>
-<p>Cria função para pegar um jogo.</p>
+<p>A API oferecida pelo BGG funciona através de requisições do tipo <code>GET</code>, que retornam um arquivo <code>xml</code> (e<strong>X</strong>tensible <strong>M</strong>arkup <strong>L</strong>anguage) cujos parâmetros e valores seguem o padrão de <em>tags</em> e atributos comum à páginas <code>HTML</code>. Acredito que essa API não segue a arquitetura do tipo REST (<strong>RE</strong>presentational <strong>S</strong>tate <strong>T</strong>ransfer), uma vez que (1) as requisições para um determinado tipo de informação são todas feitas através de um único <em>endpoint</em> e (2) os nomes dos métodos utilizados devem ser passados diretamente para a <code>url</code> da requisição. De toda forma, essa API é bastante simples de usar - mas mais trabalhosa de <em>parsear</em>, como veremos mais adiante.</p>
+<p>Podemos pegar diversos tipos de informação através dessa API, tais como as informações dos jogos (<em>i.e.</em>, <code>thing</code>), das coleções (<em>i.e.</em>, <code>collection</code>) e dos próprios usuários (<em>i.e.</em>, <code>user</code>) e do fórum (<em>i.e.</em>, <code>forum</code>). Neste post vamos focar apenas as informações dos jogos e, portanto, vamos usar o <em>endpoint</em> <code>https://www.boardgamegeek.com/xmlapi2/thing</code> e passar alguns métodos para ela - separando o <em>endpoint</em> dos métodos através de um <code>?</code> e cada método do outro usando o <code>&amp;</code>. Os métodos que vamos usar aqui são o <code>id</code> do jogo (que vamos extrair da tabela que carregamos acima), as estatísticas relacionadas à cada jogo (setando <code>stats=1</code>) e uma amostra de, no máximo, 100 comentários associados à cada jogo (setando <code>ratingcomments=1</code> e <code>pagesize=100</code>). Com isso, a <code>url</code> que vamos passar para o <code>GET</code> tomará a forma <code>https://www.boardgamegeek.com/xmlapi2/thing?id=game_id&amp;stats=1&amp;ratingcomments=1&amp;pagesize=100</code>, onde o <code>game_id</code> vai ser um número correspondente ao identificador numérico do jogo.</p>
+<p>A função cuidará de fazer essa requisição, salvando uma cópia do HTML da resposta em disco, caso o valor passado para o argumento <code>path_to_save</code> não seja <code>NULL</code>.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## funcao para pegar o XML de um jogo</span>
