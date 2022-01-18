@@ -6,11 +6,10 @@ author:
   - first_name: Nicholas 
     last_name: Marino
     url: https://github.com/nacmarino
-date: 01-09-2022
+date: 01-17-2022
 categories:
   - web scraping
-  - selenium
-  - python
+  - boardgames
 output:
   distill::distill_article:
     self_contained: false
@@ -20,13 +19,506 @@ output:
 draft: true
 ---
 
-
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+# setando as opções gerais dos code chunks
+knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, cache = TRUE, dpi = 200, fig.align = 'center')
+
+# presetando o ggplot2
+library(ggplot2)
+
+# setando o tema geral do ggplot2
+theme_set(new = theme_minimal(base_family = 'Nunito'))
+
+# atualizando o tema
+theme_update(
+  plot.title    = element_text(face = 'bold', size = 10),
+  plot.subtitle = element_text(size = 8),
+  plot.caption  = element_text(size = 8),
+  axis.title    = element_text(face = 'bold', size = 8),
+  axis.text     = element_text(color = 'black', size = 8),
+  strip.text    = element_text(face = 'bold', size = 8)
+)
 ```
 
-Distill is a publication format for scientific and technical writing, native to the web.
+# Motivação
 
-Learn more about using Distill at <https://rstudio.github.io/distill>.
+# Funcionamento da API
+
+Carrega os dados do ranking.
+
+```{r carrega_dados}
+# carregando os pacotes
+library(tidyverse) # core
+library(httr) # para fazer o scraping
+library(xml2) # para o parser
+library(fs) # para manipular paths
+
+## lendo os dados do ranking da BGG para pegar o identificador unico de cada jogo
+ranking <- read_rds(file = 'data/ranking_bgg.rds')
+# ranking <- read_rds(file = '_posts/2022-01-09-interagindo-com-a-api-do-boardgamegeek/data/ranking_bgg.rds')
+
+## visualizando a tabela
+rmarkdown::paged_table(x = ranking)
+```
+
+Cria função para pegar um jogo.
+
+```{r funcao_pega_jogo}
+## funcao para pegar o XML de um jogo
+pega_jogo <- function(game_id, path_to_save = NULL) {
+  # url base para pegar um jogo, as estatisticas e a primeira pagina de comentarios
+  base_url <- str_glue('https://www.boardgamegeek.com/xmlapi2/thing?id={game_id}&stats=1&ratingcomments=1&pagesize=100')
+  
+  # fazendo o request e salvando o codigo da resposta se o path nao for nulo
+  if(!is.null(path_to_save)){
+    GET(url = base_url, 
+        write_disk(path = sprintf(fmt = '%s/%08d.html', path_to_save, game_id), 
+                   overwrite = TRUE)
+    )
+  } else {
+    GET(url = base_url)
+  }
+  
+}
+```
+
+Usa a função para pegar um jogo.
+
+```{r pega_um_jogo}
+## setando o path onde vamos jogar os arquivos
+path_scrapped_data <- 'temporario'
+# path_scrapped_data <- '_posts/2022-01-09-interagindo-com-a-api-do-boardgamegeek/temporario'
+
+## criando pasta se ela nao existir
+if(!dir_exists(path_scrapped_data)){
+  dir_create(path = path_scrapped_data, recurse = TRUE)
+}
+
+# pegando o id do jogo que vamos usar no exemplo
+id_do_jogo <- ranking %>% 
+  # pegando o jogo wingspan
+  filter(titulo == 'Ticket to Ride') %>% 
+  # pegando o id do jogo
+  pull(id) %>% 
+  # parseando o id para um numero
+  parse_number()
+
+# fazendo o request do XML do jogo
+xml_do_jogo <- pega_jogo(game_id = id_do_jogo, path_to_save = path_scrapped_data)
+```
+
+Estrutura do XML.
+
+```{r estrutura_do_xml}
+xml_do_jogo %>% 
+  # pega o conteudo da response
+  content() %>% 
+  # coloca o conteudo como uma lista
+  as_list() %>% 
+  # pega os elementos da lista que estao dentro de item
+  pluck('items', 'item') %>% 
+  # olha os nomes dos elementos na sublista
+  names
+```
+
+# Parseando o `response`
+
+Parseia os nomes dos jogos.
+
+```{r funcao_parser_nome}
+## funcao para parsear a lista de nomes do jogo
+parser_nome <- function(arquivo_xml) {
+  # pega o arquivo HTML
+  arquivo_xml %>% 
+    # extrai todas as tags name
+    xml_find_all(xpath = '*//name') %>% 
+    # extrai todo os atributos dessas tags
+    xml_attrs('value') %>% 
+    # junta todos os atributos em uma tibble
+    bind_rows() %>% 
+    # remove a coluna sortindex
+    select(titulo = value, metadado = type)
+}
+
+# parseando os nomes
+parser_nome(arquivo_xml = content(x = xml_do_jogo))
+```
+
+Parseia a descrição do jogo.
+
+```{r funcao_parser_descricao}
+## funcao para parsear a descricao do jogo
+parser_descricao <- function(arquivo_xml) {
+  # pega o arquivo HTML
+  arquivo_xml %>% 
+    # extrai todas as tags description
+    xml_find_first(xpath = '*//description') %>% 
+    # extrai o texto da descricao
+    xml_text()
+}
+
+# parseando a descricao
+parser_descricao(arquivo_xml = content(x = xml_do_jogo))
+```
+
+Parseia as informacoes do jogo.
+
+```{r funcao_parser_informacoes}
+## funcao para parsear as informacoes do jogo
+parser_informacoes <- function(arquivo_xml) {
+  # pega o arquivo HTML
+  arquivo_xml %>% 
+    # extrai todas as tags relacionadas às informações sobre o ano de publicacao, quantidade de jogadores
+    # idade minima para o jogo e tempo de jogo
+    xml_find_all(xpath = '*//*[self::yearpublished or self::minplayers or self::maxplayers
+               or self::playingtime or self::minplaytime or self::maxplaytime or self::minage]') %>% 
+    # colocando todos os atributos dessa tag em um tibble
+    map_dfr(
+      ~ list(
+        caracteristica = xml_name(.x),
+        valor = xml_attrs(.x, 'value')
+      )) %>% 
+    # parseando tudo para numerico
+    mutate(valor = parse_number(x = valor)) %>% 
+    # passando o tibble do formato longo para o largo
+    pivot_wider(names_from = caracteristica, values_from = valor)
+}
+
+# parseando as informacoes
+parser_informacoes(arquivo_xml = content(x = xml_do_jogo))
+```
+
+Parseia as avaliacoes do jogo.
+
+```{r funcao_parser_avaliacoes}
+## funcao para parsear todas as informacoes relacionadas à avaliação de cada jogo
+parser_avaliacoes <- function(arquivo_xml) {
+  # extrai outras informacoes das avaliacoes e junta com as informacoes de rankings e contagem de comentarios
+  arquivo_xml %>% 
+    # extrai todas as tags relacionadas dentro das avaliacoes que nao estejam relacionadas ao rankeamento
+    xml_find_all(xpath = '*/statistics/ratings/*[not(self::ranks)]') %>% 
+    # coloca todas as informacoes dentro de um tibble
+    map_dfr(
+      ~ list(
+        estatistica = xml_name(.x),
+        valor = xml_attrs(.x, 'value')
+      )
+    ) %>% 
+    # parseando tudo para numerico
+    mutate(valor = parse_number(x = valor)) %>% 
+    # passando o tibble do formato longo para o largo
+    pivot_wider(names_from = estatistica, values_from = valor)
+}
+
+# parseando as avaliacoes
+parser_avaliacoes(arquivo_xml = content(x = xml_do_jogo))
+```
+
+Parseia os rankings do jogo.
+
+```{r funcao_parser_rankings}
+## funcao para parsear todas as informacoes relacionadas aos rankings em que cada jogo esta
+parser_rankings <- function(arquivo_xml) {
+  # pega o arquivo html
+  arquivo_xml %>% 
+    # extrai todas as tags que estejam relacionadas ao ranking
+    xml_find_all(xpath = '*/statistics/ratings/ranks/rank') %>% 
+    # extrai todo os atributos dessas tags
+    xml_attrs('value') %>% 
+    # junta todos os atributos em uma tibble
+    bind_rows() %>% 
+    # renomeando colunas
+    rename(nivel = type, tipo = name, nome = friendlyname, 
+           posicao = value, media_bayesiana = bayesaverage) %>% 
+    # parseando os numericos para tal
+    mutate(
+      posicao         = parse_number(x = posicao),
+      media_bayesiana = parse_number(x = media_bayesiana)
+    )
+}
+
+# parseando os rankings
+parser_rankings(arquivo_xml = content(x = xml_do_jogo))
+```
+
+Parseia os comentarios sobre o jogo.
+
+```{r funcao_parser_comentarios}
+## funcao para parsear os comentarios sobre o jogo
+parser_comentarios <- function(arquivo_xml) {
+  # pega o arquivo HTML
+  arquivo_xml %>% 
+    # extrai todas as tags de comentario
+    xml_find_all(xpath = '*/comments/comment') %>% 
+    # extrai todo os atributos dessas tags
+    xml_attrs('value') %>% 
+    # junta todos os atributos em uma tibble
+    bind_rows() %>% 
+    # renomeando as colunas
+    rename(usuario = username, nota = rating, comentario = value) %>% 
+    # parseando as notas para numerico
+    mutate(nota = parse_number(x = nota))
+}
+
+# parseando os comentarios
+parser_comentarios(arquivo_xml = content(x = xml_do_jogo))
+```
+
+Parseia o total de comentários do jogo.
+
+```{r funcao_parser_comentarios_total}
+## funcao para parsear a quantidade total de comentarios que um jogo tem
+parser_comentarios_total <- function(arquivo_xml) {
+  # pega o arquivo html
+  arquivo_xml %>% 
+    # pega tudo o que está sobre a tag comments
+    xml_find_all(xpath = '*/comments') %>% 
+    # pega apenas o valor correspondente ao total de comentarios
+    xml_attr('totalitems') %>% 
+    # parseando o string para numero
+    parse_number()
+}
+
+# parseando a descricao
+parser_comentarios_total(arquivo_xml = content(x = xml_do_jogo))
+```
+
+Parseia o resultado da votacao da melhor quantidade de jogadores do jogo.
+
+```{r funcao_parser_votacao_n_jogadores}
+## funcao para parsear os resultados da votacao do melhor numero de jogadores para se jogar
+parser_votacao_n_jogadores <- function(arquivo_xml) {
+  # pega o arquivo html
+  arquivo_xml %>% 
+    # extrai todas as tags com os resultados da votação relacionada ao melhor numero de jogadores
+    xml_find_all(xpath = '*/poll[@name="suggested_numplayers"]/results') %>% 
+    # coloca tudo dentro de um tibble
+    map_dfr(
+      ~ xml_find_all(.x, xpath = 'result') %>% 
+        xml_attrs() %>% 
+        bind_rows() %>% 
+        mutate(numplayers = xml_attrs(.x))
+    )  %>% 
+    # renomeia e organiza as colunas
+    select(num_jogadores = numplayers, voto = value, num_votos = numvotes) %>% 
+    # parseando votos para numerico
+    mutate(num_votos = parse_number(x = num_votos))
+}
+
+# parseando o resultado da votacao da melhor quantidade de jogadores
+parser_votacao_n_jogadores(arquivo_xml = content(x = xml_do_jogo))
+```
+
+Parseia o resultado da votacao da melhor idade para o jogo.
+
+```{r funcao_parser_votacao_idade}
+## funcao para parsear os resultados da votacao da idade recomendada para o jogo
+parser_votacao_idade <- function(arquivo_xml) {
+  # pega o arquivo html
+  arquivo_xml %>% 
+    # extrai todas as tags com os resultados da votação relacionada à idade recomendada para o jogo
+    xml_find_all(xpath = '*/poll[@name="suggested_playerage"]/results') %>% 
+    # coloca tudo dentro de um tibble
+    map_dfr(
+      ~ xml_find_all(.x, xpath = 'result') %>% 
+        xml_attrs()
+    ) %>% 
+    # renomeia e organiza as colunas
+    select(idade_ideal = value, num_votos = numvotes) %>% 
+    # parseando votos para numerico
+    mutate(num_votos = parse_number(x = num_votos))
+}
+
+# parseando o resultado da votacao da melhor idade para o jogo
+parser_votacao_idade(arquivo_xml = content(x = xml_do_jogo))
+```
+
+Parseia o resultado da votacao da dependencia do idioma para o jogo.
+
+```{r funcao_parser_votacao_idioma}
+## funcao para parsear os resultados da votacao sobre a dependencia do idioma para jogar o jogo
+parser_votacao_idioma <- function(arquivo_xml) {
+  # pega o arquivo html
+  arquivo_xml %>% 
+    # extrai todas as tags com os resultados da votacao sobre a dependencia do idioma para jogar o jogo
+    xml_find_all(xpath = '*/poll[@name="language_dependence"]/results') %>% 
+    # coloca tudo dentro de um tibble
+    map_dfr(
+      ~ xml_find_all(.x, xpath = 'result') %>% 
+        xml_attrs()
+    ) %>% 
+    # renomeia e organiza as colunas
+    select(voto = value, num_votos = numvotes) %>% 
+    # parseando votos para numerico
+    mutate(num_votos = parse_number(x = num_votos))
+}
+
+# parseando o resultado da votacao da dependencia do idioma
+parser_votacao_idioma(arquivo_xml = content(x = xml_do_jogo))
+```
+
+Parseia os metadados do jogo.
+
+```{r funcao_parser_metadados}
+## funcao para parsear os metadados do jogo
+parser_metadados <- function(arquivo_xml) {
+  # pega o arquivo HTML
+  arquivo_xml %>% 
+    # extrai todas as tags link
+    xml_find_all(xpath = '*//link') %>% 
+    # extrai todo os atributos dessas tags
+    xml_attrs() %>% 
+    # junta todos os atributos em uma tibble
+    bind_rows() %>% 
+    # organiza as colunas
+    select(id_metadado = id, metadado = value, tipo_metadado = type) %>% 
+    # removendo o padrao boardgame do tipo de metadado
+    mutate(tipo_metadado = str_replace(string = tipo_metadado, pattern = 'boardgame', replacement = 'tbl_')) %>% 
+    # aninhando informacoes pelo tipo de metadado
+    nest(data = -tipo_metadado) %>% 
+    # passando o dado para o formato largo
+    pivot_wider(names_from = tipo_metadado, values_from = data)
+}
+
+# parseando os metadados
+parser_metadados(arquivo_xml = content(x = xml_do_jogo))
+```
+
+# Desempacotando os metadados
+
+Desempacota os metadados em uma lista de tibbles.
+
+```{r desempacota_metadados}
+## expandindo cada uma das tabelas que contem multiplas informacoes sobre cada jogo
+tabelas <- parser_metadados(arquivo_xml = content(x = xml_do_jogo)) %>% 
+  # passando a base para o formato longo
+  pivot_longer(cols = everything(), names_to = 'tabela', values_to = 'dados') %>% 
+  # separando a base em listas de acordo com a dimensao
+  split(.$tabela) %>% 
+  # desaninhando cada tabela
+  map(.f = unnest, cols = dados) %>% 
+  # dropando a coluna do id da tabela
+  map(.f = select, -tabela) %>% 
+  # ordenando as tabelas por jogo em ordem alfabetica do metadado
+  map(.f = arrange, metadado)
+tabelas
+```
+
+Passa os metadados para o formato tidy.
+
+```{r metadados_tidy}
+## colocando as tabelas no formato tidy
+tabelas_tidy <- tabelas %>% 
+  # sumarizando todas as informacoes de forma a termos uma linha por jogo
+  map(.f = summarise, metadado = paste0(unique(metadado), collapse = ';')) %>% 
+  # colocando tudo em uma unica tabela
+  bind_rows(.id = 'informacao') %>% 
+  # removendo o prefixo tbl
+  mutate(informacao = str_remove(string = informacao, pattern = 'tbl_')) %>% 
+  # passando a base para o formato largo
+  pivot_wider(names_from = informacao, values_from = metadado)
+tabelas_tidy
+```
+
+# Colocando tudo junto
+
+Parseando tudo de uma vez.
+
+```{r funcao_parser_do_jogo}
+# funcao para parsear o arquivo xml inteiro do jogo
+parser_do_jogo <- function(path_arquivo_xml) {
+  
+  ## lendo o arquivo xml
+  xml_do_jogo <- read_xml(x = path_arquivo_xml)
+  
+  ## parseando o arquivo xml
+  tibble(
+    tbl_nomes             = list(parser_nome(arquivo_xml = xml_do_jogo)),
+    tbl_comentarios       = list(parser_comentarios(arquivo_xml = xml_do_jogo)), 
+    tbl_rankings          = list(parser_rankings(arquivo_xml = xml_do_jogo)), 
+    tbl_votacao_idade     = list(parser_votacao_idade(arquivo_xml = xml_do_jogo)), 
+    tbl_votacao_idioma    = list(parser_votacao_idioma(arquivo_xml = xml_do_jogo)),
+    tbl_votacao_jogadores = list(parser_votacao_n_jogadores(arquivo_xml = xml_do_jogo))
+  ) %>% 
+    # juntando informacoes que ja estao no formato esperado
+    bind_cols(
+      parser_metadados(arquivo_xml = xml_do_jogo),
+      descricao = parser_descricao(arquivo_xml = xml_do_jogo),
+      total_comentarios = parser_comentarios_total(arquivo_xml = xml_do_jogo),
+      parser_avaliacoes(arquivo_xml = xml_do_jogo),
+      parser_informacoes(arquivo_xml = xml_do_jogo)
+    )
+}
+
+## fazendo o parser do jogo
+jogos <- parser_do_jogo(path_arquivo_xml = 'temporario/00266192.html')
+# jogos <- parser_do_jogo(path_arquivo_xml = '_posts/2022-01-09-interagindo-com-a-api-do-boardgamegeek/temporario/00266192.html')
+
+## olhando a tabela
+jogos
+```
+
+Criando a tabela final do jogo.
+
+```{r jogo_formato_tidy}
+## colocando a tabela com os jogos em um formato tidy
+jogos_tidy <- jogos %>% 
+  mutate(
+    # extraindo nome oficial do jogo
+    titulo  = map_chr(.x = tbl_nomes, 
+                      .f = ~ filter(.x, metadado == 'primary') %>% pull(titulo)
+    ),
+    # codificando se o titulo é uma expansao ou nao
+    eh_expansao = map2_int(.x = tbl_expansion, .y = titulo, .f = ~ any(.y %in% .x$metadado)),
+    # pegando melhor idade
+    idade_ideal = map_chr(.x = tbl_votacao_idade, 
+                          .f = ~ filter(.x, num_votos == max(num_votos)) %>% 
+                            pull(idade_ideal)
+    ),
+    # pegando melhor numero de jogadores
+    melhor_n_jogadores = map_chr(.x = tbl_votacao_jogadores,
+                                 .f = ~ filter(.x, voto == 'Best') %>% 
+                                   filter(num_votos == max(num_votos)) %>% 
+                                   pull(num_jogadores)
+    ),
+    # pegando pior numero de jogadores
+    pior_n_jogadores = map_chr(.x = tbl_votacao_jogadores,
+                               .f = ~ filter(.x, voto == 'Not Recommended') %>% 
+                                 filter(num_votos == max(num_votos)) %>% 
+                                 pull(num_jogadores)
+    ),
+    # pegando numero de jogadores recomendado
+    recomendado_n_jogadores = map_chr(.x = tbl_votacao_jogadores,
+                                      .f = ~ filter(.x, voto == 'Recommended') %>% 
+                                        filter(num_votos == max(num_votos)) %>% 
+                                        pull(num_jogadores)
+    ),
+    # pegando dependencia do idioma
+    dependencia_do_idioma = map_chr(.x = tbl_votacao_idioma,
+                                    .f = ~ filter(.x, num_votos == max(num_votos)) %>% 
+                                      pull(voto)
+    )
+  ) %>% 
+  # removendo todas as colunas que tenham como prefixo tbl
+  select(-starts_with('tbl_')) %>% 
+  # adicionando a base das tabelas no formato tidy
+  bind_cols(tabelas_tidy) %>% 
+  # colocando o titulo do jogo depois do id
+  relocate(titulo, .before = descricao) %>% 
+  # colocando as informacoes do numeroc de jogadores juntos
+  relocate(melhor_n_jogadores, pior_n_jogadores, recomendado_n_jogadores, .after = maxplayers) %>% 
+  # colocando informacoes da idade juntos
+  relocate(idade_ideal, .after = minage) %>% 
+  # renomeando as colunas
+  rename(notas = usersrated, nota_usuarios = average, nota_bgg = bayesaverage,
+         possuem = owned, trocam = trading, querem = wanting, desejam = wishing,
+         ano_publicacao = yearpublished, artista = artist, categoria = category,
+         edicoes_especiais = compilation, expansoes = expansion, familia = family,
+         jogos_base = implementation, mecanica = mechanic, editora = publisher)
+jogos_tidy
+```
 
 
+# Conclusões
+
+# Possíveis Extensões
