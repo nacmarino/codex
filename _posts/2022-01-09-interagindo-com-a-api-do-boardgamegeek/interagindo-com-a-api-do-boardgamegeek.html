@@ -1497,10 +1497,10 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </nav>
 </div>
 <h1 id="motivação">Motivação</h1>
-<p>Um dos primeiros <a href="https://nacmarino.github.io/codex/posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/">posts</a> do blog foi sobre a criação de um <em>scrapper</em> para obtermos as informações da página do ranking do <a href="https://boardgamegeek.com/browse/boardgame">BoardGameGeek</a>, um portal especializado em jogos de tabuleiro. Meu principal objetivo com isso não foi o de extrair o ranking em si, mas o de obter o identificador único de cada jogo para usá-lo junto à API XML oferecida pelo portal. Essa API oferece (praticamente) todas as informações sobre os jogos que estão disponíveis em suas respectivas páginas e, portanto, fornece um caminho mais simples para obtermos os dados sobre cada um deles de forma programática. No entanto, o mais importante para mim é que essas informações vindas da API têm o potencial de facilitar uma das coisas que eu mais tenho dificuldade: encontrar os jogos que mais combinam com aquilo que eu curto.</p>
+<p>Um dos primeiros <a href="https://nacmarino.github.io/codex/posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/">posts</a> do blog foi sobre um <em>scrapper</em> para obtermos as informações da página do ranking do <a href="https://boardgamegeek.com/browse/boardgame">BoardGameGeek</a>, um portal especializado em jogos de tabuleiro. Meu principal objetivo com isso não foi o de extrair o ranking em si, mas o de obter o identificador único de cada jogo para usá-lo junto à API XML oferecida pelo portal. Essa API nos dá acesso à (praticamente) todas as informações sobre os jogos que estão disponíveis em suas respectivas páginas e, portanto, fornece um caminho mais simples para obtermos os dados sobre cada um deles de forma programática. No entanto, o mais importante para mim é que as informações vindas dessa API têm o potencial de facilitar uma das coisas que eu mais tenho dificuldade: encontrar os jogos que combinam com aquilo que eu curto.</p>
 <p>Neste post eu mostro como interagir com a API XML do BGG e, também, fazer o <em>parser</em> das informações que obtemos a partir dela. Esse processo vai ser importante para entendermos os tipos de dados que temos disponíveis e as possíveis formas de usá-los nos próximos posts.</p>
 <h1 id="funcionamento-da-api">Funcionamento da API</h1>
-<p>A primeira coisa que precisaremos fazer para interagir com a API oferecida pelo BGG é a base com o identificador único de cada jogo. Esta informação pode ser obtida a partir do <em>scrapper</em> disponível neste <a href="https://nacmarino.github.io/codex/posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/">link</a>, e eu reproduzo a base que você deve conseguir aqui abaixo. Na tabela a seguir, as informações que precisamos são àquelas na coluna <code>id</code>.</p>
+<p>A primeira coisa que precisaremos fazer para interagir com a API do BGG é carregar a base que contém o identificador único de cada jogo. Estes dados podem ser obtidos a partir do <em>scrapper</em> disponível neste <a href="https://nacmarino.github.io/codex/posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/">link</a>, ou você pode simplesmente usar a base de dados disponível junto a esse post. A informação que precisaremos esta na tabela abaixo, e são os números que estão na coluna <code>id</code>.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'># carregando os pacotes</span>
@@ -1526,9 +1526,10 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
   </script>
 </div>
 </div>
-<p>A API oferecida pelo BGG funciona através de requisições do tipo <code>GET</code>, que retornam um arquivo <code>xml</code> (e<strong>X</strong>tensible <strong>M</strong>arkup <strong>L</strong>anguage) cujos parâmetros e valores seguem o padrão de <em>tags</em> e atributos comum à páginas <code>HTML</code>. Acredito que essa API não segue a arquitetura do tipo REST (<strong>RE</strong>presentational <strong>S</strong>tate <strong>T</strong>ransfer), uma vez que (1) as requisições para um determinado tipo de informação são todas feitas através de um único <em>endpoint</em> e (2) os nomes dos métodos utilizados devem ser passados diretamente para a <code>url</code> da requisição. De toda forma, essa API é bastante simples de usar - mas mais trabalhosa de <em>parsear</em>, como veremos mais adiante.</p>
-<p>Podemos pegar diversos tipos de informação através dessa API, tais como as informações dos jogos (<em>i.e.</em>, <code>thing</code>), das coleções (<em>i.e.</em>, <code>collection</code>) e dos próprios usuários (<em>i.e.</em>, <code>user</code>) e do fórum (<em>i.e.</em>, <code>forum</code>). Neste post vamos focar apenas as informações dos jogos e, portanto, vamos usar o <em>endpoint</em> <code>https://www.boardgamegeek.com/xmlapi2/thing</code> e passar alguns métodos para ela - separando o <em>endpoint</em> dos métodos através de um <code>?</code> e cada método do outro usando o <code>&amp;</code>. Os métodos que vamos usar aqui são o <code>id</code> do jogo (que vamos extrair da tabela que carregamos acima), as estatísticas relacionadas à cada jogo (setando <code>stats=1</code>) e uma amostra de, no máximo, 100 comentários associados à cada jogo (setando <code>ratingcomments=1</code> e <code>pagesize=100</code>). Com isso, a <code>url</code> que vamos passar para o <code>GET</code> tomará a forma <code>https://www.boardgamegeek.com/xmlapi2/thing?id=game_id&amp;stats=1&amp;ratingcomments=1&amp;pagesize=100</code>, onde o <code>game_id</code> vai ser um número correspondente ao identificador numérico do jogo.</p>
-<p>A função cuidará de fazer essa requisição, salvando uma cópia do HTML da resposta em disco, caso o valor passado para o argumento <code>path_to_save</code> não seja <code>NULL</code>.</p>
+<p>A API do BGG funciona através de requisições do tipo <code>GET</code>, que retornam um arquivo <code>xml</code> (e<strong>X</strong>tensible <strong>M</strong>arkup <strong>L</strong>anguage) cujos parâmetros e valores seguem o padrão de <em>tags</em> e atributos comum à páginas <code>HTML</code>. Acredito que essa API não segue a arquitetura do tipo REST (<strong>RE</strong>presentational <strong>S</strong>tate <strong>T</strong>ransfer), uma vez que (1) as requisições para um determinado tipo de informação são todas feitas através de um único <em>endpoint</em> e (2) os nomes dos métodos utilizados devem ser passados diretamente para a <code>url</code> da requisição. De toda forma, essa API é bastante simples de usar - mas mais trabalhosa de <em>parsear</em>, como veremos mais adiante.</p>
+<p>Existem diversos tipos de informação disponíveis no site do BGG que podem ser obtidas através dessa API, tais como os dados dos jogos (<em>i.e.</em>, <code>thing</code>), das coleções (<em>i.e.</em>, <code>collection</code>) e dos próprios usuários (<em>i.e.</em>, <code>user</code>) e do fórum (<em>i.e.</em>, <code>forum</code>). Além disso, dentro de cada tipo de informação desta, podemos buscar detalhes específicos, tais como tudo o que há no <em>marketplace</em> para um jogo ou os resultados das partidas dos jogos registrados por cada usuário. Apesar desse existir esse monte de informação disponivel, neste post vamos focar apenas as informações dos jogos e, portanto, vamos usar o <em>endpoint</em> <code>https://www.boardgamegeek.com/xmlapi2/thing</code> - a documentação da API pode ser encontrada <a href="https://boardgamegeek.com/wiki/page/BGG_XML_API2">aqui</a>.</p>
+<p>Existem diversos métodos que podemos ser usados junto daquele <em>endpoint</em>. Os métodos que vamos usar aqui são o <code>id</code> do jogo (que vamos extrair da tabela que carregamos acima), as estatísticas relacionadas à cada jogo (setando <code>stats=1</code>) e uma amostra de, no máximo, 100 comentários associados à cada jogo (setando <code>ratingcomments=1</code> e <code>pagesize=100</code>). Existem outros métodos associados a esse <em>endpoint</em>, como os vídeos que falam sobre o jogo (<em>i.e.</em>, <code>videos=1</code>) e as informações dos anúncios do <em>marketplace</em> (<em>i.e.</em>, <code>marketplace=1</code>), mas não vamos trabalhar com eles aqui. De toda forma, precisamos juntar o endereço do <em>endpoint</em> e os método para compor a <code>url</code> para do <code>GET</code>: para isso, vamos separar o <em>endpoint</em> dos métodos utilizando o <code>?</code> e cada método do outro usando o <code>&amp;</code>. Com isso, a <code>url</code> ficará assim: <code>https://www.boardgamegeek.com/xmlapi2/thing?id=&lt;game_id&gt;&amp;stats=1&amp;ratingcomments=1&amp;pagesize=100</code> - onde o <code>game_id</code> vai ser um número correspondente ao identificador numérico do jogo.</p>
+<p>A função abaixo cuidará de fazer essa requisição, salvando uma cópia do HTML da resposta em disco caso o valor passado para o argumento <code>path_to_save</code> não seja <code>NULL</code>.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## funcao para pegar o XML de um jogo</span>
@@ -1550,7 +1551,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </code></pre>
 </div>
 </div>
-<p>Usa a função para pegar um jogo.</p>
+<p>Vamos usar a função para fazer a requisição de um jogo, salvando o <code>xml</code> resultante em disco. Antes disso, vou criar um diretório temporário para armazenar o <code>xml</code> e, também, extrair o identificador numérico do jogo que utilizaremos nesse exemplo: o <strong>Ticket to Ride</strong>. Esse é um jogo de construir rotas com trenzinhos, e é muito legal e divertido.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## setando o path onde vamos jogar os arquivos</span>
@@ -1576,81 +1577,33 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </code></pre>
 </div>
 </div>
-<p>Estrutura do XML.</p>
+<p>Podemos pegar o <code>content</code> da resposta da requisição e usar a função <code>xml_structure</code> para entender a sua estrutura. Isso nos ajuda bastante a identificar as <em>tags</em> que precisamos buscar, bem como o tipo de resultado que deve estar associado à cada uma delas. Como o output dessa função é bastante longo, resolvi usar outra abordagem aqui no post só para dar uma ideia do que existe dentro da resposta: usei a função <code>as_list</code> do pacote <code>xml2</code> para parsear o código para uma lista do R e, então, usei a função <code>pluck</code> para catar os elementos que realmente importam para nós - eles são uma uma lista dentro da lista <code>item</code> que está dentro da lista <code>items</code>; depois disso, usei a função <code>names</code> para extrair os nomes de cada <em>tag</em> e, como o resultado também era longo, passei o vetor de <em>strings</em> para a função <code>table</code>. O resultado que obtemos com isso é apresentado abaixo, onde podemos ver quantas vezes cada <em>tag</em> aparece dentro do <code>xml</code>. Como podemos ver, existem <em>tags</em> que são ok de entender o que é e pegar, mas tem outras <em>tags</em> que possivelmente nos darão uma dose extra de trabalho (<em>i.e.</em>, <code>links</code>, <code>name</code> e <code>pool</code>).</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='va'>xml_do_jogo</span> <span class='op'>%&gt;%</span> 
   <span class='co'># pega o conteudo da response</span>
-  <span class='fu'><a href='https://httr.r-lib.org/reference/content.html'>content</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='fu'>content</span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
   <span class='co'># coloca o conteudo como uma lista</span>
-  <span class='fu'><a href='http://xml2.r-lib.org/reference/as_list.html'>as_list</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='fu'>as_list</span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
   <span class='co'># pega os elementos da lista que estao dentro de item</span>
   <span class='fu'>pluck</span><span class='op'>(</span><span class='st'>'items'</span>, <span class='st'>'item'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
   <span class='co'># olha os nomes dos elementos na sublista</span>
-  <span class='va'>names</span>
+  <span class='va'>names</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># contando quantas vezes cada nome aparece</span>
+  <span class='va'>table</span>
 </code></pre>
 </div>
-<pre><code>  [1] &quot;thumbnail&quot;     &quot;image&quot;         &quot;name&quot;          &quot;name&quot;         
-  [5] &quot;name&quot;          &quot;name&quot;          &quot;name&quot;          &quot;name&quot;         
-  [9] &quot;name&quot;          &quot;name&quot;          &quot;name&quot;          &quot;name&quot;         
- [13] &quot;name&quot;          &quot;name&quot;          &quot;name&quot;          &quot;name&quot;         
- [17] &quot;name&quot;          &quot;name&quot;          &quot;description&quot;   &quot;yearpublished&quot;
- [21] &quot;minplayers&quot;    &quot;maxplayers&quot;    &quot;poll&quot;          &quot;playingtime&quot;  
- [25] &quot;minplaytime&quot;   &quot;maxplaytime&quot;   &quot;minage&quot;        &quot;poll&quot;         
- [29] &quot;poll&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
- [33] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
- [37] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
- [41] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
- [45] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
- [49] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
- [53] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
- [57] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
- [61] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
- [65] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
- [69] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
- [73] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
- [77] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
- [81] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
- [85] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
- [89] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
- [93] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
- [97] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[101] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[105] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[109] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[113] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[117] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[121] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[125] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[129] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[133] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[137] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[141] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[145] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[149] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[153] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[157] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[161] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[165] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[169] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[173] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[177] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[181] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[185] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[189] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[193] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[197] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[201] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[205] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[209] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[213] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[217] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[221] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[225] &quot;link&quot;          &quot;link&quot;          &quot;link&quot;          &quot;link&quot;         
-[229] &quot;link&quot;          &quot;comments&quot;      &quot;statistics&quot;   </code></pre>
+<pre><code>.
+     comments   description         image          link    maxplayers 
+            1             1             1           200             1 
+  maxplaytime        minage    minplayers   minplaytime          name 
+            1             1             1             1            16 
+  playingtime          poll    statistics     thumbnail yearpublished 
+            1             3             1             1             1 </code></pre>
 </div>
+<p>Vamos parsear cada um desses resultados a seguir.</p>
 <h1 id="parseando-o-response">Parseando o <code>response</code></h1>
-<p>Parseia os nomes dos jogos.</p>
+<p>A primeira informação que vamos parsear é àquela que está dentro da <em>tag</em> <code>name</code>. Para isso, precisaremos pegar tudo o que está associado à essa <em>tag</em> e extrair os atributos de cada elemento com <code>xml_attrs</code>. O resultado dessa operação é uma lista onde cada elemento dela é um <code>data.frame</code> com uma única linha, contendo um nome do jogo e um indicador se esse nome é o oficial (<em>i.e.</em>, <em>primary</em>) ou o não-oficial (<em>i.e.</em>, <em>alternate</em>). A partir daí juntaremos essas linhas usando um <code>bind_rows</code> seguido de um <code>select</code> para organizar o resultado. Aplicando essa função ao conteúdo do <code>xml</code>, obtemos uma tabelinha com todos os nomes do jogo, onde podemos ver que o os nomes não-oficiais são normalmente aqueles em outras línguas. Essa tabela é bastante útil pois, com base nela, podemos fazer um de-para das informações do BGG para àquelas da <a href="https://www.ludopedia.com.br/ranking">Ludopedia</a>, o que nos permite responder à algumas perguntas que havíamos aberto <a href="https://nacmarino.github.io/codex/posts/2021-12-11-quao-similares-sao-as-notas-dos-jogos-de-tabuleiro-entre-os-portais-especializados/">anteriormente</a>.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## funcao para parsear a lista de nomes do jogo</span>
@@ -1658,9 +1611,9 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
   <span class='co'># pega o arquivo HTML</span>
   <span class='va'>arquivo_xml</span> <span class='op'>%&gt;%</span> 
     <span class='co'># extrai todas as tags name</span>
-    <span class='fu'><a href='http://xml2.r-lib.org/reference/xml_find_all.html'>xml_find_all</a></span><span class='op'>(</span>xpath <span class='op'>=</span> <span class='st'>'*//name'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+    <span class='fu'>xml_find_all</span><span class='op'>(</span>xpath <span class='op'>=</span> <span class='st'>'*//name'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
     <span class='co'># extrai todo os atributos dessas tags</span>
-    <span class='fu'><a href='http://xml2.r-lib.org/reference/xml_attr.html'>xml_attrs</a></span><span class='op'>(</span><span class='st'>'value'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+    <span class='fu'>xml_attrs</span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
     <span class='co'># junta todos os atributos em uma tibble</span>
     <span class='fu'>bind_rows</span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
     <span class='co'># remove a coluna sortindex</span>
@@ -1668,7 +1621,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <span class='op'>}</span>
 
 <span class='co'># parseando os nomes</span>
-<span class='fu'>parser_nome</span><span class='op'>(</span>arquivo_xml <span class='op'>=</span> <span class='fu'><a href='https://httr.r-lib.org/reference/content.html'>content</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>xml_do_jogo</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'>parser_nome</span><span class='op'>(</span>arquivo_xml <span class='op'>=</span> <span class='fu'>content</span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>xml_do_jogo</span><span class='op'>)</span><span class='op'>)</span>
 </code></pre>
 </div>
 <pre><code># A tibble: 16 × 2
@@ -1691,7 +1644,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 15 铁路环游                         alternate
 16 티켓 투 라이드                   alternate</code></pre>
 </div>
-<p>Parseia a descrição do jogo.</p>
+<p>A próxima informação que vamos parsear é a descrição do jogo. Como poderíamos esperar, essa informação é um texto disponível dentro da <em>tag</em> <code>description</code>. O resultado do <em>parser</em> é um string bastante longo, com toda a estorinha e contexto sobre o jogo.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## funcao para parsear a descricao do jogo</span>
@@ -1710,7 +1663,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </div>
 <pre><code>[1] &quot;With elegantly simple gameplay, Ticket to Ride can be learned in under 15 minutes. Players collect cards of various types of train cars they then use to claim railway routes in North America. The longer the routes, the more points they earn. Additional points come to those who fulfill Destination Tickets &amp;ndash; goal cards that connect distant cities; and to the player who builds the longest continuous route.&amp;#10;&amp;#10;&amp;quot;The rules are simple enough to write on a train ticket &amp;ndash; each turn you either draw more cards, claim a route, or get additional Destination Tickets,&amp;quot; says Ticket to Ride author, Alan R. Moon. &amp;quot;The tension comes from being forced to balance greed &amp;ndash; adding more cards to your hand, and fear &amp;ndash; losing a critical route to a competitor.&amp;quot;&amp;#10;&amp;#10;Ticket to Ride continues in the tradition of Days of Wonder&#39;s big format board games featuring high-quality illustrations and components including: an oversize board map of North America, 225 custom-molded train cars, 144 illustrated cards, and wooden scoring markers.&amp;#10;&amp;#10;Since its introduction and numerous subsequent awards, Ticket to Ride has become the BoardGameGeek epitome of a &amp;quot;gateway game&amp;quot; -- simple enough to be taught in a few minutes, and with enough action and tension to keep new players involved and in the game for the duration.&amp;#10;&amp;#10;Part of the Ticket to Ride series.&amp;#10;&amp;#10;&quot;</code></pre>
 </div>
-<p>Parseia as informacoes do jogo.</p>
+<p>A próxima função faz o <em>parser</em> de diversas informações relacionadas às especificações técnicas de cada jogo, e coloca tudo dentro de colunas distintas de um <code>tibble</code>. Essas informações falam do ano de publicação do jogo, quantidade de jogadores, tempo de jogo e idade mínima. Deu um trabalhinho fazer esse <em>parser</em> em uma função só, pois todas essas coisas estão em <em>tags</em> diferentes e, portanto, precisei user o <code>self</code> dentro do <em>xpath</em>.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## funcao para parsear as informacoes do jogo</span>
@@ -1743,7 +1696,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 1          2004          2          5          60          30
 # … with 2 more variables: maxplaytime &lt;dbl&gt;, minage &lt;dbl&gt;</code></pre>
 </div>
-<p>Parseia as avaliacoes do jogo.</p>
+<p>Quando passamos o método <code>stats=1</code> para o <em>endpoint</em> também coletamos as informações sobre as estatísticas relacionadas ao <em>ranking</em> para o jogo que escolhemos. Com isso vamos ter acesso à dois principais aspectos: as informações relativas às notas e àquelas diretamente relacionadas aos <em>rankings</em> em que cada jogo aparece. A função abaixo dá conta de parsear o primeiro destes, nos dando acesso à quantidade de votos que cada jogo recebeu, a nota média (arimética e bayesiana), além da quantidade de usuários que têm o jogo, estão trocando, querem ou o desejam.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## funcao para parsear todas as informacoes relacionadas à avaliação de cada jogo</span>
@@ -1776,7 +1729,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 # … with 4 more variables: wishing &lt;dbl&gt;, numcomments &lt;dbl&gt;,
 #   numweights &lt;dbl&gt;, averageweight &lt;dbl&gt;</code></pre>
 </div>
-<p>Parseia os rankings do jogo.</p>
+<p>Já a função abaixo parseia os <em>rankings</em> em que cada jogo aparece. Além do <em>ranking</em> geral, cada jogo também pode estar posicionado dentro da família de jogos à que pertence e/ou aos tipos de mecânica associados a ele. No nosso exemplo, podemos ver que o <em>Ticket to Ride</em> ocupa a 193º posição do <em>ranking</em> geral e a 40º posição quando o assunto são os jogos familiares.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## funcao para parsear todas as informacoes relacionadas aos rankings em que cada jogo esta</span>

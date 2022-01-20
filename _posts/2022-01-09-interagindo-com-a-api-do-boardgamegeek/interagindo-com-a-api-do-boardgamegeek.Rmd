@@ -42,13 +42,13 @@ theme_update(
 
 # Motivação
 
-Um dos primeiros [posts](https://nacmarino.github.io/codex/posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/) do blog foi sobre a criação de um _scrapper_ para obtermos as informações da página do ranking do [BoardGameGeek](https://boardgamegeek.com/browse/boardgame), um portal especializado em jogos de tabuleiro. Meu principal objetivo com isso não foi o de extrair o ranking em si, mas o de obter o identificador único de cada jogo para usá-lo junto à API XML oferecida pelo portal. Essa API oferece (praticamente) todas as informações sobre os jogos que estão disponíveis em suas respectivas páginas e, portanto, fornece um caminho mais simples para obtermos os dados sobre cada um deles de forma programática. No entanto, o mais importante para mim é que essas informações vindas da API têm o potencial de facilitar uma das coisas que eu mais tenho dificuldade: encontrar os jogos que mais combinam com aquilo que eu curto.
+Um dos primeiros [posts](https://nacmarino.github.io/codex/posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/) do blog foi sobre um _scrapper_ para obtermos as informações da página do ranking do [BoardGameGeek](https://boardgamegeek.com/browse/boardgame), um portal especializado em jogos de tabuleiro. Meu principal objetivo com isso não foi o de extrair o ranking em si, mas o de obter o identificador único de cada jogo para usá-lo junto à API XML oferecida pelo portal. Essa API nos dá acesso à (praticamente) todas as informações sobre os jogos que estão disponíveis em suas respectivas páginas e, portanto, fornece um caminho mais simples para obtermos os dados sobre cada um deles de forma programática. No entanto, o mais importante para mim é que as informações vindas dessa API têm o potencial de facilitar uma das coisas que eu mais tenho dificuldade: encontrar os jogos que combinam com aquilo que eu curto.
 
 Neste post eu mostro como interagir com a API XML do BGG e, também, fazer o _parser_ das informações que obtemos a partir dela. Esse processo vai ser importante para entendermos os tipos de dados que temos disponíveis e as possíveis formas de usá-los nos próximos posts.
 
 # Funcionamento da API
 
-A primeira coisa que precisaremos fazer para interagir com a API oferecida pelo BGG é a base com o identificador único de cada jogo. Esta informação pode ser obtida a partir do _scrapper_ disponível neste [link](https://nacmarino.github.io/codex/posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/), e eu reproduzo a base que você deve conseguir aqui abaixo. Na tabela a seguir, as informações que precisamos são àquelas na coluna `id`.
+A primeira coisa que precisaremos fazer para interagir com a API do BGG é carregar a base que contém o identificador único de cada jogo. Estes dados podem ser obtidos a partir do _scrapper_ disponível neste [link](https://nacmarino.github.io/codex/posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/), ou você pode simplesmente usar a base de dados disponível junto a esse post. A informação que precisaremos esta na tabela abaixo, e são os números que estão na coluna `id`.
 
 ```{r carrega_dados}
 # carregando os pacotes
@@ -68,11 +68,13 @@ ranking <- read_rds(file = 'data/ranking_bgg.rds') %>%
 rmarkdown::paged_table(x = ranking)
 ```
 
-A API oferecida pelo BGG funciona através de requisições do tipo `GET`, que retornam um arquivo `xml` (e**X**tensible **M**arkup **L**anguage) cujos parâmetros e valores seguem o padrão de _tags_ e atributos comum à páginas `HTML`. Acredito que essa API não segue a arquitetura do tipo REST (**RE**presentational **S**tate **T**ransfer), uma vez que (1) as requisições para um determinado tipo de informação são todas feitas através de um único _endpoint_ e (2) os nomes dos métodos utilizados devem ser passados diretamente para a `url` da requisição. De toda forma, essa API é bastante simples de usar - mas mais trabalhosa de _parsear_, como veremos mais adiante.
+A API do BGG funciona através de requisições do tipo `GET`, que retornam um arquivo `xml` (e**X**tensible **M**arkup **L**anguage) cujos parâmetros e valores seguem o padrão de _tags_ e atributos comum à páginas `HTML`. Acredito que essa API não segue a arquitetura do tipo REST (**RE**presentational **S**tate **T**ransfer), uma vez que (1) as requisições para um determinado tipo de informação são todas feitas através de um único _endpoint_ e (2) os nomes dos métodos utilizados devem ser passados diretamente para a `url` da requisição. De toda forma, essa API é bastante simples de usar - mas mais trabalhosa de _parsear_, como veremos mais adiante.
 
-Podemos pegar diversos tipos de informação através dessa API, tais como as informações dos jogos (_i.e._, `thing`), das coleções (_i.e._, `collection`) e dos próprios usuários (_i.e._, `user`) e do fórum (_i.e._, `forum`). Neste post vamos focar apenas as informações dos jogos e, portanto, vamos usar o _endpoint_ `https://www.boardgamegeek.com/xmlapi2/thing` e passar alguns métodos para ela - separando o _endpoint_ dos métodos através de um `?` e cada método do outro usando o `&`. Os métodos que vamos usar aqui são o `id` do jogo (que vamos extrair da tabela que carregamos acima), as estatísticas relacionadas à cada jogo (setando `stats=1`) e uma amostra de, no máximo,  100 comentários associados à cada jogo (setando `ratingcomments=1` e `pagesize=100`). Com isso, a `url` que vamos passar para o `GET` tomará a forma `https://www.boardgamegeek.com/xmlapi2/thing?id=game_id&stats=1&ratingcomments=1&pagesize=100`, onde o `game_id` vai ser um número correspondente ao identificador numérico do jogo. 
+Existem diversos tipos de informação disponíveis no site do BGG que podem ser obtidas através dessa API, tais como os dados dos jogos (_i.e._, `thing`), das coleções (_i.e._, `collection`) e dos próprios usuários (_i.e._, `user`) e do fórum (_i.e._, `forum`). Além disso, dentro de cada tipo de informação desta, podemos buscar detalhes específicos, tais como tudo o que há no _marketplace_ para um jogo ou os resultados das partidas dos jogos registrados por cada usuário. Apesar desse existir esse monte de informação disponivel, neste post vamos focar apenas as informações dos jogos e, portanto, vamos usar o _endpoint_ `https://www.boardgamegeek.com/xmlapi2/thing` - a documentação da API pode ser encontrada [aqui](https://boardgamegeek.com/wiki/page/BGG_XML_API2). 
 
-A função cuidará de fazer essa requisição, salvando uma cópia do HTML da resposta em disco, caso o valor passado para o argumento `path_to_save` não seja `NULL`.
+Existem diversos métodos que podemos ser usados junto daquele _endpoint_. Os métodos que vamos usar aqui são o `id` do jogo (que vamos extrair da tabela que carregamos acima), as estatísticas relacionadas à cada jogo (setando `stats=1`) e uma amostra de, no máximo, 100 comentários associados à cada jogo (setando `ratingcomments=1` e `pagesize=100`). Existem outros métodos associados a esse _endpoint_, como os vídeos que falam sobre o jogo (_i.e._, `videos=1`) e as informações dos anúncios do _marketplace_ (_i.e._, `marketplace=1`), mas não vamos trabalhar com eles aqui. De toda forma, precisamos juntar o endereço do _endpoint_ e os método para compor a `url` para do `GET`: para isso, vamos separar o _endpoint_ dos métodos utilizando o `?` e cada método do outro usando o `&`. Com isso, a `url` ficará assim: `https://www.boardgamegeek.com/xmlapi2/thing?id=<game_id>&stats=1&ratingcomments=1&pagesize=100` - onde o `game_id` vai ser um número correspondente ao identificador numérico do jogo. 
+
+A função abaixo cuidará de fazer essa requisição, salvando uma cópia do HTML da resposta em disco caso o valor passado para o argumento `path_to_save` não seja `NULL`.
 
 ```{r funcao_pega_jogo}
 ## funcao para pegar o XML de um jogo
@@ -93,7 +95,7 @@ pega_jogo <- function(game_id, path_to_save = NULL) {
 }
 ```
 
-Usa a função para pegar um jogo.
+Vamos usar a função para fazer a requisição de um jogo, salvando o `xml` resultante em disco. Antes disso, vou criar um diretório temporário para armazenar o `xml` e, também, extrair o identificador numérico do jogo que utilizaremos nesse exemplo: o __Ticket to Ride__. Esse é um jogo de construir rotas com trenzinhos, e é muito legal e divertido. 
 
 ```{r pega_um_jogo}
 ## setando o path onde vamos jogar os arquivos
@@ -118,7 +120,7 @@ id_do_jogo <- ranking %>%
 xml_do_jogo <- pega_jogo(game_id = id_do_jogo, path_to_save = path_scrapped_data)
 ```
 
-Estrutura do XML.
+Podemos pegar o `content` da resposta da requisição e usar a função `xml_structure` para entender a sua estrutura. Isso nos ajuda bastante a identificar as _tags_ que precisamos buscar, bem como o tipo de resultado que deve estar associado à cada uma delas. Como o output dessa função é bastante longo, resolvi usar outra abordagem aqui no post só para dar uma ideia do que existe dentro da resposta: usei a função `as_list` do pacote `xml2` para parsear o código para uma lista do R e, então, usei a função `pluck` para catar os elementos que realmente importam para nós - eles são uma uma lista dentro da lista `item` que está dentro da lista `items`; depois disso, usei a função `names` para extrair os nomes de cada _tag_ e, como o resultado também era longo, passei o vetor de _strings_ para a função `table`. O resultado que obtemos com isso é apresentado abaixo, onde podemos ver quantas vezes cada _tag_ aparece dentro do `xml`. Como podemos ver, existem _tags_ que são ok de entender o que é e pegar, mas tem outras _tags_ que possivelmente nos darão uma dose extra de trabalho (_i.e._, `links`, `name` e `pool`).
 
 ```{r estrutura_do_xml}
 xml_do_jogo %>% 
@@ -129,12 +131,16 @@ xml_do_jogo %>%
   # pega os elementos da lista que estao dentro de item
   pluck('items', 'item') %>% 
   # olha os nomes dos elementos na sublista
-  names
+  names %>% 
+  # contando quantas vezes cada nome aparece
+  table
 ```
+
+Vamos parsear cada um desses resultados a seguir.
 
 # Parseando o `response`
 
-Parseia os nomes dos jogos.
+A primeira informação que vamos parsear é àquela que está dentro da _tag_ `name`. Para isso, precisaremos pegar tudo o que está associado à essa _tag_ e extrair os atributos de cada elemento com `xml_attrs`. O resultado dessa operação é uma lista onde cada elemento dela é um `data.frame` com uma única linha, contendo um nome do jogo e um indicador se esse nome é o oficial (_i.e._, _primary_) ou o não-oficial (_i.e._, _alternate_). A partir daí juntaremos essas linhas usando um `bind_rows` seguido de um `select` para organizar o resultado. Aplicando essa função ao conteúdo do `xml`, obtemos uma tabelinha com todos os nomes do jogo, onde podemos ver que o os nomes não-oficiais são normalmente aqueles em outras línguas. Essa tabela é bastante útil pois, com base nela, podemos fazer um de-para das informações do BGG para àquelas da [Ludopedia](https://www.ludopedia.com.br/ranking), o que nos permite responder à algumas perguntas que havíamos aberto [anteriormente](https://nacmarino.github.io/codex/posts/2021-12-11-quao-similares-sao-as-notas-dos-jogos-de-tabuleiro-entre-os-portais-especializados/).
 
 ```{r funcao_parser_nome}
 ## funcao para parsear a lista de nomes do jogo
@@ -144,7 +150,7 @@ parser_nome <- function(arquivo_xml) {
     # extrai todas as tags name
     xml_find_all(xpath = '*//name') %>% 
     # extrai todo os atributos dessas tags
-    xml_attrs('value') %>% 
+    xml_attrs() %>% 
     # junta todos os atributos em uma tibble
     bind_rows() %>% 
     # remove a coluna sortindex
@@ -155,7 +161,7 @@ parser_nome <- function(arquivo_xml) {
 parser_nome(arquivo_xml = content(x = xml_do_jogo))
 ```
 
-Parseia a descrição do jogo.
+A próxima informação que vamos parsear é a descrição do jogo. Como poderíamos esperar, essa informação é um texto disponível dentro da _tag_ `description`. O resultado do _parser_ é um string bastante longo, com toda a estorinha e contexto sobre o jogo.
 
 ```{r funcao_parser_descricao}
 ## funcao para parsear a descricao do jogo
@@ -172,7 +178,7 @@ parser_descricao <- function(arquivo_xml) {
 parser_descricao(arquivo_xml = content(x = xml_do_jogo))
 ```
 
-Parseia as informacoes do jogo.
+A próxima função faz o _parser_ de diversas informações relacionadas às especificações técnicas de cada jogo, e coloca tudo dentro de colunas distintas de um `tibble`. Essas informações falam do ano de publicação do jogo, quantidade de jogadores, tempo de jogo e idade mínima. Deu um trabalhinho fazer esse _parser_ em uma função só, pois todas essas coisas estão em _tags_ diferentes e, portanto, precisei user o `self` dentro do _xpath_.
 
 ```{r funcao_parser_informacoes}
 ## funcao para parsear as informacoes do jogo
@@ -199,7 +205,7 @@ parser_informacoes <- function(arquivo_xml) {
 parser_informacoes(arquivo_xml = content(x = xml_do_jogo))
 ```
 
-Parseia as avaliacoes do jogo.
+Quando passamos o método `stats=1` para o _endpoint_ também coletamos as informações sobre as estatísticas relacionadas ao _ranking_ para o jogo que escolhemos. Com isso vamos ter acesso à dois principais aspectos: as informações relativas às notas e àquelas diretamente relacionadas aos _rankings_ em que cada jogo aparece. A função abaixo dá conta de parsear o primeiro destes, nos dando acesso à quantidade de votos que cada jogo recebeu, a nota média (arimética e bayesiana), além da quantidade de usuários que têm o jogo, estão trocando, querem ou o desejam.
 
 ```{r funcao_parser_avaliacoes}
 ## funcao para parsear todas as informacoes relacionadas à avaliação de cada jogo
@@ -225,7 +231,7 @@ parser_avaliacoes <- function(arquivo_xml) {
 parser_avaliacoes(arquivo_xml = content(x = xml_do_jogo))
 ```
 
-Parseia os rankings do jogo.
+Já a função abaixo parseia os _rankings_ em que cada jogo aparece. Além do _ranking_ geral, cada jogo também pode estar posicionado dentro da família de jogos à que pertence e/ou aos tipos de mecânica associados a ele. No nosso exemplo, podemos ver que o _Ticket to Ride_ ocupa a 193º posição do _ranking_ geral e a 40º posição quando o assunto são os jogos familiares.
 
 ```{r funcao_parser_rankings}
 ## funcao para parsear todas as informacoes relacionadas aos rankings em que cada jogo esta
