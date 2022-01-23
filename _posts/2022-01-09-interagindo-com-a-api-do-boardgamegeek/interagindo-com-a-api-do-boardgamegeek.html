@@ -1488,19 +1488,28 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <ul>
 <li><a href="#motivação">Motivação</a></li>
 <li><a href="#funcionamento-da-api">Funcionamento da API</a></li>
-<li><a href="#parseando-o-response">Parseando o <code>response</code></a></li>
+<li><a href="#parseando-o-response">Parseando o <code>response</code></a>
+<ul>
+<li><a href="#informações-genéricas">Informações genéricas</a></li>
+<li><a href="#comentários">Comentários</a></li>
+<li><a href="#resultados-das-votações">Resultados das votações</a></li>
+<li><a href="#metadados">Metadados</a>
+<ul>
 <li><a href="#desempacotando-os-metadados">Desempacotando os metadados</a></li>
+</ul></li>
+</ul></li>
 <li><a href="#colocando-tudo-junto">Colocando tudo junto</a></li>
+<li><a href="#dicionário-de-dados">Dicionário de Dados</a></li>
 <li><a href="#conclusões">Conclusões</a></li>
 <li><a href="#possíveis-extensões">Possíveis Extensões</a></li>
 </ul>
 </nav>
 </div>
 <h1 id="motivação">Motivação</h1>
-<p>Um dos primeiros <a href="https://nacmarino.github.io/codex/posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/">posts</a> do blog foi sobre um <em>scrapper</em> para obtermos as informações da página do ranking do <a href="https://boardgamegeek.com/browse/boardgame">BoardGameGeek</a>, um portal especializado em jogos de tabuleiro. Meu principal objetivo com isso não foi o de extrair o ranking em si, mas o de obter o identificador único de cada jogo para usá-lo junto à API XML oferecida pelo portal. Essa API nos dá acesso à (praticamente) todas as informações sobre os jogos que estão disponíveis em suas respectivas páginas e, portanto, fornece um caminho mais simples para obtermos os dados sobre cada um deles de forma programática. No entanto, o mais importante para mim é que as informações vindas dessa API têm o potencial de facilitar uma das coisas que eu mais tenho dificuldade: encontrar os jogos que combinam com aquilo que eu curto.</p>
+<p>Um dos primeiros <a href="https://nacmarino.github.io/codex/posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/">posts</a> do blog foi sobre um <em>scrapper</em> para obtermos as informações da página do ranking do <a href="https://boardgamegeek.com/browse/boardgame">BoardGameGeek</a>, um portal especializado em jogos de tabuleiro. Meu principal objetivo com isso não foi o de extrair o ranking em si, mas o de extrair o identificador único de cada jogo para usá-lo junto à API XML oferecida pelo portal. Essa API nos dá acesso à (praticamente) todas as informações sobre os jogos que estão disponíveis em suas respectivas páginas e, portanto, fornece um caminho mais simples para obtermos os dados sobre cada um deles de forma programática. No entanto, o mais importante para mim é que essas informações têm o potencial de facilitar uma das coisas que eu mais tenho dificuldade: encontrar os jogos que combinam com aquilo que eu curto.</p>
 <p>Neste post eu mostro como interagir com a API XML do BGG e, também, fazer o <em>parser</em> das informações que obtemos a partir dela. Esse processo vai ser importante para entendermos os tipos de dados que temos disponíveis e as possíveis formas de usá-los nos próximos posts.</p>
 <h1 id="funcionamento-da-api">Funcionamento da API</h1>
-<p>A primeira coisa que precisaremos fazer para interagir com a API do BGG é carregar a base que contém o identificador único de cada jogo. Estes dados podem ser obtidos a partir do <em>scrapper</em> disponível neste <a href="https://nacmarino.github.io/codex/posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/">link</a>, ou você pode simplesmente usar a base de dados disponível junto a esse post. A informação que precisaremos esta na tabela abaixo, e são os números que estão na coluna <code>id</code>.</p>
+<p>A primeira coisa que precisaremos fazer para interagir com a API do BGG é carregar a base que contém o identificador único de cada jogo. Estes dados podem ser obtidos a partir do <em>scrapper</em> disponível neste <a href="https://nacmarino.github.io/codex/posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/">link</a>, ou você pode simplesmente usar a base de dados disponível junto a esse post. A informação que precisaremos está na coluna <code>id</code> na tabela abaixo.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'># carregando os pacotes</span>
@@ -1526,9 +1535,9 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
   </script>
 </div>
 </div>
-<p>A API do BGG funciona através de requisições do tipo <code>GET</code>, que retornam um arquivo <code>xml</code> (e<strong>X</strong>tensible <strong>M</strong>arkup <strong>L</strong>anguage) cujos parâmetros e valores seguem o padrão de <em>tags</em> e atributos comum à páginas <code>HTML</code>. Acredito que essa API não segue a arquitetura do tipo REST (<strong>RE</strong>presentational <strong>S</strong>tate <strong>T</strong>ransfer), uma vez que (1) as requisições para um determinado tipo de informação são todas feitas através de um único <em>endpoint</em> e (2) os nomes dos métodos utilizados devem ser passados diretamente para a <code>url</code> da requisição. De toda forma, essa API é bastante simples de usar - mas mais trabalhosa de <em>parsear</em>, como veremos mais adiante.</p>
-<p>Existem diversos tipos de informação disponíveis no site do BGG que podem ser obtidas através dessa API, tais como os dados dos jogos (<em>i.e.</em>, <code>thing</code>), das coleções (<em>i.e.</em>, <code>collection</code>) e dos próprios usuários (<em>i.e.</em>, <code>user</code>) e do fórum (<em>i.e.</em>, <code>forum</code>). Além disso, dentro de cada tipo de informação desta, podemos buscar detalhes específicos, tais como tudo o que há no <em>marketplace</em> para um jogo ou os resultados das partidas dos jogos registrados por cada usuário. Apesar desse existir esse monte de informação disponivel, neste post vamos focar apenas as informações dos jogos e, portanto, vamos usar o <em>endpoint</em> <code>https://www.boardgamegeek.com/xmlapi2/thing</code> - a documentação da API pode ser encontrada <a href="https://boardgamegeek.com/wiki/page/BGG_XML_API2">aqui</a>.</p>
-<p>Existem diversos métodos que podemos ser usados junto daquele <em>endpoint</em>. Os métodos que vamos usar aqui são o <code>id</code> do jogo (que vamos extrair da tabela que carregamos acima), as estatísticas relacionadas à cada jogo (setando <code>stats=1</code>) e uma amostra de, no máximo, 100 comentários associados à cada jogo (setando <code>ratingcomments=1</code> e <code>pagesize=100</code>). Existem outros métodos associados a esse <em>endpoint</em>, como os vídeos que falam sobre o jogo (<em>i.e.</em>, <code>videos=1</code>) e as informações dos anúncios do <em>marketplace</em> (<em>i.e.</em>, <code>marketplace=1</code>), mas não vamos trabalhar com eles aqui. De toda forma, precisamos juntar o endereço do <em>endpoint</em> e os método para compor a <code>url</code> para do <code>GET</code>: para isso, vamos separar o <em>endpoint</em> dos métodos utilizando o <code>?</code> e cada método do outro usando o <code>&amp;</code>. Com isso, a <code>url</code> ficará assim: <code>https://www.boardgamegeek.com/xmlapi2/thing?id=&lt;game_id&gt;&amp;stats=1&amp;ratingcomments=1&amp;pagesize=100</code> - onde o <code>game_id</code> vai ser um número correspondente ao identificador numérico do jogo.</p>
+<p>A API do BGG funciona através de requisições do tipo <code>GET</code>, que retornam um arquivo <code>xml</code> (e<strong>X</strong>tensible <strong>M</strong>arkup <strong>L</strong>anguage) cujos parâmetros e valores seguem o padrão de <em>tags</em> e atributos comum à páginas <code>HTML</code>. Não é necessário fazer qualquer tipo de autenticação para usar essa API, bastando fazer àquela requisição diretamente para o <em>endpoint</em> selecionado e empregando os métodos desejados. Falando nisso, acredito que essa API não segue a arquitetura do tipo REST (<strong>RE</strong>presentational <strong>S</strong>tate <strong>T</strong>ransfer), uma vez que (1) as requisições para um determinado tipo de informação são todas feitas através de um único <em>endpoint</em> e (2) os nomes dos métodos utilizados devem ser passados diretamente para a <code>url</code> da requisição. A documentação da API pode ser encontrada <a href="https://boardgamegeek.com/wiki/page/BGG_XML_API2">aqui</a>.</p>
+<p>Existem diversos tipos de informação disponíveis no site do BGG que podem ser obtidas através dessa API, tais como os dados dos jogos (<em>i.e.</em>, <code>thing</code>), das coleções (<em>i.e.</em>, <code>collection</code>) e dos próprios usuários (<em>i.e.</em>, <code>user</code>) e do fórum (<em>i.e.</em>, <code>forum</code>). Além disso, dentro de cada tipo de informação desta, podemos buscar detalhes específicos, tais como tudo o que há no <em>marketplace</em> para um jogo ou os resultados das partidas dos jogos registrados por cada usuário. Embora haja uma infinidade de informalões, neste post vamos focar apenas nas relativas às características dos jogos e, portanto, vamos usar o <em>endpoint</em> <code>https://www.boardgamegeek.com/xmlapi2/thing</code>.</p>
+<p>Existem diversos métodos que podemos ser usados junto daquele <em>endpoint</em>. Entretanto, vamos usar aqui o <code>id</code> do jogo (que vamos extrair da tabela que carregamos acima), as estatísticas relacionadas à cada jogo (setando <code>stats=1</code>) e uma amostra de, no máximo, 100 comentários associados à cada jogo (setando <code>ratingcomments=1</code> e <code>pagesize=100</code>). Existem outros métodos associados a esse <em>endpoint</em>, como os vídeos que falam sobre o jogo (<em>i.e.</em>, <code>videos=1</code>) e as informações dos anúncios do <em>marketplace</em> (<em>i.e.</em>, <code>marketplace=1</code>), mas não vamos trabalhar com eles aqui. De toda forma, precisamos juntar o endereço do <em>endpoint</em> e os métodos para compor a <code>url</code> para o <code>GET</code>: fazemos isso separando a <code>url</code> do <em>endpoint</em> das strings dos métodos utilizando o <code>?</code> e cada método do outro usando o <code>&amp;</code>. Com isso, a <code>url</code> ficará assim: <code>https://www.boardgamegeek.com/xmlapi2/thing?id=&lt;game_id&gt;&amp;stats=1&amp;ratingcomments=1&amp;pagesize=100</code> - onde o <code>game_id</code> vai ser um número correspondente ao identificador numérico do jogo.</p>
 <p>A função abaixo cuidará de fazer essa requisição, salvando uma cópia do HTML da resposta em disco caso o valor passado para o argumento <code>path_to_save</code> não seja <code>NULL</code>.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
@@ -1551,7 +1560,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </code></pre>
 </div>
 </div>
-<p>Vamos usar a função para fazer a requisição de um jogo, salvando o <code>xml</code> resultante em disco. Antes disso, vou criar um diretório temporário para armazenar o <code>xml</code> e, também, extrair o identificador numérico do jogo que utilizaremos nesse exemplo: o <strong>Ticket to Ride</strong>. Esse é um jogo de construir rotas com trenzinhos, e é muito legal e divertido.</p>
+<p>Vamos usar a função para fazer a requisição de um jogo, salvando o <code>xml</code> resultante em disco. Para isso, vou criar um diretório temporário para armazenar o <code>xml</code> e, também, extrair o identificador numérico do jogo que utilizaremos nesse exemplo: o <strong>Ticket to Ride</strong>. Esse é um jogo de construir rotas com trenzinhos, e é muito legal e divertido.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## setando o path onde vamos jogar os arquivos</span>
@@ -1577,7 +1586,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </code></pre>
 </div>
 </div>
-<p>Podemos pegar o <code>content</code> da resposta da requisição e usar a função <code>xml_structure</code> para entender a sua estrutura. Isso nos ajuda bastante a identificar as <em>tags</em> que precisamos buscar, bem como o tipo de resultado que deve estar associado à cada uma delas. Como o output dessa função é bastante longo, resolvi usar outra abordagem aqui no post só para dar uma ideia do que existe dentro da resposta: usei a função <code>as_list</code> do pacote <code>xml2</code> para parsear o código para uma lista do R e, então, usei a função <code>pluck</code> para catar os elementos que realmente importam para nós - eles são uma uma lista dentro da lista <code>item</code> que está dentro da lista <code>items</code>; depois disso, usei a função <code>names</code> para extrair os nomes de cada <em>tag</em> e, como o resultado também era longo, passei o vetor de <em>strings</em> para a função <code>table</code>. O resultado que obtemos com isso é apresentado abaixo, onde podemos ver quantas vezes cada <em>tag</em> aparece dentro do <code>xml</code>. Como podemos ver, existem <em>tags</em> que são ok de entender o que é e pegar, mas tem outras <em>tags</em> que possivelmente nos darão uma dose extra de trabalho (<em>i.e.</em>, <code>links</code>, <code>name</code> e <code>pool</code>).</p>
+<p>Podemos pegar o <code>content</code> da resposta da requisição e usar a função <code>xml_structure</code> para entender a sua estrutura. Isso nos ajuda bastante a identificar as <em>tags</em> que precisamos buscar, bem como o tipo de resultado que deve estar associado à cada uma delas. Como o output dessa função é bastante longo, resolvi usar outra abordagem aqui no post só para dar uma ideia do que existe dentro da resposta: usei a função <code>as_list</code> do pacote <code>xml2</code> para parsear o código para uma lista do R. O resultado disso, é uma lista aninhada, começando pelo elemento único <code>items</code> que, por sua vez, tem outro elemento único chamado <code>item</code> dentro dela e, finalmente, os elementos que estamos buscando. Para obter esses objetos e extrair o nome delas, usei a função <code>pluck</code>, seguida da função <code>names</code> para extrair o nome das <em>tags</em> e <code>table</code> para contar quantas vezes cada uma aparece. O resultado que obtemos com isso é apresentado abaixo, onde podemos ver quantas vezes cada <em>tag</em> aparece dentro do <code>xml</code>: algumas aparecem uma única vez, outras aparecem dezenas ou centenas de vezes (<em>i.e.</em>, <code>links</code>, <code>name</code> e <code>pool</code>).</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='va'>xml_do_jogo</span> <span class='op'>%&gt;%</span> 
@@ -1601,9 +1610,11 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
   playingtime          poll    statistics     thumbnail yearpublished 
             1             3             1             1             1 </code></pre>
 </div>
-<p>Vamos parsear cada um desses resultados a seguir.</p>
+<p>E com isso fechamos a parte da obtenção dos dados da API do BGG, que se mostrou bastante simples: sem autenticação, só usar o <em>enpoint</em> e os métodos que queremos. Por outro lado, veremos a seguir que fazer o <em>parser</em> dessas informações é bem mais trabalhoso.</p>
 <h1 id="parseando-o-response">Parseando o <code>response</code></h1>
-<p>A primeira informação que vamos parsear é àquela que está dentro da <em>tag</em> <code>name</code>. Para isso, precisaremos pegar tudo o que está associado à essa <em>tag</em> e extrair os atributos de cada elemento com <code>xml_attrs</code>. O resultado dessa operação é uma lista onde cada elemento dela é um <code>data.frame</code> com uma única linha, contendo um nome do jogo e um indicador se esse nome é o oficial (<em>i.e.</em>, <em>primary</em>) ou o não-oficial (<em>i.e.</em>, <em>alternate</em>). A partir daí juntaremos essas linhas usando um <code>bind_rows</code> seguido de um <code>select</code> para organizar o resultado. Aplicando essa função ao conteúdo do <code>xml</code>, obtemos uma tabelinha com todos os nomes do jogo, onde podemos ver que o os nomes não-oficiais são normalmente aqueles em outras línguas. Essa tabela é bastante útil pois, com base nela, podemos fazer um de-para das informações do BGG para àquelas da <a href="https://www.ludopedia.com.br/ranking">Ludopedia</a>, o que nos permite responder à algumas perguntas que havíamos aberto <a href="https://nacmarino.github.io/codex/posts/2021-12-11-quao-similares-sao-as-notas-dos-jogos-de-tabuleiro-entre-os-portais-especializados/">anteriormente</a>.</p>
+<p>O conteúdo da requisição é bastante heterogêneo, e fazer o <em>parser</em> dele fica mais fácil de ser entendido se pensarmos em quatro tipos de informação: (1) àquelas de cunho geral e que são representadas por uma única quantidade (<em>e.g.</em>, idade mínima, tempo de jogo,…) ou facilmente resumidas à uma única informação (<em>e.g.</em>, nome do jogo), (2) os comentários associados à cada jogo, (3) as que trazem uma opinião específica da comunidade em torno do jogo e que são representadas por tabelas consolidando o resultado de votações (<em>e.g.</em>, idade recomendada, dependência do idioma) e (4) os metadados que trazem detalhes específicos do jogo e que são apresentadas como tabelas contendo cada um destes metadados de forma discriminada (<em>e.g.</em>, mecânicas, autores,…). Veremos como fazer o <em>parser</em> de cada informação desta e o que obtemos como resultado em cada caso.</p>
+<h2 id="informações-genéricas">Informações genéricas</h2>
+<p>A primeira informação geral que vamos parsear é àquela que está dentro da <em>tag</em> <code>name</code>. Para isso, precisaremos pegar tudo o que está associado à essa <em>tag</em> usando um <code>xml_find_all</code> e extrair os atributos de cada elemento com <code>xml_attrs</code>. O resultado dessa operação é uma lista onde cada elemento é um <code>data.frame</code> com uma única linha, contendo um nome do jogo e um indicador se esse nome é o oficial (<em>i.e.</em>, <em>primary</em>) ou o não-oficial (<em>i.e.</em>, <em>alternate</em>). Juntaremos essas linhas usando um <code>bind_rows</code> seguido de um <code>select</code> para organizar o resultado. Aplicando essa função ao conteúdo do <code>xml</code>, obtemos uma tabelinha com todos os nomes do jogo, onde podemos ver que o os nomes não-oficiais são normalmente aqueles em outras línguas. Essa tabela é bastante útil pois, com base nela, podemos fazer um de-para das informações do BGG para àquelas da <a href="https://www.ludopedia.com.br/ranking">Ludopedia</a>, o que nos permite responder à algumas perguntas que havíamos aberto <a href="https://nacmarino.github.io/codex/posts/2021-12-11-quao-similares-sao-as-notas-dos-jogos-de-tabuleiro-entre-os-portais-especializados/">anteriormente</a>. De toda forma, se quiséssemos extrair apenas o nome oficial do jogo, bastava usar um <code>filter</code> pelo valor <code>primary</code>, seguido de um <code>pull</code> da coluna título.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## funcao para parsear a lista de nomes do jogo</span>
@@ -1644,7 +1655,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 15 铁路环游                         alternate
 16 티켓 투 라이드                   alternate</code></pre>
 </div>
-<p>A próxima informação que vamos parsear é a descrição do jogo. Como poderíamos esperar, essa informação é um texto disponível dentro da <em>tag</em> <code>description</code>. O resultado do <em>parser</em> é um string bastante longo, com toda a estorinha e contexto sobre o jogo.</p>
+<p>A próxima informação que vamos parsear é a descrição do jogo, que é um string contendo toda a estorinha e contexto sobre o jogo. Essa informação está dentro da <em>tag</em> <code>description</code>, e basta usarmos o <code>xml_text</code> para pegá-la.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## funcao para parsear a descricao do jogo</span>
@@ -1663,7 +1674,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </div>
 <pre><code>[1] &quot;With elegantly simple gameplay, Ticket to Ride can be learned in under 15 minutes. Players collect cards of various types of train cars they then use to claim railway routes in North America. The longer the routes, the more points they earn. Additional points come to those who fulfill Destination Tickets &amp;ndash; goal cards that connect distant cities; and to the player who builds the longest continuous route.&amp;#10;&amp;#10;&amp;quot;The rules are simple enough to write on a train ticket &amp;ndash; each turn you either draw more cards, claim a route, or get additional Destination Tickets,&amp;quot; says Ticket to Ride author, Alan R. Moon. &amp;quot;The tension comes from being forced to balance greed &amp;ndash; adding more cards to your hand, and fear &amp;ndash; losing a critical route to a competitor.&amp;quot;&amp;#10;&amp;#10;Ticket to Ride continues in the tradition of Days of Wonder&#39;s big format board games featuring high-quality illustrations and components including: an oversize board map of North America, 225 custom-molded train cars, 144 illustrated cards, and wooden scoring markers.&amp;#10;&amp;#10;Since its introduction and numerous subsequent awards, Ticket to Ride has become the BoardGameGeek epitome of a &amp;quot;gateway game&amp;quot; -- simple enough to be taught in a few minutes, and with enough action and tension to keep new players involved and in the game for the duration.&amp;#10;&amp;#10;Part of the Ticket to Ride series.&amp;#10;&amp;#10;&quot;</code></pre>
 </div>
-<p>A próxima função faz o <em>parser</em> de diversas informações relacionadas às especificações técnicas de cada jogo, e coloca tudo dentro de colunas distintas de um <code>tibble</code>. Essas informações falam do ano de publicação do jogo, quantidade de jogadores, tempo de jogo e idade mínima. Deu um trabalhinho fazer esse <em>parser</em> em uma função só, pois todas essas coisas estão em <em>tags</em> diferentes e, portanto, precisei user o <code>self</code> dentro do <em>xpath</em>.</p>
+<p>O próximo <em>parser</em> estrutura diversas informações relacionadas ao ano de publicação do jogo, quantidade de jogadores, tempo de jogo e idade mínima. Todas essas informações estão como <em>tags</em> soltas dentro do <code>xml</code>, portanto tive que usar o <code>self</code> dentro do <em>xpath</em> para pegar cada uma delas e colocar dentro do mesmo resultado. Entretanto, uma vez que conseguimos extrair essas informações, usamos um <code>map_dfr</code> para as colocarmos como um <code>tibble</code> e, depois, um <code>pivot_wider</code> para organizá-las entre colunas.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## funcao para parsear as informacoes do jogo</span>
@@ -1696,7 +1707,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 1          2004          2          5          60          30
 # … with 2 more variables: maxplaytime &lt;dbl&gt;, minage &lt;dbl&gt;</code></pre>
 </div>
-<p>Quando passamos o método <code>stats=1</code> para o <em>endpoint</em> também coletamos as informações sobre as estatísticas relacionadas ao <em>ranking</em> para o jogo que escolhemos. Com isso vamos ter acesso à dois principais aspectos: as informações relativas às notas e àquelas diretamente relacionadas aos <em>rankings</em> em que cada jogo aparece. A função abaixo dá conta de parsear o primeiro destes, nos dando acesso à quantidade de votos que cada jogo recebeu, a nota média (arimética e bayesiana), além da quantidade de usuários que têm o jogo, estão trocando, querem ou o desejam.</p>
+<p>Quando passamos o método <code>stats=1</code> para o <em>endpoint</em> também coletamos as informações sobre as estatísticas relacionadas ao <em>ranking</em> do jogo que escolhemos. Com isso vamos ter acesso: (a) às informações relativas às notas e (b) àquelas diretamente relacionadas aos <em>rankings</em> em que cada jogo aparece. A função abaixo dá conta de parsear o primeiro destes, nos dando acesso à quantidade de votos que cada jogo recebeu, a nota média (arimética e bayesiana) e outras informações relacionadas ao interesse dos usuários pelo jogo.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## funcao para parsear todas as informacoes relacionadas à avaliação de cada jogo</span>
@@ -1762,7 +1773,8 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 1 subtype 1     boardgame   Board Game Rank      193            7.30
 2 family  5499  familygames Family Game Rank      40            7.30</code></pre>
 </div>
-<p>Parseia os comentarios sobre o jogo.</p>
+<h2 id="comentários">Comentários</h2>
+<p>O método <code>ratingcomments=1</code> faz com que tenhamos acesso aos comentários e notas individuais associadas à cada jogo. Essas informações estão dentro da <em>tag</em> <code>comment</code>, aninhada em <code>comments</code>, e podemos usar a função abaixo para extrair os 100 comentários que virão junto do <code>xml</code>. O resultado dela é um <code>tibble</code> onde temos uma coluna com o identificador único, a nota dada ao jogo e o comentário feito por um dado usuário. Esse identificador do usuário pode até ser usado em outros <em>endpoints</em> disponíveis na API, como aquele que nos dá acesso às coleções.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## funcao para parsear os comentarios sobre o jogo</span>
@@ -1770,9 +1782,9 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
   <span class='co'># pega o arquivo HTML</span>
   <span class='va'>arquivo_xml</span> <span class='op'>%&gt;%</span> 
     <span class='co'># extrai todas as tags de comentario</span>
-    <span class='fu'><a href='http://xml2.r-lib.org/reference/xml_find_all.html'>xml_find_all</a></span><span class='op'>(</span>xpath <span class='op'>=</span> <span class='st'>'*/comments/comment'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+    <span class='fu'>xml_find_all</span><span class='op'>(</span>xpath <span class='op'>=</span> <span class='st'>'*/comments/comment'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
     <span class='co'># extrai todo os atributos dessas tags</span>
-    <span class='fu'><a href='http://xml2.r-lib.org/reference/xml_attr.html'>xml_attrs</a></span><span class='op'>(</span><span class='st'>'value'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+    <span class='fu'>xml_attrs</span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
     <span class='co'># junta todos os atributos em uma tibble</span>
     <span class='fu'>bind_rows</span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
     <span class='co'># renomeando as colunas</span>
@@ -1782,7 +1794,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <span class='op'>}</span>
 
 <span class='co'># parseando os comentarios</span>
-<span class='fu'>parser_comentarios</span><span class='op'>(</span>arquivo_xml <span class='op'>=</span> <span class='fu'><a href='https://httr.r-lib.org/reference/content.html'>content</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>xml_do_jogo</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'>parser_comentarios</span><span class='op'>(</span>arquivo_xml <span class='op'>=</span> <span class='fu'>content</span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>xml_do_jogo</span><span class='op'>)</span><span class='op'>)</span>
 </code></pre>
 </div>
 <pre><code># A tibble: 100 × 3
@@ -1800,7 +1812,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 10 Babluit            10 &quot;&quot;                                           
 # … with 90 more rows</code></pre>
 </div>
-<p>Parseia o total de comentários do jogo.</p>
+<p>Um ponto importante é que estamos limitados à obter um máximo de 100 comentários por requisição à API (usamos o método <code>pagesize=100</code> para garantir que isso vá acontecer). Desta forma, se quisermos pegar os comentários de 101 à 200 (e assim sucessivamente), devemos correr entre as ‘páginas’ dos comentários usando o método <code>page=numero</code> (onde <code>número</code> é o número da página). No entanto, se fossemos fazer isso precisávamos ter noção de quantos comentários existem para poder chegar ao número máximo de páginas que podermos passar para o método. É possível extrairmos estas informações olhando diretamente a <em>tag</em> <code>comments</code>, e extraindo o atributo <code>totalitems</code>. Assim, para obtermos todos os comentários para esse jogo, bastaria dividirmos essa quantidade por 100, e iterar da página 1 até este máximo usando o método <code>page</code> junto do <em>endpoint</em>.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## funcao para parsear a quantidade total de comentarios que um jogo tem</span>
@@ -1821,7 +1833,9 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </div>
 <pre><code>[1] 76846</code></pre>
 </div>
-<p>Parseia o resultado da votacao da melhor quantidade de jogadores do jogo.</p>
+<h2 id="resultados-das-votações">Resultados das votações</h2>
+<p>Existem três <em>tags</em> com o nome <code>pool</code> dentro do <code>xml</code>, e as funções a seguir tratam de fazer o <em>parser</em> deste conteúdo. Essas <em>tags</em> nada mais são do que os resultados de votações abertas sobre o número de jogadores, idade sugerida e dependência do idioma, nas quais os usuários do portal do BGG puderam opinar em torno desses três grupos de informação.</p>
+<p>O <em>parser</em> abaixo pega os resultados da votação relacionada ao número de jogadores, retornando as informações sobre a melhor e a pior quantidade de jogadores, além da quantidade recomendada per se. Se quiséssemos colocar essas informações em suas próprias colunas, faria bastante sentido agrupar a tabela abaixo pela coluna <code>voto</code> e pegar o <code>num_jogadores</code> que tivesse a maior quantidade de votos usando um <code>slice_max</code> com <code>n = 1</code>, passando o resultado disso para um <code>pivot_wider</code> depois. Não mostro como fazer isso aqui, mas seria uma opção viável para resumirmos essas informações em torno dessas três recomendações (<em>i.e.</em> a pior quantidade de jogadores, a melhor quantidade de jogadores, e a quantidade recomendada de jogadores).</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## funcao para parsear os resultados da votacao do melhor numero de jogadores para se jogar</span>
@@ -1869,7 +1883,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 17 5+            Recommended            20
 18 5+            Not Recommended       457</code></pre>
 </div>
-<p>Parseia o resultado da votacao da melhor idade para o jogo.</p>
+<p>O <em>parser</em> seguinte olha o resultado da votação sobre a idade mínima sugerida para o jogo. Novamente, se quiséssemos resumir as informações dessa tabela à uma única linha (<em>i.e.</em>, qual a idade recomendada pela comunidade para o jogo), bastaria que usássemos um <code>filter</code> para reter a linha que tivesse a maior quantidade de votos (<em>i.e.</em>, <code>num_votos == max(num_votos)</code>) e, então, usar um <code>pull</code> na coluna <code>idade_ideal</code>.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## funcao para parsear os resultados da votacao da idade recomendada para o jogo</span>
@@ -1909,7 +1923,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 11 18                  1
 12 21 and up           0</code></pre>
 </div>
-<p>Parseia o resultado da votacao da dependencia do idioma para o jogo.</p>
+<p>Finalmente, o último <em>parser</em> relacionado às votações fala da dependência do idioma para o jogo. Essa informação indica o quanto dependemos de entender o que está escrito no livro de regras, cartas e etc de forma a conseguir jogar. O resultado desse <em>parser</em> é mais uma vez uma tabelinha e, para extrair a recomendação da comunidade, bastaria que repetimos o processo descrito acima, mas usando um <code>pull</code> na coluna <code>voto</code>.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## funcao para parsear os resultados da votacao sobre a dependencia do idioma para jogar o jogo</span>
@@ -1942,7 +1956,9 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 4 Extensive use of text - massive conversion needed to be p…         0
 5 Unplayable in another language                                     1</code></pre>
 </div>
-<p>Parseia os metadados do jogo.</p>
+<p>Para fechar essa seção, acho importante ressaltar que o processo que sugeri fazer aqui resume as informações em cada uma dessas três tabelas em torno de uma única quantidade - <em>i.e.</em>, a informação com mais votos. No entanto, acredito ser possível criar algum tipo de <em>embedding</em> ou <em>feature</em> a partir das informações em cada uma dessas tabelas, que descreva de que forma a opinião dos usuários variou para aquele jogo. Isto talvez seja interessante para fazer uma caracterização mais refinada dos mesmos.</p>
+<h2 id="metadados">Metadados</h2>
+<p>O <em>parser</em> que deixei para o final é aquele relacionado aos metadados do jogo, que estavam dentro da <em>tag</em> <code>link</code>. Se você puder lembrar, essa é àquela <em>tag</em> que tinha umas 200 ocorrências no <code>xml</code> e, assim, já podemos imaginar a quantidade de informação que existe nela. De fato, quando parseamos essas informações através da função abaixo, vemos que existe uma diversidade de informações sobre cada jogo. Como o resultado dessa operação são várias <code>list-columns</code> dentro de um <code>tibble</code>, vamos precisar de mais um pouquinho de trabalho para deixar esse dado organizado.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## funcao para parsear os metadados do jogo</span>
@@ -1950,15 +1966,18 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
   <span class='co'># pega o arquivo HTML</span>
   <span class='va'>arquivo_xml</span> <span class='op'>%&gt;%</span> 
     <span class='co'># extrai todas as tags link</span>
-    <span class='fu'><a href='http://xml2.r-lib.org/reference/xml_find_all.html'>xml_find_all</a></span><span class='op'>(</span>xpath <span class='op'>=</span> <span class='st'>'*//link'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+    <span class='fu'>xml_find_all</span><span class='op'>(</span>xpath <span class='op'>=</span> <span class='st'>'*//link'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
     <span class='co'># extrai todo os atributos dessas tags</span>
-    <span class='fu'><a href='http://xml2.r-lib.org/reference/xml_attr.html'>xml_attrs</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+    <span class='fu'>xml_attrs</span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
     <span class='co'># junta todos os atributos em uma tibble</span>
     <span class='fu'>bind_rows</span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
     <span class='co'># organiza as colunas</span>
     <span class='fu'>select</span><span class='op'>(</span>id_metadado <span class='op'>=</span> <span class='va'>id</span>, metadado <span class='op'>=</span> <span class='va'>value</span>, tipo_metadado <span class='op'>=</span> <span class='va'>type</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
     <span class='co'># removendo o padrao boardgame do tipo de metadado</span>
-    <span class='fu'>mutate</span><span class='op'>(</span>tipo_metadado <span class='op'>=</span> <span class='fu'>str_replace</span><span class='op'>(</span>string <span class='op'>=</span> <span class='va'>tipo_metadado</span>, pattern <span class='op'>=</span> <span class='st'>'boardgame'</span>, replacement <span class='op'>=</span> <span class='st'>'tbl_'</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+    <span class='fu'>mutate</span><span class='op'>(</span>
+      tipo_metadado <span class='op'>=</span> <span class='fu'>str_replace</span><span class='op'>(</span>string <span class='op'>=</span> <span class='va'>tipo_metadado</span>, 
+                                  pattern <span class='op'>=</span> <span class='st'>'boardgame'</span>, replacement <span class='op'>=</span> <span class='st'>'tbl_'</span><span class='op'>)</span>
+      <span class='op'>)</span> <span class='op'>%&gt;%</span> 
     <span class='co'># aninhando informacoes pelo tipo de metadado</span>
     <span class='fu'>nest</span><span class='op'>(</span>data <span class='op'>=</span> <span class='op'>-</span><span class='va'>tipo_metadado</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
     <span class='co'># passando o dado para o formato largo</span>
@@ -1966,7 +1985,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <span class='op'>}</span>
 
 <span class='co'># parseando os metadados</span>
-<span class='fu'>parser_metadados</span><span class='op'>(</span>arquivo_xml <span class='op'>=</span> <span class='fu'><a href='https://httr.r-lib.org/reference/content.html'>content</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>xml_do_jogo</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'>parser_metadados</span><span class='op'>(</span>arquivo_xml <span class='op'>=</span> <span class='fu'>content</span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>xml_do_jogo</span><span class='op'>)</span><span class='op'>)</span>
 </code></pre>
 </div>
 <pre><code># A tibble: 1 × 9
@@ -1976,8 +1995,8 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 # … with 4 more variables: tbl_implementation &lt;list&gt;,
 #   tbl_designer &lt;list&gt;, tbl_artist &lt;list&gt;, tbl_publisher &lt;list&gt;</code></pre>
 </div>
-<h1 id="desempacotando-os-metadados">Desempacotando os metadados</h1>
-<p>Desempacota os metadados em uma lista de tibbles.</p>
+<h3 id="desempacotando-os-metadados">Desempacotando os metadados</h3>
+<p>O resultado que obtivemos no <em>parser</em> dos metadados não é muito útil pois ele não está em um formato <code>tidy</code>. Apesar de termos uma informação diferente por coluna, ela está totalmente colapsada dentro de <code>tibbles</code>, o que dificulta (mas não impede) realizarmos muitas operações que seriam úteis para entender melhor os dados. Como a informação dentro de cada uma das <code>list-columns</code> deve ter uma estrutura diferente das demais, vamos começar tratando esse dado passando a base do formato largo para o formato longo, usando a função <code>pivot_longer</code>. A partir daí, vamos utilizar a função <code>split</code> para quebrar o <code>tibble</code> resultante em uma lista de <code>tibbles</code> por tipo de informação, desaninhando eles na sequência usando um <code>unnest</code> - eu descrevo o que são cada uma dessas informações e todas as demais no final desse post.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## expandindo cada uma das tabelas que contem multiplas informacoes sobre cada jogo</span>
@@ -2096,7 +2115,12 @@ $tbl_publisher
 16 33998       Siam Board Games           
 17 9234        Swan Panasia Co., Ltd.     </code></pre>
 </div>
-<p>Passa os metadados para o formato tidy.</p>
+<p>Como podemos ver, todas essas informações já são <code>tidy</code> por si só, pois temos uma informação diferente por coluna e cada observação em uma linha distinta. Se o nosso objetivo for a manipulação e visualização de dados, então salvar cada uma dessas tabelas no formato em que estão já estaria ok. Por outro lado, se quisermos juntar essas informações para colocar todas as informações sobre um determinado jogo em uma única linha, usar elas para fazer um <code>join</code> acabaria replicando todas as informações em muitas linhas, o que não é desejável. Nesse contexto, teríamos duas opções para prevenir que isto ocorra, novamente dependendo do objetivo final que formos dar aos dados:</p>
+<ol type="a">
+<li>Se a ideia for criar uma base para a análise de dados, então poderíamos fazer um <em>one-hot-encoding</em> de todas as informações e juntar todas as colunas. Isto, no entanto, geraria uma infinidade de colunas novas e uma matriz super esparsa<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>;<br />
+</li>
+<li>Se quisermos apenas consolidar essas informações em uma única tabela, então basta que concatenemos cada uma delas em um único <em>string</em> por <code>tibble</code> e juntar tudo em uma tabela só. Para isso, podemos usar um <code>paste0</code> dentro de um <code>summarise</code> para colapsar as informações de cada linha em um string só, seguido de um <code>bind_rows</code> para juntar cada <code>tibble</code> resultante linha a linha e, finalmente, um <code>pivot_wider</code> para colocar cada informação em uma coluna diferente. Para fins ilustrativos, apresento este tratamento abaixo.</li>
+</ol>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## colocando as tabelas no formato tidy</span>
@@ -2118,15 +2142,16 @@ $tbl_publisher
 1 Cyril… Trains   Ticket to … Alan R.… Alaska (… Compo… Les Aventurie…
 # … with 2 more variables: mechanic &lt;chr&gt;, publisher &lt;chr&gt;</code></pre>
 </div>
+<p>Pronto! Já temos uma visão de como colocar as informações dos metadados em um único <code>tibble</code> no formato <code>tidy</code>, seja para consolidar tudo em uma tabela só ou para a análise de dados. Vamos fechar esse post criando uma função para consolidar todo o <em>parser</em>.</p>
 <h1 id="colocando-tudo-junto">Colocando tudo junto</h1>
-<p>Parseando tudo de uma vez.</p>
+<p>Todas as funções que criamos para parsear as informações recebem como <em>input</em> o <code>xml</code> do jogo e retornam um <code>tibble</code>, uma lista de <code>tibbles</code> ou um vetor com um único elemento. Portanto, vou criar uma única função para fazer o <em>parser</em> chamando todas essas outras funções que criamos, mas aproveitando para carregar o arquivo <code>xml</code> que queremos parsear dentro dela mesmo, facilitando a nossa vida. Com isso, essa função receberá como argumento apenas o <em>path</em> para o arquivo <code>xml</code> que foi salvo.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'># funcao para parsear o arquivo xml inteiro do jogo</span>
 <span class='va'>parser_do_jogo</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>path_arquivo_xml</span><span class='op'>)</span> <span class='op'>{</span>
   
   <span class='co'>## lendo o arquivo xml</span>
-  <span class='va'>xml_do_jogo</span> <span class='op'>&lt;-</span> <span class='fu'><a href='http://xml2.r-lib.org/reference/read_xml.html'>read_xml</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>path_arquivo_xml</span><span class='op'>)</span>
+  <span class='va'>xml_do_jogo</span> <span class='op'>&lt;-</span> <span class='fu'>read_xml</span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>path_arquivo_xml</span><span class='op'>)</span>
   
   <span class='co'>## parseando o arquivo xml</span>
   <span class='fu'>tibble</span><span class='op'>(</span>
@@ -2148,100 +2173,187 @@ $tbl_publisher
 <span class='op'>}</span>
 
 <span class='co'>## fazendo o parser do jogo</span>
-<span class='va'>jogos</span> <span class='op'>&lt;-</span> <span class='fu'>parser_do_jogo</span><span class='op'>(</span>path_arquivo_xml <span class='op'>=</span> <span class='st'>'temporario/00266192.html'</span><span class='op'>)</span>
-<span class='co'># jogos &lt;- parser_do_jogo(path_arquivo_xml = '_posts/2022-01-09-interagindo-com-a-api-do-boardgamegeek/temporario/00266192.html')</span>
+<span class='va'>jogos</span> <span class='op'>&lt;-</span> <span class='fu'>parser_do_jogo</span><span class='op'>(</span>path_arquivo_xml <span class='op'>=</span> <span class='st'>'temporario/00009209.html'</span><span class='op'>)</span>
+<span class='co'># jogos &lt;- parser_do_jogo(path_arquivo_xml = '_posts/2022-01-09-interagindo-com-a-api-do-boardgamegeek/temporario/00009209.html')</span>
 
 <span class='co'>## olhando a tabela</span>
 <span class='va'>jogos</span>
 </code></pre>
 </div>
-<pre><code># A tibble: 1 × 34
+<pre><code># A tibble: 1 × 36
   tbl_nomes         tbl_comentarios    tbl_rankings     tbl_votacao_ida…
   &lt;list&gt;            &lt;list&gt;             &lt;list&gt;           &lt;list&gt;          
-1 &lt;tibble [17 × 2]&gt; &lt;tibble [100 × 3]&gt; &lt;tibble [3 × 6]&gt; &lt;tibble [12 × 2…
-# … with 30 more variables: tbl_votacao_idioma &lt;list&gt;,
+1 &lt;tibble [16 × 2]&gt; &lt;tibble [100 × 3]&gt; &lt;tibble [2 × 6]&gt; &lt;tibble [12 × 2…
+# … with 32 more variables: tbl_votacao_idioma &lt;list&gt;,
 #   tbl_votacao_jogadores &lt;list&gt;, tbl_category &lt;list&gt;,
 #   tbl_mechanic &lt;list&gt;, tbl_family &lt;list&gt;, tbl_expansion &lt;list&gt;,
+#   tbl_compilation &lt;list&gt;, tbl_implementation &lt;list&gt;,
 #   tbl_designer &lt;list&gt;, tbl_artist &lt;list&gt;, tbl_publisher &lt;list&gt;,
 #   descricao &lt;chr&gt;, total_comentarios &lt;dbl&gt;, usersrated &lt;dbl&gt;,
-#   average &lt;dbl&gt;, bayesaverage &lt;dbl&gt;, stddev &lt;dbl&gt;, median &lt;dbl&gt;,
-#   owned &lt;dbl&gt;, trading &lt;dbl&gt;, wanting &lt;dbl&gt;, wishing &lt;dbl&gt;, …</code></pre>
+#   average &lt;dbl&gt;, bayesaverage &lt;dbl&gt;, stddev &lt;dbl&gt;, median &lt;dbl&gt;, …</code></pre>
 </div>
-<p>Criando a tabela final do jogo.</p>
-<div class="layout-chunk" data-layout="l-body">
-<div class="sourceCode">
-<pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## colocando a tabela com os jogos em um formato tidy</span>
-<span class='va'>jogos_tidy</span> <span class='op'>&lt;-</span> <span class='va'>jogos</span> <span class='op'>%&gt;%</span> 
-  <span class='fu'>mutate</span><span class='op'>(</span>
-    <span class='co'># extraindo nome oficial do jogo</span>
-    titulo  <span class='op'>=</span> <span class='fu'>map_chr</span><span class='op'>(</span>.x <span class='op'>=</span> <span class='va'>tbl_nomes</span>, 
-                      .f <span class='op'>=</span> <span class='op'>~</span> <span class='fu'><a href='https://rdrr.io/r/stats/filter.html'>filter</a></span><span class='op'>(</span><span class='va'>.x</span>, <span class='va'>metadado</span> <span class='op'>==</span> <span class='st'>'primary'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> <span class='fu'>pull</span><span class='op'>(</span><span class='va'>titulo</span><span class='op'>)</span>
-    <span class='op'>)</span>,
-    <span class='co'># codificando se o titulo é uma expansao ou nao</span>
-    eh_expansao <span class='op'>=</span> <span class='fu'>map2_int</span><span class='op'>(</span>.x <span class='op'>=</span> <span class='va'>tbl_expansion</span>, .y <span class='op'>=</span> <span class='va'>titulo</span>, .f <span class='op'>=</span> <span class='op'>~</span> <span class='fu'><a href='https://rdrr.io/r/base/any.html'>any</a></span><span class='op'>(</span><span class='va'>.y</span> <span class='op'>%in%</span> <span class='va'>.x</span><span class='op'>$</span><span class='va'>metadado</span><span class='op'>)</span><span class='op'>)</span>,
-    <span class='co'># pegando melhor idade</span>
-    idade_ideal <span class='op'>=</span> <span class='fu'>map_chr</span><span class='op'>(</span>.x <span class='op'>=</span> <span class='va'>tbl_votacao_idade</span>, 
-                          .f <span class='op'>=</span> <span class='op'>~</span> <span class='fu'><a href='https://rdrr.io/r/stats/filter.html'>filter</a></span><span class='op'>(</span><span class='va'>.x</span>, <span class='va'>num_votos</span> <span class='op'>==</span> <span class='fu'><a href='https://rdrr.io/r/base/Extremes.html'>max</a></span><span class='op'>(</span><span class='va'>num_votos</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
-                            <span class='fu'>pull</span><span class='op'>(</span><span class='va'>idade_ideal</span><span class='op'>)</span>
-    <span class='op'>)</span>,
-    <span class='co'># pegando melhor numero de jogadores</span>
-    melhor_n_jogadores <span class='op'>=</span> <span class='fu'>map_chr</span><span class='op'>(</span>.x <span class='op'>=</span> <span class='va'>tbl_votacao_jogadores</span>,
-                                 .f <span class='op'>=</span> <span class='op'>~</span> <span class='fu'><a href='https://rdrr.io/r/stats/filter.html'>filter</a></span><span class='op'>(</span><span class='va'>.x</span>, <span class='va'>voto</span> <span class='op'>==</span> <span class='st'>'Best'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
-                                   <span class='fu'><a href='https://rdrr.io/r/stats/filter.html'>filter</a></span><span class='op'>(</span><span class='va'>num_votos</span> <span class='op'>==</span> <span class='fu'><a href='https://rdrr.io/r/base/Extremes.html'>max</a></span><span class='op'>(</span><span class='va'>num_votos</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
-                                   <span class='fu'>pull</span><span class='op'>(</span><span class='va'>num_jogadores</span><span class='op'>)</span>
-    <span class='op'>)</span>,
-    <span class='co'># pegando pior numero de jogadores</span>
-    pior_n_jogadores <span class='op'>=</span> <span class='fu'>map_chr</span><span class='op'>(</span>.x <span class='op'>=</span> <span class='va'>tbl_votacao_jogadores</span>,
-                               .f <span class='op'>=</span> <span class='op'>~</span> <span class='fu'><a href='https://rdrr.io/r/stats/filter.html'>filter</a></span><span class='op'>(</span><span class='va'>.x</span>, <span class='va'>voto</span> <span class='op'>==</span> <span class='st'>'Not Recommended'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
-                                 <span class='fu'><a href='https://rdrr.io/r/stats/filter.html'>filter</a></span><span class='op'>(</span><span class='va'>num_votos</span> <span class='op'>==</span> <span class='fu'><a href='https://rdrr.io/r/base/Extremes.html'>max</a></span><span class='op'>(</span><span class='va'>num_votos</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
-                                 <span class='fu'>pull</span><span class='op'>(</span><span class='va'>num_jogadores</span><span class='op'>)</span>
-    <span class='op'>)</span>,
-    <span class='co'># pegando numero de jogadores recomendado</span>
-    recomendado_n_jogadores <span class='op'>=</span> <span class='fu'>map_chr</span><span class='op'>(</span>.x <span class='op'>=</span> <span class='va'>tbl_votacao_jogadores</span>,
-                                      .f <span class='op'>=</span> <span class='op'>~</span> <span class='fu'><a href='https://rdrr.io/r/stats/filter.html'>filter</a></span><span class='op'>(</span><span class='va'>.x</span>, <span class='va'>voto</span> <span class='op'>==</span> <span class='st'>'Recommended'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
-                                        <span class='fu'><a href='https://rdrr.io/r/stats/filter.html'>filter</a></span><span class='op'>(</span><span class='va'>num_votos</span> <span class='op'>==</span> <span class='fu'><a href='https://rdrr.io/r/base/Extremes.html'>max</a></span><span class='op'>(</span><span class='va'>num_votos</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
-                                        <span class='fu'>pull</span><span class='op'>(</span><span class='va'>num_jogadores</span><span class='op'>)</span>
-    <span class='op'>)</span>,
-    <span class='co'># pegando dependencia do idioma</span>
-    dependencia_do_idioma <span class='op'>=</span> <span class='fu'>map_chr</span><span class='op'>(</span>.x <span class='op'>=</span> <span class='va'>tbl_votacao_idioma</span>,
-                                    .f <span class='op'>=</span> <span class='op'>~</span> <span class='fu'><a href='https://rdrr.io/r/stats/filter.html'>filter</a></span><span class='op'>(</span><span class='va'>.x</span>, <span class='va'>num_votos</span> <span class='op'>==</span> <span class='fu'><a href='https://rdrr.io/r/base/Extremes.html'>max</a></span><span class='op'>(</span><span class='va'>num_votos</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
-                                      <span class='fu'>pull</span><span class='op'>(</span><span class='va'>voto</span><span class='op'>)</span>
-    <span class='op'>)</span>
-  <span class='op'>)</span> <span class='op'>%&gt;%</span> 
-  <span class='co'># removendo todas as colunas que tenham como prefixo tbl</span>
-  <span class='fu'>select</span><span class='op'>(</span><span class='op'>-</span><span class='fu'>starts_with</span><span class='op'>(</span><span class='st'>'tbl_'</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
-  <span class='co'># adicionando a base das tabelas no formato tidy</span>
-  <span class='fu'>bind_cols</span><span class='op'>(</span><span class='va'>tabelas_tidy</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
-  <span class='co'># colocando o titulo do jogo depois do id</span>
-  <span class='fu'>relocate</span><span class='op'>(</span><span class='va'>titulo</span>, .before <span class='op'>=</span> <span class='va'>descricao</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
-  <span class='co'># colocando as informacoes do numeroc de jogadores juntos</span>
-  <span class='fu'>relocate</span><span class='op'>(</span><span class='va'>melhor_n_jogadores</span>, <span class='va'>pior_n_jogadores</span>, <span class='va'>recomendado_n_jogadores</span>, .after <span class='op'>=</span> <span class='va'>maxplayers</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
-  <span class='co'># colocando informacoes da idade juntos</span>
-  <span class='fu'>relocate</span><span class='op'>(</span><span class='va'>idade_ideal</span>, .after <span class='op'>=</span> <span class='va'>minage</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
-  <span class='co'># renomeando as colunas</span>
-  <span class='fu'>rename</span><span class='op'>(</span>notas <span class='op'>=</span> <span class='va'>usersrated</span>, nota_usuarios <span class='op'>=</span> <span class='va'>average</span>, nota_bgg <span class='op'>=</span> <span class='va'>bayesaverage</span>,
-         possuem <span class='op'>=</span> <span class='va'>owned</span>, trocam <span class='op'>=</span> <span class='va'>trading</span>, querem <span class='op'>=</span> <span class='va'>wanting</span>, desejam <span class='op'>=</span> <span class='va'>wishing</span>,
-         ano_publicacao <span class='op'>=</span> <span class='va'>yearpublished</span>, artista <span class='op'>=</span> <span class='va'>artist</span>, categoria <span class='op'>=</span> <span class='va'>category</span>,
-         edicoes_especiais <span class='op'>=</span> <span class='va'>compilation</span>, expansoes <span class='op'>=</span> <span class='va'>expansion</span>, familia <span class='op'>=</span> <span class='va'>family</span>,
-         jogos_base <span class='op'>=</span> <span class='va'>implementation</span>, mecanica <span class='op'>=</span> <span class='va'>mechanic</span>, editora <span class='op'>=</span> <span class='va'>publisher</span><span class='op'>)</span>
-<span class='va'>jogos_tidy</span>
-</code></pre>
-</div>
-<pre><code># A tibble: 1 × 37
-  titulo   descricao     total_comentari… notas nota_usuarios nota_bgg
-  &lt;chr&gt;    &lt;chr&gt;                    &lt;dbl&gt; &lt;dbl&gt;         &lt;dbl&gt;    &lt;dbl&gt;
-1 Wingspan Wingspan is&amp;…            57599 56835          8.10     7.94
-# … with 31 more variables: stddev &lt;dbl&gt;, median &lt;dbl&gt;,
-#   possuem &lt;dbl&gt;, trocam &lt;dbl&gt;, querem &lt;dbl&gt;, desejam &lt;dbl&gt;,
-#   numcomments &lt;dbl&gt;, numweights &lt;dbl&gt;, averageweight &lt;dbl&gt;,
-#   ano_publicacao &lt;dbl&gt;, minplayers &lt;dbl&gt;, maxplayers &lt;dbl&gt;,
-#   melhor_n_jogadores &lt;chr&gt;, pior_n_jogadores &lt;chr&gt;,
-#   recomendado_n_jogadores &lt;chr&gt;, playingtime &lt;dbl&gt;,
-#   minplaytime &lt;dbl&gt;, maxplaytime &lt;dbl&gt;, minage &lt;dbl&gt;, …</code></pre>
-</div>
+<p>Como podemos ver, temos todas as informações que já cobrimos até aqui nessa tabela, inclusive àquelas <code>list-columns</code>. Poderíamos salvar essa tabela como está, ou descartar àquelas <code>list-columns</code> e usar àquelas que preparamos acima, criar novas colunas ou fazer qualquer coisa que nos ocorrer - mas acredito que qualquer decisão daqui para a frente depende muito de como esses dados seriam usados. Deixo todas essas opções em aberto por aqui, mas mostrarei como fazer algumas delas em posts futuros, quando pretendo usar esses dados para gerar algumas visualizações, <em>dashboards</em> e análises. Um ponto importante a se notar é que temos apenas um jogo neste exemplo e, portanto, essa tabela acima tem uma só linha. Todavia, caso tivéssemos mais de um, jogo teríamos tantas linhas quanto fossem os jogos, e ainda poderíamos colocar uma coluna com o identificador numérico do jogo para referência.</p>
+<p>Eu mostro como generalizar essa função para vários jogos através do o código que acompanha este post, acessível por esse link.</p>
+<h1 id="dicionário-de-dados">Dicionário de Dados</h1>
+<p>Como pretendo usar esses dados em mais de um post, vou deixar aqui um pequeno dicionário para explicar as tabelas e o que temos de informação em cada uma delas. Vou usar como referência as informações que estão dentro do objeto <code>jogos</code>, uma vez que o que vier dele vai ser o <em>output</em> padrão do <em>parser</em> que criamos.</p>
+<ul>
+<li><strong>tbl_nomes:</strong> tabela que contém o nome original e os nomes alternativos do jogo, podendo servir como uma base de-para para ligar os jogos de seu nome em inglês para <em>e.g.</em> o português.
+<ul>
+<li><code>titulo</code>: nomes que o jogo pode assumir, dependendo da língua;<br />
+</li>
+<li><code>metadado</code>: indicam se o nome correspondente é aquele oficial (<code>primary</code>) ou se é uma variação dada em outra língua (<code>alternate</code>).<br />
+</li>
+</ul></li>
+<li><strong>tbl_comentarios</strong>: tabela que contém os comentários e notas dadas ao jogo por cada usuários.
+<ul>
+<li><code>usuario</code>: nome do usuário que fez o comentário;<br />
+</li>
+<li><code>nota</code>: nota dada pelo usuário ao jogo;<br />
+</li>
+<li><code>comentario</code>: comentário feito pelo usuário sobre o jogo.<br />
+</li>
+</ul></li>
+<li><strong>tbl_rankings:</strong> tabela que contém os rankings nos quais o jogo aparece, sua nota e posição.
+<ul>
+<li><code>nivel</code>: nível geral do ranking avaliado;<br />
+</li>
+<li><code>id</code>: identificador numérico único do tipo de ranking;<br />
+</li>
+<li><code>tipo</code>: tipo de ranking analisado;<br />
+</li>
+<li><code>nome</code>: nome do ranking;<br />
+</li>
+<li><code>posicao</code>: posição no ranking em questão;<br />
+</li>
+<li><code>media_bayesiana</code>: média bayesiana da nota do jogo.<br />
+</li>
+</ul></li>
+<li><strong>tbl_votacao_idade:</strong> tabela que contém os resultados da votação feita para definir a idade ideal para o jogo.
+<ul>
+<li><code>idade_ideal</code>: categoria de idade votada pelos usuários;<br />
+</li>
+<li><code>num_votos</code>: quantidade de votos.<br />
+</li>
+</ul></li>
+<li><strong>tbl_votacao_idioma:</strong> tabela que contém os resultados da votação feita para definir o grau de dependência do idiomata para se jogar o jogo.
+<ul>
+<li><code>voto</code>: categoria do grau de dependência do idioma votada pelos usuários;<br />
+</li>
+<li><code>num_votos</code>: quantidade de votos.<br />
+</li>
+</ul></li>
+<li><strong>tbl_votacao_jogadores:</strong> tabela que contém os resultados da votação feita para definir a pior, a melhor e a quantidade recomendada de jogadores para o jogo.
+<ul>
+<li><code>num_jogadores</code>: categoria da quantidade de jogadores votada pelos usuários;<br />
+</li>
+<li><code>voto</code>: categorias existentes associadas à pior, à melhor e à quantidade recomendada de jogadores;<br />
+</li>
+<li><code>num_votos</code>: quantidade de votos.<br />
+</li>
+</ul></li>
+<li><strong>tbl_category:</strong> tabela que contém cada uma das categorias associadas ao jogo, que normalmente falam dos temas e/ou elementos principais que o compõem.
+<ul>
+<li><code>id_metadado</code>: identificador numérico único da categoria;</li>
+<li><code>metadado</code>: nome da categoria associada ao jogo.<br />
+</li>
+</ul></li>
+<li><strong>tbl_mechanic:</strong> tabela que contém cada uma das mecânicas que definem a dinâmica do jogo em questão.
+<ul>
+<li><code>id_metadado</code>: identificador numérico único da mecânica;</li>
+<li><code>metadado</code>: nome da mecânica de jogo.<br />
+</li>
+</ul></li>
+<li><strong>tbl_family:</strong> tabela que contém os nomes de todas as famílias de elementos associadas ao jogo.
+<ul>
+<li><code>id_metadado</code>: identificador numérico único da família;</li>
+<li><code>metadado</code>: nome da família associada ao jogo.<br />
+</li>
+</ul></li>
+<li><strong>tbl_expansion:</strong> tabela que contém todas as expansões disponíveis para o jogo em questão.
+<ul>
+<li><code>id_metadado</code>: identificador numérico único da expansão do jogo;</li>
+<li><code>metadado</code>: nome da expansão do jogo.<br />
+</li>
+</ul></li>
+<li><strong>tbl_compilation:</strong> tabela que contém o nome de todas as edições especiais do jogo em questão.
+<ul>
+<li><code>id_metadado</code>: identificador numérico único da edição especial do jogo;</li>
+<li><code>metadado</code>: nome da edição especial do jogo.<br />
+</li>
+</ul></li>
+<li><strong>tbl_implementation:</strong> tabela que contém todos os jogos que implementam uma versão do jogo em questão e que podem ser utilizados sem a dependência do jogo original.
+<ul>
+<li><code>id_metadado</code>: identificador numérico único da implementação do jogo;</li>
+<li><code>metadado</code>: nome da variante que faz a implementação do jogo base.<br />
+</li>
+</ul></li>
+<li><strong>tbl_designer:</strong> tabela que contém os nomes de cada uma das pessoas autoras do jogo.
+<ul>
+<li><code>id_metadado</code>: identificador numérico único da pessoa autora do jogo;</li>
+<li><code>metadado</code>: nome da pessoa do autora do jogo.<br />
+</li>
+</ul></li>
+<li><strong>tbl_artist:</strong> tabela que contém os nomes de cada uma das pessoas responsáveis pela arte do jogo.
+<ul>
+<li><code>id_metadado</code>: identificador numérico único da pessoa artista responsável pela arte jogo;</li>
+<li><code>metadado</code>: nome da pessoa artista responsável pela arte jogo.<br />
+</li>
+</ul></li>
+<li><strong>tbl_publisher:</strong> tabela que contém os nomes das editoras responsáveis por publicar o jogo ao redor do mundo.
+<ul>
+<li><code>id_metadado</code>: identificador numérico único da editora responsável por publicar o jogo;<br />
+</li>
+<li><code>metadado</code>: nome da editora responsável por publicar o jogo.<br />
+</li>
+</ul></li>
+<li><strong>descricao:</strong> texto com a descrição e contexto do jogo;<br />
+</li>
+<li><strong>total_comentarios:</strong> quantidade total de comentários existentes sobre o jogo, relativo aos comentários que acompanhados das notas;<br />
+</li>
+<li><strong>usersrated:</strong> quantidade de usuários que avaliaram o jogo;</li>
+<li><strong>average:</strong> média aritmética das notas do jogo;</li>
+<li><strong>bayesaverage:</strong> média bayesiana das notas do jogo;</li>
+<li><strong>stddev:</strong> desvio padrão das notas do jogo;<br />
+</li>
+<li><strong>median:</strong> mediana das notas do jogo;<br />
+</li>
+<li><strong>owned:</strong> quantidade de usuários que têm o jogo;<br />
+</li>
+<li><strong>trading:</strong> quantidade de usuários que querem trocar este jogo por outro;<br />
+</li>
+<li><strong>wanting:</strong> quantidade de usuários que estão em busca do jogo;<br />
+</li>
+<li><strong>wishing:</strong> quantidade de usuários que desejam o jogo;<br />
+</li>
+<li><strong>numcomments:</strong> quantidade de comentários sobre o jogo;<br />
+</li>
+<li><strong>numweights:</strong> quantidade de votos sobre a complexidade do jogo;<br />
+</li>
+<li><strong>averageweight:</strong> grau de complexidade do jogo, medido em uma escala de 0 (nenhuma) à 5 (muito pesado);<br />
+</li>
+<li><strong>yearpublished:</strong> ano de publicação do jogo;<br />
+</li>
+<li><strong>minplayers:</strong> quantidade mínima de jogadores necessária para o jogo;<br />
+</li>
+<li><strong>maxplayers:</strong> quantidade máxima de jogadores sustentada pelo jogo;<br />
+</li>
+<li><strong>playingtime:</strong> duração média de uma partida do jogo;<br />
+</li>
+<li><strong>minplaytime:</strong> duração mínima de uma partida do jogo;<br />
+</li>
+<li><strong>maxplaytime:</strong> duração máxima de uma partida do jogo;<br />
+</li>
+<li><strong>minage:</strong> idade mínima sugerida para o jogo.</li>
+</ul>
 <h1 id="conclusões">Conclusões</h1>
 <h1 id="possíveis-extensões">Possíveis Extensões</h1>
-<div class="sourceCode" id="cb17"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
+<section class="footnotes" role="doc-endnotes">
+<hr />
+<ol>
+<li id="fn1" role="doc-endnote"><p>A solução aqui seria basicamente um <code>pivot_wider</code> em cada <code>tibble</code>, seguida de um <code>bind_cols</code> entre elas e delas com todas as demais informações.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
 <!--radix_placeholder_article_footer-->
 <!--/radix_placeholder_article_footer-->
 </div>
