@@ -13,12 +13,12 @@ library(fs)
 # carregando dados ------------------------------------------------------------------
 
 ## lendo os dados do ranking da BGG para pegar o identificador unico de cada jogo
-ranking <- read_rds(file = '_posts/2022-01-09-interagindo-com-a-api-do-boardgamegeek/data/ranking_bgg.rds')
+ranking <- read_rds(file = '_posts/2022-01-23-interagindo-com-a-api-do-boardgamegeek/data/ranking_bgg.rds')
 
 # criando e setando paths -----------------------------------------------------------
 
 ## setando o path onde vamos jogar os arquivos
-path_scrapped_data <- '_posts/2022-01-09-interagindo-com-a-api-do-boardgamegeek/temporario'
+path_scrapped_data <- '_posts/2022-01-23-interagindo-com-a-api-do-boardgamegeek/temporario'
 
 ## criando pasta se ela nao existir
 if(!dir_exists(path_scrapped_data)){
@@ -284,8 +284,9 @@ jogos <- map_dfr(.x = arquivos_raspados,
     # tirando os zeros do inicio para deixar o game_id dessa tabela igual ao da tabela de ranking
     game_id = str_replace(string = game_id, pattern = '^0+' , replacement = '')
   )
+jogos
 
-# tratando os dados -----------------------------------------------------------------
+# exemplo de tratamento dos dados ---------------------------------------------------
 
 ## expandindo cada uma das tabelas que contem multiplas informacoes sobre cada jogo
 tabelas <- jogos %>% 
@@ -373,3 +374,10 @@ jogos_tidy <- jogos %>%
          edicoes_especiais = compilation, expansoes = expansion, familia = family,
          jogos_base = implementation, mecanica = mechanic, editora = publisher)
 jogos_tidy
+
+# salvando as tabelas ---------------------------------------------------------------
+
+## base com os dados brutos apos o parser
+write_rds(x = jogos, file = '_posts/2022-01-23-interagindo-com-a-api-do-boardgamegeek/data/jogos_brutos.rds')
+## base com um exemplo dos dados no formato tidy
+write_rds(x = jogos_tidy, file = '_posts/2022-01-23-interagindo-com-a-api-do-boardgamegeek/data/jogos_tidy.rds')

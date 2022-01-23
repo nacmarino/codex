@@ -1,7 +1,7 @@
 ---
-title: "Interagindo com a API do BoardGameGeek"
+title: "Interagindo com a API XML do BoardGameGeek"
 description: |
-  A short description of the post.
+  Neste post eu mostro como obter e fazer os parser dos dados dos jogos de tabuleiro do BoardGameGeek, obtidos através de sua API XML. O processo apresentado aqui faz uso e complementa o que já foi apresentado no scrapper do ranking do BGG, e servirá de base para alguns posts que penso em escrever no futuro.
 author:
   - first_name: Nicholas 
     last_name: Marino
@@ -10,18 +10,19 @@ date: 01-23-2022
 categories:
   - web scraping
   - boardgames
+preview: images/logo.png
 output:
   distill::distill_article:
     self_contained: false
     toc: true
     code_folding: true
     highlight: rstudio
-draft: true
+draft: false
 ---
 
 ```{r setup, include=FALSE}
 # setando as opções gerais dos code chunks
-knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, cache = TRUE, dpi = 200, fig.align = 'center')
+knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, cache = FALSE, dpi = 200, fig.align = 'center')
 ```
 
 # Motivação
@@ -479,7 +480,7 @@ jogos
 
 Como podemos ver, temos todas as informações que já cobrimos até aqui nessa tabela, inclusive àquelas `list-columns`. Poderíamos salvar essa tabela como está, ou descartar àquelas `list-columns` e usar àquelas que preparamos acima, criar novas colunas ou fazer qualquer coisa que nos ocorrer - mas acredito que qualquer decisão daqui para a frente depende muito de como esses dados seriam usados. Deixo todas essas opções em aberto por aqui, mas mostrarei como fazer algumas delas em posts futuros, quando pretendo usar esses dados para gerar algumas visualizações, _dashboards_ e análises. Um ponto importante a se notar é que temos apenas um jogo neste exemplo e, portanto, essa tabela acima tem uma só linha. Todavia, caso tivéssemos mais de um, jogo teríamos tantas linhas quanto fossem os jogos, e ainda poderíamos colocar uma coluna com o identificador numérico do jogo para referência. 
 
-Eu mostro como generalizar essa função para vários jogos através do o código que acompanha este post, acessível por esse link.
+Eu mostro como generalizar essa função para vários jogos através do o código que acompanha este post, acessível por esse [link](https://github.com/nacmarino/codex/blob/8985e78a51b49379c7fa9aef5e1eb610ef883aea/_posts/2022-01-23-interagindo-com-a-api-do-boardgamegeek/scripts/01_scrapper.R).
 
 # Dicionário de Dados
 
