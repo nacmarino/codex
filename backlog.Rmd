@@ -6,38 +6,25 @@ theme: theme.css
 ---
 
 # Web Scraping
-- Como raspar os anúncios do ZapImóveis;
-- Interagindo com a API REST da Ludopedia;
-- Interagindo com a API XML da BoardGameGeek;
+- Como raspar os anúncios do ZapImóveis;  
+- Interagindo com a API REST da Ludopedia;  
 - Como raspar as opiniões dos funcionários do portal Glassdoor;  
 - Como raspar as opiniões dos funcionários do portal Indeed.  
 
-# TidyTuesday
-### Y2021W36 - BirdBaths 
-O dataset da semana contém uma lista de espécies de pássaros que foram avistados em _bird baths_ na Austrália por cidadões-cientistas entre os anos 2014 e 2015, em áreas urbanas e rurais e algumas bioregiões da Austrália. Gostaria de:  
-  
-- De que forma variam os padrões de biodiversidade da assembléia de pássaros entre áreas urbanas e rurais dentro e entre bioregiões?   
-- Podemos prever em que bioregião estamos a partir da lista de espécies de pássaros?  
-
-# Análises
-
-- A descrição do apartamento está associada ao seu preço?  
-- Quantos tipos diferentes de jogos de tabuleiro existem?  
-- Que fatores estão associados ao sucesso de um jogo de tabuleiro?  
-- Podemos prever se um jogo de tabuleiro lançado no Brasil será um big hit?  
-- Como gerar recomendações de um jogo a partir de suas características?  
-- Qual o deck de Gwent mais fácil de montar a partir do baralho que eu tenho?  
-- Cartas de facções diferentes formam grupos distintos com base nas informações de texto do `tooltip`?  
-- Como visualizar a relação entre as cartas de Gwent?  
-- Que carta devo adicionar ao meu deck de Gwent para complementar o que tenho com estas outras _n_ cartas?  
-- A que facção pertence uma carta de acordo com a sua ilustração?
-- Como gerar nos cartas de Gwent a partir das já existentes?
-
 # Testando Pacotes
-
 - Testando o pacote `modeltime` para modelar séries temporais;  
-- Testando o ecossistema do pacote `fpp3` para modelar séries temporais;  
+- Testando o ecossistema do pacote `fpp3` para modelar séries temporais.    
 
 # ShinyApps
+- Aplicação para análise exploratória dos decks de Gwent, regras de associação e recomendação de cartas;  
+- Aplicação para análise exploratória dos dados dos jogos de tabuleiros vindos da API do BGG;  
+- Aplicação para a recomendação de jogos de tabuleiro a partir de um exemplo de _input_.  
 
-- Aplicação para análise exploratória dos decks de Gwent, regras de associação e recomendação de cartas.  
+# Análises
+- Quantos tipos diferentes de jogos de tabuleiro existem?  
+- Como saber se um jogo de tabuleiro tem o potencial de ser um sucesso no Brasil?  
+- Quais os jogos de tabuleiro mais parecidos com aquele que eu gosto?  
+- Qual a magnitude da diferença nas notas dadas aos mesmos jogos entre os portais especializados em jogos de tabuleiro?
+- [On going] Quão diferentes são as cartas de Gwent de acordo com a facção?  
+- Como criar embeddings para as cartas de Gwent?  
+- Podemos prever a que facção uma carta pertence com base em sua imagem?  
