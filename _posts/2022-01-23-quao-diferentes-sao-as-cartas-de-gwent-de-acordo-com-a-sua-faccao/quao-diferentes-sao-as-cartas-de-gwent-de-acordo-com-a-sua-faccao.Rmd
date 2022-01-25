@@ -1,0 +1,72 @@
+---
+title: "Quao diferentes sao as cartas de Gwent de acordo com a sua faccao"
+description: |
+  A short description of the post.
+author:
+  - first_name: Nicholas 
+    last_name: Marino
+    url: https://github.com/nacmarino
+date: 01-23-2022
+categories:
+  - boardgames
+  - tidymodels
+  - vegan
+output:
+  distill::distill_article:
+    self_contained: false
+    toc: true
+    code_folding: true
+    highlight: rstudio
+draft: true
+---
+
+```{r setup, include=FALSE}
+# setando as opções gerais dos code chunks
+knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, cache = FALSE, dpi = 200, fig.align = 'center')
+
+# presetando o ggplot2
+library(ggplot2)
+
+# setando o tema geral do ggplot2
+theme_set(new = theme_minimal(base_family = 'Fira Sans'))
+
+# atualizando o tema
+theme_update(
+  plot.title    = element_text(face = 'bold', size = 10),
+  plot.subtitle = element_text(size = 8),
+  plot.caption  = element_text(size = 8),
+  axis.title    = element_text(face = 'bold', size = 8),
+  axis.text     = element_text(color = 'black', size = 8),
+  strip.text    = element_text(face = 'bold', size = 8)
+)
+
+# cores por faccao
+cores_por_faccao <- c('Monsters' = 'red', 'Nilfgaard' = 'grey30', 'Northern Realms' = 'deepskyblue2', 
+                      "Scoia'tael" = 'forestgreen', 'Skellige' = 'purple3', 'Syndicate' = 'orange2')
+```
+
+# Motivação
+
+# Carregando os Dados
+
+```{r carrega_dados}
+# carregando os pacotes
+library(tidyverse) # core
+
+# carregando os dados
+cartas <- read_rds(file = 'data/cartas.rds')
+# cartas <- read_rds(file = '_posts/2022-01-23-quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao/data/cartas.rds')
+```
+
+# Análise Exploratória de Dados
+
+# Carta | Facção
+
+# Facção | Carta
+
+# Conclusões
+
+# Possíveis Extensões
+
+Dúvidas, sugestões ou críticas? É só me procurar pelo e-mail ou GitHub!
+
