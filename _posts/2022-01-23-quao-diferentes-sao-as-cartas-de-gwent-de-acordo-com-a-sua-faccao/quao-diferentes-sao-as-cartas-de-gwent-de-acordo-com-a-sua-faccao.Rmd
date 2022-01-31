@@ -28,21 +28,22 @@ knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, cache = FALSE, dpi = 2
 library(ggplot2)
 
 # setando o tema geral do ggplot2
-theme_set(new = theme_minimal(base_family = 'Fira Sans'))
+theme_set(new = theme_minimal(base_family = 'Roboto'))
 
 # atualizando o tema
 theme_update(
-  plot.title    = element_text(face = 'bold', size = 10),
+  plot.title    = element_text(face = 'bold', size = 12),
   plot.subtitle = element_text(size = 8),
   plot.caption  = element_text(size = 8),
-  axis.title    = element_text(face = 'bold', size = 8),
+  axis.title    = element_text(face = 'bold', size = 10),
   axis.text     = element_text(color = 'black', size = 8),
   strip.text    = element_text(face = 'bold', size = 8)
 )
 
 # cores por faccao
 cores_por_faccao <- c('Monsters' = 'red', 'Nilfgaard' = 'grey30', 'Northern Realms' = 'deepskyblue2', 
-                      "Scoia'tael" = 'forestgreen', 'Skellige' = 'purple3', 'Syndicate' = 'orange2')
+                      "Scoia'tael" = 'forestgreen', 'Skellige' = 'purple3', 'Syndicate' = 'orange2',
+                      'Neutral' = 'tan4')
 ```
 
 # Motivação
@@ -52,6 +53,9 @@ cores_por_faccao <- c('Monsters' = 'red', 'Nilfgaard' = 'grey30', 'Northern Real
 ```{r carrega_dados}
 # carregando os pacotes
 library(tidyverse) # core
+library(tidytext) # para manipular texto
+library(patchwork) # para compor figuras
+library(ggridges) # para o ridge plot
 
 # carregando os dados
 cartas <- read_rds(file = 'data/cartas.rds')
@@ -60,9 +64,278 @@ cartas <- read_rds(file = 'data/cartas.rds')
 
 # Análise Exploratória de Dados
 
-# Carta | Facção
+Quantas cartas diferentes existem por facção?
 
-# Facção | Carta
+```{r fig_cartas_por_faccao}
+cartas %>% 
+  # contando quantidade de cartas existentes por faccao
+  count(slug, name = 'n_cartas') %>% 
+  # ordenando as colunas
+  mutate(slug = fct_reorder(.f = slug, .x = n_cartas)) %>%
+  # criando a figura
+  ggplot(mapping = aes(x = n_cartas, y = slug, fill = slug)) +
+  geom_col(color = 'black', show.legend = FALSE) +
+  geom_text(mapping = aes(label = n_cartas), nudge_x = 10, fontface = 'bold') +
+  scale_fill_manual(values = cores_por_faccao) +
+  labs(
+    title = 'Quantas cartas diferentes existem por facção?',
+    x     = 'Quantidade de cartas'
+  ) +
+  theme(axis.title.y = element_blank())
+```
+
+Quais as diferenças nas características das cartas?
+
+```{r fig_painel, layout = 'l-body-outset', code_folding = TRUE, fig.height=8, fig.width=10}
+## raridade das cartas por faccao
+fig_raridade <- cartas %>% 
+  # contando quantidade de cartas existentes por faccao
+  count(slug, rarity, name = 'n_cartas') %>% 
+  # ordenando as colunas
+  mutate(
+    slug = fct_reorder(.f = slug, .x = n_cartas, .fun = sum, .desc = FALSE),
+    rarity = fct_reorder(.f = rarity, .x = n_cartas, .fun = sum, .desc = TRUE),
+  ) %>%
+  # agrupando pela raridade
+  group_by(slug) %>% 
+  # calculando a proporcao de cartas por faccao
+  mutate(
+    proporcao = n_cartas / max(n_cartas)
+  ) %>% 
+  # criando a figura
+  ggplot(mapping = aes(y = slug, x = rarity, fill = proporcao)) +
+  geom_tile(color = 'white', show.legend = FALSE) +
+  geom_text(mapping = aes(label = n_cartas), color = 'white') +
+  scale_fill_viridis_c(begin = 0.1, end = 0.8) +
+  labs(title = 'Raridade das cartas') +
+  theme(axis.title = element_blank())
+
+# tipo de carta por faccao
+fig_tipo <- cartas %>% 
+  # contando quantidade de cartas existentes por faccao
+  count(slug, type, name = 'n_cartas') %>% 
+  # ordenando as colunas
+  mutate(
+    type = fct_reorder(.f = type, .x = n_cartas, .fun = sum, .desc = TRUE),
+    slug = fct_reorder(.f = slug, .x = n_cartas, .fun = sum, .desc = FALSE)
+  ) %>%
+  # agrupando pela raridade
+  group_by(slug) %>% 
+  # calculando a proporcao de cartas por faccao
+  mutate(
+    proporcao = n_cartas / max(n_cartas)
+  ) %>% 
+  # completando todas as combinacoes de tipo e faccao
+  complete(slug, type) %>% 
+  # criando a figura
+  ggplot(mapping = aes(y = slug, x = type, fill = proporcao)) +
+  geom_tile(color = 'white', show.legend = FALSE) +
+  geom_text(mapping = aes(label = n_cartas), color = 'white') +
+  scale_fill_viridis_c(begin = 0.1, end = 0.8, na.value = 'white') +
+  labs(title = 'Tipos de cartas') +
+  theme(axis.title = element_blank())
+
+# poder das cartas por faccao
+fig_poder <- cartas %>% 
+  # pegando apenas as cartas de unidade
+  filter(type == 'Unidade') %>% 
+  # ordenando as colunas
+  mutate(slug = fct_reorder(.f = slug, .x = power, .fun = mean)) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = power, y = slug, fill = slug)) +
+  geom_density_ridges(scale = 0.95, show.legend = FALSE,
+                      jittered_points = TRUE,
+                      position = position_points_jitter(width = 0.01, height = 0),
+                      point_shape = '|', point_size = 3, point_alpha = 1, alpha = 0.7) +
+  scale_fill_manual(values = cores_por_faccao)  +
+  scale_x_continuous(breaks = seq(from = 0, to = 15, by = 1)) +
+  labs(
+    title = 'Poder das cartas do tipo Unidade',
+    x     = 'Poder'
+  ) +
+  theme(axis.title.y = element_blank())
+
+# poder das cartas por faccao
+fig_armadura <- cartas %>% 
+  # pegando apenas as cartas de unidade
+  filter(type == 'Unidade') %>% 
+  # ordenando as colunas
+  mutate(slug = fct_reorder(.f = slug, .x = armour, .fun = mean)) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = armour, y = slug, fill = slug)) +
+  geom_density_ridges(scale = 0.95, show.legend = FALSE,
+                      jittered_points = TRUE,
+                      position = position_points_jitter(width = 0.01, height = 0),
+                      point_shape = '|', point_size = 3, point_alpha = 1, alpha = 0.7) +
+  scale_fill_manual(values = cores_por_faccao) +
+  scale_x_continuous(breaks = seq(from = 0, to = 10, by = 1)) +
+  labs(
+    title = 'Armadura das cartas do tipo Unidade',
+    x     = 'Armadura'
+  ) +
+  theme(axis.title.y = element_blank())
+
+# compondo a figura
+(fig_raridade + fig_tipo) / (fig_poder + fig_armadura) +
+  plot_annotation(tag_levels = 'A', tag_prefix = '(', tag_suffix = ')') & 
+  theme(plot.tag = element_text(size = 10, face = 'bold'))
+```
+
+De que forma as categorias das cartas de Unidade variam entre facções?
+
+```{r fig_categoria_carta, layout = 'l-body-outset', code_folding = TRUE, fig.height=9, fig.width=8}
+cartas %>% 
+  # pegando apenas as cartas de unidade
+  filter(type == 'Unidade') %>% 
+  # quebrando o string em tokens
+  unnest_tokens(output = token, input = categoryName, to_lower = FALSE, 
+                token = 'regex', pattern = ', ') %>% 
+  # contando as categorias por faccao
+  count(slug, token, name = 'ocorrencias') %>% 
+  # contando quantas vezes cada token aparece entre as faccoes
+  add_count(token, name = 'faccoes_nos_tokens') %>% 
+  # contando quantas vezes as faccoes aparecem entre os tokens
+  add_count(slug, name = 'tokens_nas_faccoes') %>% 
+  # agrupando por faccao
+  mutate(
+    token = fct_reorder(.f = token, .x = faccoes_nos_tokens, .desc = FALSE),
+    slug = fct_reorder(.f = slug, .x = tokens_nas_faccoes, .desc = TRUE)
+  ) %>% 
+  # agrupando pelo token
+  group_by(token) %>% 
+  # proporcao de vezes que cada token aparece entre as faccoes
+  mutate(proporcao = ocorrencias / max(ocorrencias)) %>% 
+  # desagrupando o dataframe
+  ungroup %>% 
+  # completando as combinacoes faltantes de token e faccao
+  complete(token, slug) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = slug, y = token, fill = proporcao)) +
+  geom_tile(color = 'black', show.legend = FALSE) +
+  geom_text(mapping = aes(label = ocorrencias, color = proporcao > 0.5), show.legend = FALSE) +
+  scale_fill_viridis_c(begin = 0.2, end = 0.9, na.value = 'white') +
+  scale_color_manual(values = c('white', 'black')) +
+  labs(
+    title = 'Quais os tipos de personagem associados às cartas de cada facção?'
+  ) +
+  theme(
+    axis.title = element_blank()
+  )
+```
+
+Quais as habilidades mais comuns das cartas por facção?
+
+```{r fig_habilidade_carta, layout = 'l-body-outset', code_folding = TRUE, fig.height=12, fig.width=8}
+cartas %>% 
+  # quebrando o string em tokens
+  unnest_tokens(output = token, input = keywords, to_lower = FALSE, 
+                token = 'regex', pattern = ';') %>% 
+  # removendo os NAs
+  filter(!is.na(token)) %>%
+  # contando as categorias por faccao
+  count(slug, token, name = 'ocorrencias') %>% 
+  # contando quantas vezes cada token aparece entre as faccoes
+  add_count(token, name = 'faccoes_com_token') %>% 
+  # contando quantas vezes as faccoes aparecem entre os tokens
+  add_count(slug, name = 'tokens_nas_faccoes') %>% 
+  # agrupando por faccao
+  mutate(
+    token = fct_reorder(.f = token, .x = faccoes_com_token, .desc = FALSE),
+    slug = fct_reorder(.f = slug, .x = tokens_nas_faccoes, .desc = TRUE)
+  ) %>% 
+  # agrupando pelo token
+  group_by(token) %>% 
+  # proporcao de vezes que cada token aparece entre as faccoes
+  mutate(proporcao = ocorrencias / max(ocorrencias)) %>% 
+  # desagrupando o dataframe
+  ungroup %>% 
+  # completando as combinacoes faltantes de token e faccao
+  complete(token, slug) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = slug, y = token, fill = proporcao)) +
+  geom_tile(color = 'black', show.legend = FALSE) +
+  geom_text(mapping = aes(label = ocorrencias, color = proporcao > 0.5), show.legend = FALSE) +
+  scale_fill_viridis_c(begin = 0.2, end = 0.9, na.value = 'white') +
+  scale_color_manual(values = c('white', 'black')) +
+  labs(
+    title = 'Quais os tipos de habilidade associados às cartas de cada facção?'
+  ) +
+  theme(
+    axis.title = element_blank()
+  )
+```
+
+Habilidades únicas às facções.
+
+```{r fig_habilidade_tfidf, layout = 'l-body-outset', code_folding = TRUE, fig.height=8, fig.width=9}
+cartas %>% 
+  # quebrando o string em tokens
+  unnest_tokens(output = token, input = keywords, to_lower = FALSE, 
+                token = 'regex', pattern = ';') %>% 
+  # removendo os NAs
+  filter(!is.na(token)) %>%
+  # contando as categorias por faccao
+  count(slug, token, name = 'ocorrencias') %>% 
+  # calculando o tf-idf
+  bind_tf_idf(term = token, document = slug, n = ocorrencias) %>% 
+  # agrupando pela faccao
+  group_by(slug) %>% 
+  # pegando os 10 tokens com maior tf-idf
+  slice_max(order_by = tf_idf, n = 10, with_ties = FALSE) %>% 
+  # desagrupando
+  ungroup %>% 
+  # ordenando as colunas
+  mutate(token = reorder_within(x = token, by = tf_idf, within = slug)) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = tf_idf, y = token, fill = slug)) +
+  facet_wrap(~ slug, scales = 'free') +
+  geom_col(color = 'black', show.legend = FALSE) +
+  scale_y_reordered() +
+  scale_fill_manual(values = cores_por_faccao) +
+  labs(
+    title = 'Quais as habilidades particulares às cartas de cada facção?',
+    x     = 'TF-IDF'
+  ) +
+  theme(axis.title.y = element_blank())
+```
+
+Texto da carta.
+
+```{r fig_texto_tfidf, layout = 'l-body-outset', code_folding = TRUE, fig.height=8, fig.width=9}
+cartas %>% 
+  # quebrando o string em tokens
+  unnest_tokens(output = token, input = texto, to_lower = TRUE) %>% 
+  # removendo os NAs e algumas palavras que não ajudam a visualização
+  filter(!is.na(token), 
+         str_detect(string = token, pattern = "scoia'tael|reinos|skellige|norte|dos", negate = TRUE)) %>%
+  # contando as categorias por faccao
+  count(slug, token, name = 'ocorrencias') %>% 
+  # calculando o tf-idf
+  bind_tf_idf(term = token, document = slug, n = ocorrencias) %>% 
+  # agrupando pela faccao
+  group_by(slug) %>% 
+  # pegando os 15 tokens com maior tf-idf
+  slice_max(order_by = tf_idf, n = 15, with_ties = FALSE) %>% 
+  # desagrupando
+  ungroup %>% 
+  # ordenando as colunas
+  mutate(token = reorder_within(x = token, by = tf_idf, within = slug)) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = tf_idf, y = token, fill = slug)) +
+  facet_wrap(~ slug, scales = 'free') +
+  geom_col(color = 'black', show.legend = FALSE) +
+  scale_y_reordered() +
+  scale_fill_manual(values = cores_por_faccao) +
+  labs(
+    title = 'Quais as habilidades particulares às cartas de cada facção?',
+    x     = 'TF-IDF'
+  ) +
+  theme(axis.title.y = element_blank())
+```
+
+# STM
+
+# Visualizando o Embedding
 
 # Conclusões
 

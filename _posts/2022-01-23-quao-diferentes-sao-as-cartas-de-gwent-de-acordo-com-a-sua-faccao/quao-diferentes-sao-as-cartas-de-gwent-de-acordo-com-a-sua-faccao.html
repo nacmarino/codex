@@ -113,7 +113,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
   <!--/radix_placeholder_rmarkdown_metadata-->
   
   <script type="text/json" id="radix-resource-manifest">
-  {"type":"character","attributes":{},"value":["data/cartas.rds","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/anchor-4.2.2/anchor.min.js","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/bowser-1.9.3/bowser.min.js","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/distill-2.2.21/template.v2.js","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/header-attrs-2.10/header-attrs.js","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/jquery-1.11.3/jquery.min.js","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/popper-2.6.0/popper.min.js","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/tippy-6.2.7/tippy-bundle.umd.min.js","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/tippy-6.2.7/tippy-light-border.css","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/tippy-6.2.7/tippy.css","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/tippy-6.2.7/tippy.umd.min.js","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/webcomponents-2.0.0/webcomponents.js"]}
+  {"type":"character","attributes":{},"value":["data/cartas.rds","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/anchor-4.2.2/anchor.min.js","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/bowser-1.9.3/bowser.min.js","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/distill-2.2.21/template.v2.js","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/figure-html5/fig_cartas_por_faccao-1.png","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/figure-html5/fig_cartas_por_raridade-1.png","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/figure-html5/fig_categoria_carta-1.png","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/figure-html5/fig_habilidade_carta-1.png","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/figure-html5/fig_habilidade_tfidf-1.png","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/figure-html5/fig_painel-1.png","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/figure-html5/fig_texto_tfidf-1.png","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/header-attrs-2.10/header-attrs.js","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/jquery-1.11.3/jquery.min.js","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/popper-2.6.0/popper.min.js","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/tippy-6.2.7/tippy-bundle.umd.min.js","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/tippy-6.2.7/tippy-light-border.css","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/tippy-6.2.7/tippy.css","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/tippy-6.2.7/tippy.umd.min.js","quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/webcomponents-2.0.0/webcomponents.js"]}
   </script>
   <!--radix_placeholder_navigation_in_header-->
   <!--/radix_placeholder_navigation_in_header-->
@@ -1488,8 +1488,8 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <li><a href="#motivação">Motivação</a></li>
 <li><a href="#carregando-os-dados">Carregando os Dados</a></li>
 <li><a href="#análise-exploratória-de-dados">Análise Exploratória de Dados</a></li>
-<li><a href="#carta-facção">Carta | Facção</a></li>
-<li><a href="#facção-carta">Facção | Carta</a></li>
+<li><a href="#stm">STM</a></li>
+<li><a href="#visualizando-o-embedding">Visualizando o Embedding</a></li>
 <li><a href="#conclusões">Conclusões</a></li>
 <li><a href="#possíveis-extensões">Possíveis Extensões</a></li>
 </ul>
@@ -1501,6 +1501,9 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'># carregando os pacotes</span>
 <span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://tidyverse.tidyverse.org'>tidyverse</a></span><span class='op'>)</span> <span class='co'># core</span>
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://github.com/juliasilge/tidytext'>tidytext</a></span><span class='op'>)</span> <span class='co'># para manipular texto</span>
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://patchwork.data-imaginist.com'>patchwork</a></span><span class='op'>)</span> <span class='co'># para compor figuras</span>
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://wilkelab.org/ggridges/'>ggridges</a></span><span class='op'>)</span> <span class='co'># para o ridge plot</span>
 
 <span class='co'># carregando os dados</span>
 <span class='va'>cartas</span> <span class='op'>&lt;-</span> <span class='fu'>read_rds</span><span class='op'>(</span>file <span class='op'>=</span> <span class='st'>'data/cartas.rds'</span><span class='op'>)</span>
@@ -1509,8 +1512,314 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </div>
 </div>
 <h1 id="análise-exploratória-de-dados">Análise Exploratória de Dados</h1>
-<h1 id="carta-facção">Carta | Facção</h1>
-<h1 id="facção-carta">Facção | Carta</h1>
+<p>Quantas cartas diferentes existem por facção?</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>cartas</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># contando quantidade de cartas existentes por faccao</span>
+  <span class='fu'>count</span><span class='op'>(</span><span class='va'>slug</span>, name <span class='op'>=</span> <span class='st'>'n_cartas'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># ordenando as colunas</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>slug <span class='op'>=</span> <span class='fu'>fct_reorder</span><span class='op'>(</span>.f <span class='op'>=</span> <span class='va'>slug</span>, .x <span class='op'>=</span> <span class='va'>n_cartas</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
+  <span class='co'># criando a figura</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/ggplot.html'>ggplot</a></span><span class='op'>(</span>mapping <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>n_cartas</span>, y <span class='op'>=</span> <span class='va'>slug</span>, fill <span class='op'>=</span> <span class='va'>slug</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_bar.html'>geom_col</a></span><span class='op'>(</span>color <span class='op'>=</span> <span class='st'>'black'</span>, show.legend <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_text.html'>geom_text</a></span><span class='op'>(</span>mapping <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>label <span class='op'>=</span> <span class='va'>n_cartas</span><span class='op'>)</span>, nudge_x <span class='op'>=</span> <span class='fl'>10</span>, fontface <span class='op'>=</span> <span class='st'>'bold'</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_manual.html'>scale_fill_manual</a></span><span class='op'>(</span>values <span class='op'>=</span> <span class='va'>cores_por_faccao</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/labs.html'>labs</a></span><span class='op'>(</span>
+    title <span class='op'>=</span> <span class='st'>'Quantas cartas diferentes existem por facção?'</span>,
+    x     <span class='op'>=</span> <span class='st'>'Quantidade de cartas'</span>
+  <span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/theme.html'>theme</a></span><span class='op'>(</span>axis.title.y <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_blank</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
+</code></pre>
+</div>
+<p><img src="quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/figure-html5/fig_cartas_por_faccao-1.png" width="1300" style="display: block; margin: auto;" /></p>
+</div>
+<p>Quais as diferenças nas características das cartas?</p>
+<div class="layout-chunk" data-layout="l-body-outset">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## raridade das cartas por faccao</span>
+<span class='va'>fig_raridade</span> <span class='op'>&lt;-</span> <span class='va'>cartas</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># contando quantidade de cartas existentes por faccao</span>
+  <span class='fu'>count</span><span class='op'>(</span><span class='va'>slug</span>, <span class='va'>rarity</span>, name <span class='op'>=</span> <span class='st'>'n_cartas'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># ordenando as colunas</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>
+    slug <span class='op'>=</span> <span class='fu'>fct_reorder</span><span class='op'>(</span>.f <span class='op'>=</span> <span class='va'>slug</span>, .x <span class='op'>=</span> <span class='va'>n_cartas</span>, .fun <span class='op'>=</span> <span class='va'>sum</span>, .desc <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span>,
+    rarity <span class='op'>=</span> <span class='fu'>fct_reorder</span><span class='op'>(</span>.f <span class='op'>=</span> <span class='va'>rarity</span>, .x <span class='op'>=</span> <span class='va'>n_cartas</span>, .fun <span class='op'>=</span> <span class='va'>sum</span>, .desc <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>,
+  <span class='op'>)</span> <span class='op'>%&gt;%</span>
+  <span class='co'># agrupando pela raridade</span>
+  <span class='fu'>group_by</span><span class='op'>(</span><span class='va'>slug</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># calculando a proporcao de cartas por faccao</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>
+    proporcao <span class='op'>=</span> <span class='va'>n_cartas</span> <span class='op'>/</span> <span class='fu'><a href='https://rdrr.io/r/base/Extremes.html'>max</a></span><span class='op'>(</span><span class='va'>n_cartas</span><span class='op'>)</span>
+  <span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># criando a figura</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/ggplot.html'>ggplot</a></span><span class='op'>(</span>mapping <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>y <span class='op'>=</span> <span class='va'>slug</span>, x <span class='op'>=</span> <span class='va'>rarity</span>, fill <span class='op'>=</span> <span class='va'>proporcao</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_tile.html'>geom_tile</a></span><span class='op'>(</span>color <span class='op'>=</span> <span class='st'>'white'</span>, show.legend <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_text.html'>geom_text</a></span><span class='op'>(</span>mapping <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>label <span class='op'>=</span> <span class='va'>n_cartas</span><span class='op'>)</span>, color <span class='op'>=</span> <span class='st'>'white'</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_viridis.html'>scale_fill_viridis_c</a></span><span class='op'>(</span>begin <span class='op'>=</span> <span class='fl'>0.1</span>, end <span class='op'>=</span> <span class='fl'>0.8</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/labs.html'>labs</a></span><span class='op'>(</span>title <span class='op'>=</span> <span class='st'>'Raridade das cartas'</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/theme.html'>theme</a></span><span class='op'>(</span>axis.title <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_blank</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
+
+<span class='co'># tipo de carta por faccao</span>
+<span class='va'>fig_tipo</span> <span class='op'>&lt;-</span> <span class='va'>cartas</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># contando quantidade de cartas existentes por faccao</span>
+  <span class='fu'>count</span><span class='op'>(</span><span class='va'>slug</span>, <span class='va'>type</span>, name <span class='op'>=</span> <span class='st'>'n_cartas'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># ordenando as colunas</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>
+    type <span class='op'>=</span> <span class='fu'>fct_reorder</span><span class='op'>(</span>.f <span class='op'>=</span> <span class='va'>type</span>, .x <span class='op'>=</span> <span class='va'>n_cartas</span>, .fun <span class='op'>=</span> <span class='va'>sum</span>, .desc <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>,
+    slug <span class='op'>=</span> <span class='fu'>fct_reorder</span><span class='op'>(</span>.f <span class='op'>=</span> <span class='va'>slug</span>, .x <span class='op'>=</span> <span class='va'>n_cartas</span>, .fun <span class='op'>=</span> <span class='va'>sum</span>, .desc <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span>
+  <span class='op'>)</span> <span class='op'>%&gt;%</span>
+  <span class='co'># agrupando pela raridade</span>
+  <span class='fu'>group_by</span><span class='op'>(</span><span class='va'>slug</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># calculando a proporcao de cartas por faccao</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>
+    proporcao <span class='op'>=</span> <span class='va'>n_cartas</span> <span class='op'>/</span> <span class='fu'><a href='https://rdrr.io/r/base/Extremes.html'>max</a></span><span class='op'>(</span><span class='va'>n_cartas</span><span class='op'>)</span>
+  <span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># completando todas as combinacoes de tipo e faccao</span>
+  <span class='fu'>complete</span><span class='op'>(</span><span class='va'>slug</span>, <span class='va'>type</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># criando a figura</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/ggplot.html'>ggplot</a></span><span class='op'>(</span>mapping <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>y <span class='op'>=</span> <span class='va'>slug</span>, x <span class='op'>=</span> <span class='va'>type</span>, fill <span class='op'>=</span> <span class='va'>proporcao</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_tile.html'>geom_tile</a></span><span class='op'>(</span>color <span class='op'>=</span> <span class='st'>'white'</span>, show.legend <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_text.html'>geom_text</a></span><span class='op'>(</span>mapping <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>label <span class='op'>=</span> <span class='va'>n_cartas</span><span class='op'>)</span>, color <span class='op'>=</span> <span class='st'>'white'</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_viridis.html'>scale_fill_viridis_c</a></span><span class='op'>(</span>begin <span class='op'>=</span> <span class='fl'>0.1</span>, end <span class='op'>=</span> <span class='fl'>0.8</span>, na.value <span class='op'>=</span> <span class='st'>'white'</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/labs.html'>labs</a></span><span class='op'>(</span>title <span class='op'>=</span> <span class='st'>'Tipos de cartas'</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/theme.html'>theme</a></span><span class='op'>(</span>axis.title <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_blank</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
+
+<span class='co'># poder das cartas por faccao</span>
+<span class='va'>fig_poder</span> <span class='op'>&lt;-</span> <span class='va'>cartas</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># pegando apenas as cartas de unidade</span>
+  <span class='fu'><a href='https://rdrr.io/r/stats/filter.html'>filter</a></span><span class='op'>(</span><span class='va'>type</span> <span class='op'>==</span> <span class='st'>'Unidade'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># ordenando as colunas</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>slug <span class='op'>=</span> <span class='fu'>fct_reorder</span><span class='op'>(</span>.f <span class='op'>=</span> <span class='va'>slug</span>, .x <span class='op'>=</span> <span class='va'>power</span>, .fun <span class='op'>=</span> <span class='va'>mean</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># criando a figura</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/ggplot.html'>ggplot</a></span><span class='op'>(</span>mapping <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>power</span>, y <span class='op'>=</span> <span class='va'>slug</span>, fill <span class='op'>=</span> <span class='va'>slug</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://wilkelab.org/ggridges/reference/geom_density_ridges.html'>geom_density_ridges</a></span><span class='op'>(</span>scale <span class='op'>=</span> <span class='fl'>0.95</span>, show.legend <span class='op'>=</span> <span class='cn'>FALSE</span>,
+                      jittered_points <span class='op'>=</span> <span class='cn'>TRUE</span>,
+                      position <span class='op'>=</span> <span class='fu'><a href='https://wilkelab.org/ggridges/reference/position_points_jitter.html'>position_points_jitter</a></span><span class='op'>(</span>width <span class='op'>=</span> <span class='fl'>0.01</span>, height <span class='op'>=</span> <span class='fl'>0</span><span class='op'>)</span>,
+                      point_shape <span class='op'>=</span> <span class='st'>'|'</span>, point_size <span class='op'>=</span> <span class='fl'>3</span>, point_alpha <span class='op'>=</span> <span class='fl'>1</span>, alpha <span class='op'>=</span> <span class='fl'>0.7</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_manual.html'>scale_fill_manual</a></span><span class='op'>(</span>values <span class='op'>=</span> <span class='va'>cores_por_faccao</span><span class='op'>)</span>  <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_continuous.html'>scale_x_continuous</a></span><span class='op'>(</span>breaks <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/seq.html'>seq</a></span><span class='op'>(</span>from <span class='op'>=</span> <span class='fl'>0</span>, to <span class='op'>=</span> <span class='fl'>15</span>, by <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/labs.html'>labs</a></span><span class='op'>(</span>
+    title <span class='op'>=</span> <span class='st'>'Poder das cartas do tipo Unidade'</span>,
+    x     <span class='op'>=</span> <span class='st'>'Poder'</span>
+  <span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/theme.html'>theme</a></span><span class='op'>(</span>axis.title.y <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_blank</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
+
+<span class='co'># poder das cartas por faccao</span>
+<span class='va'>fig_armadura</span> <span class='op'>&lt;-</span> <span class='va'>cartas</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># pegando apenas as cartas de unidade</span>
+  <span class='fu'><a href='https://rdrr.io/r/stats/filter.html'>filter</a></span><span class='op'>(</span><span class='va'>type</span> <span class='op'>==</span> <span class='st'>'Unidade'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># ordenando as colunas</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>slug <span class='op'>=</span> <span class='fu'>fct_reorder</span><span class='op'>(</span>.f <span class='op'>=</span> <span class='va'>slug</span>, .x <span class='op'>=</span> <span class='va'>armour</span>, .fun <span class='op'>=</span> <span class='va'>mean</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># criando a figura</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/ggplot.html'>ggplot</a></span><span class='op'>(</span>mapping <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>armour</span>, y <span class='op'>=</span> <span class='va'>slug</span>, fill <span class='op'>=</span> <span class='va'>slug</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://wilkelab.org/ggridges/reference/geom_density_ridges.html'>geom_density_ridges</a></span><span class='op'>(</span>scale <span class='op'>=</span> <span class='fl'>0.95</span>, show.legend <span class='op'>=</span> <span class='cn'>FALSE</span>,
+                      jittered_points <span class='op'>=</span> <span class='cn'>TRUE</span>,
+                      position <span class='op'>=</span> <span class='fu'><a href='https://wilkelab.org/ggridges/reference/position_points_jitter.html'>position_points_jitter</a></span><span class='op'>(</span>width <span class='op'>=</span> <span class='fl'>0.01</span>, height <span class='op'>=</span> <span class='fl'>0</span><span class='op'>)</span>,
+                      point_shape <span class='op'>=</span> <span class='st'>'|'</span>, point_size <span class='op'>=</span> <span class='fl'>3</span>, point_alpha <span class='op'>=</span> <span class='fl'>1</span>, alpha <span class='op'>=</span> <span class='fl'>0.7</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_manual.html'>scale_fill_manual</a></span><span class='op'>(</span>values <span class='op'>=</span> <span class='va'>cores_por_faccao</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_continuous.html'>scale_x_continuous</a></span><span class='op'>(</span>breaks <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/seq.html'>seq</a></span><span class='op'>(</span>from <span class='op'>=</span> <span class='fl'>0</span>, to <span class='op'>=</span> <span class='fl'>10</span>, by <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/labs.html'>labs</a></span><span class='op'>(</span>
+    title <span class='op'>=</span> <span class='st'>'Armadura das cartas do tipo Unidade'</span>,
+    x     <span class='op'>=</span> <span class='st'>'Armadura'</span>
+  <span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/theme.html'>theme</a></span><span class='op'>(</span>axis.title.y <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_blank</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
+
+<span class='co'># compondo a figura</span>
+<span class='op'>(</span><span class='va'>fig_raridade</span> <span class='op'>+</span> <span class='va'>fig_tipo</span><span class='op'>)</span> <span class='op'>/</span> <span class='op'>(</span><span class='va'>fig_poder</span> <span class='op'>+</span> <span class='va'>fig_armadura</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://patchwork.data-imaginist.com/reference/plot_annotation.html'>plot_annotation</a></span><span class='op'>(</span>tag_levels <span class='op'>=</span> <span class='st'>'A'</span>, tag_prefix <span class='op'>=</span> <span class='st'>'('</span>, tag_suffix <span class='op'>=</span> <span class='st'>')'</span><span class='op'>)</span> <span class='op'>&amp;</span> 
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/theme.html'>theme</a></span><span class='op'>(</span>plot.tag <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_text</a></span><span class='op'>(</span>size <span class='op'>=</span> <span class='fl'>10</span>, face <span class='op'>=</span> <span class='st'>'bold'</span><span class='op'>)</span><span class='op'>)</span>
+</code></pre>
+</div>
+</details>
+<p><img src="quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/figure-html5/fig_painel-1.png" width="2000" style="display: block; margin: auto;" /></p>
+</div>
+<p>De que forma as categorias das cartas de Unidade variam entre facções?</p>
+<div class="layout-chunk" data-layout="l-body-outset">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>cartas</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># pegando apenas as cartas de unidade</span>
+  <span class='fu'><a href='https://rdrr.io/r/stats/filter.html'>filter</a></span><span class='op'>(</span><span class='va'>type</span> <span class='op'>==</span> <span class='st'>'Unidade'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># quebrando o string em tokens</span>
+  <span class='fu'><a href='https://rdrr.io/pkg/tidytext/man/unnest_tokens.html'>unnest_tokens</a></span><span class='op'>(</span>output <span class='op'>=</span> <span class='va'>token</span>, input <span class='op'>=</span> <span class='va'>categoryName</span>, to_lower <span class='op'>=</span> <span class='cn'>FALSE</span>, 
+                token <span class='op'>=</span> <span class='st'>'regex'</span>, pattern <span class='op'>=</span> <span class='st'>', '</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># contando as categorias por faccao</span>
+  <span class='fu'>count</span><span class='op'>(</span><span class='va'>slug</span>, <span class='va'>token</span>, name <span class='op'>=</span> <span class='st'>'ocorrencias'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># contando quantas vezes cada token aparece entre as faccoes</span>
+  <span class='fu'>add_count</span><span class='op'>(</span><span class='va'>token</span>, name <span class='op'>=</span> <span class='st'>'faccoes_nos_tokens'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># contando quantas vezes as faccoes aparecem entre os tokens</span>
+  <span class='fu'>add_count</span><span class='op'>(</span><span class='va'>slug</span>, name <span class='op'>=</span> <span class='st'>'tokens_nas_faccoes'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># agrupando por faccao</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>
+    token <span class='op'>=</span> <span class='fu'>fct_reorder</span><span class='op'>(</span>.f <span class='op'>=</span> <span class='va'>token</span>, .x <span class='op'>=</span> <span class='va'>faccoes_nos_tokens</span>, .desc <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span>,
+    slug <span class='op'>=</span> <span class='fu'>fct_reorder</span><span class='op'>(</span>.f <span class='op'>=</span> <span class='va'>slug</span>, .x <span class='op'>=</span> <span class='va'>tokens_nas_faccoes</span>, .desc <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+  <span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># agrupando pelo token</span>
+  <span class='fu'>group_by</span><span class='op'>(</span><span class='va'>token</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># proporcao de vezes que cada token aparece entre as faccoes</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>proporcao <span class='op'>=</span> <span class='va'>ocorrencias</span> <span class='op'>/</span> <span class='fu'><a href='https://rdrr.io/r/base/Extremes.html'>max</a></span><span class='op'>(</span><span class='va'>ocorrencias</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># desagrupando o dataframe</span>
+  <span class='va'>ungroup</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># completando as combinacoes faltantes de token e faccao</span>
+  <span class='fu'>complete</span><span class='op'>(</span><span class='va'>token</span>, <span class='va'>slug</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># criando a figura</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/ggplot.html'>ggplot</a></span><span class='op'>(</span>mapping <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>slug</span>, y <span class='op'>=</span> <span class='va'>token</span>, fill <span class='op'>=</span> <span class='va'>proporcao</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_tile.html'>geom_tile</a></span><span class='op'>(</span>color <span class='op'>=</span> <span class='st'>'black'</span>, show.legend <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_text.html'>geom_text</a></span><span class='op'>(</span>mapping <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>label <span class='op'>=</span> <span class='va'>ocorrencias</span>, color <span class='op'>=</span> <span class='va'>proporcao</span> <span class='op'>&gt;</span> <span class='fl'>0.5</span><span class='op'>)</span>, show.legend <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_viridis.html'>scale_fill_viridis_c</a></span><span class='op'>(</span>begin <span class='op'>=</span> <span class='fl'>0.2</span>, end <span class='op'>=</span> <span class='fl'>0.9</span>, na.value <span class='op'>=</span> <span class='st'>'white'</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_manual.html'>scale_color_manual</a></span><span class='op'>(</span>values <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>'white'</span>, <span class='st'>'black'</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/labs.html'>labs</a></span><span class='op'>(</span>
+    title <span class='op'>=</span> <span class='st'>'Quais os tipos de personagem associados às cartas de cada facção?'</span>
+  <span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/theme.html'>theme</a></span><span class='op'>(</span>
+    axis.title <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_blank</a></span><span class='op'>(</span><span class='op'>)</span>
+  <span class='op'>)</span>
+</code></pre>
+</div>
+</details>
+<p><img src="quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/figure-html5/fig_categoria_carta-1.png" width="1600" style="display: block; margin: auto;" /></p>
+</div>
+<p>Quais as habilidades mais comuns das cartas por facção?</p>
+<div class="layout-chunk" data-layout="l-body-outset">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>cartas</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># quebrando o string em tokens</span>
+  <span class='fu'><a href='https://rdrr.io/pkg/tidytext/man/unnest_tokens.html'>unnest_tokens</a></span><span class='op'>(</span>output <span class='op'>=</span> <span class='va'>token</span>, input <span class='op'>=</span> <span class='va'>keywords</span>, to_lower <span class='op'>=</span> <span class='cn'>FALSE</span>, 
+                token <span class='op'>=</span> <span class='st'>'regex'</span>, pattern <span class='op'>=</span> <span class='st'>';'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># removendo os NAs</span>
+  <span class='fu'><a href='https://rdrr.io/r/stats/filter.html'>filter</a></span><span class='op'>(</span><span class='op'>!</span><span class='fu'><a href='https://rdrr.io/r/base/NA.html'>is.na</a></span><span class='op'>(</span><span class='va'>token</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
+  <span class='co'># contando as categorias por faccao</span>
+  <span class='fu'>count</span><span class='op'>(</span><span class='va'>slug</span>, <span class='va'>token</span>, name <span class='op'>=</span> <span class='st'>'ocorrencias'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># contando quantas vezes cada token aparece entre as faccoes</span>
+  <span class='fu'>add_count</span><span class='op'>(</span><span class='va'>token</span>, name <span class='op'>=</span> <span class='st'>'faccoes_com_token'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># contando quantas vezes as faccoes aparecem entre os tokens</span>
+  <span class='fu'>add_count</span><span class='op'>(</span><span class='va'>slug</span>, name <span class='op'>=</span> <span class='st'>'tokens_nas_faccoes'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># agrupando por faccao</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>
+    token <span class='op'>=</span> <span class='fu'>fct_reorder</span><span class='op'>(</span>.f <span class='op'>=</span> <span class='va'>token</span>, .x <span class='op'>=</span> <span class='va'>faccoes_com_token</span>, .desc <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span>,
+    slug <span class='op'>=</span> <span class='fu'>fct_reorder</span><span class='op'>(</span>.f <span class='op'>=</span> <span class='va'>slug</span>, .x <span class='op'>=</span> <span class='va'>tokens_nas_faccoes</span>, .desc <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+  <span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># agrupando pelo token</span>
+  <span class='fu'>group_by</span><span class='op'>(</span><span class='va'>token</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># proporcao de vezes que cada token aparece entre as faccoes</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>proporcao <span class='op'>=</span> <span class='va'>ocorrencias</span> <span class='op'>/</span> <span class='fu'><a href='https://rdrr.io/r/base/Extremes.html'>max</a></span><span class='op'>(</span><span class='va'>ocorrencias</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># desagrupando o dataframe</span>
+  <span class='va'>ungroup</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># completando as combinacoes faltantes de token e faccao</span>
+  <span class='fu'>complete</span><span class='op'>(</span><span class='va'>token</span>, <span class='va'>slug</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># criando a figura</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/ggplot.html'>ggplot</a></span><span class='op'>(</span>mapping <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>slug</span>, y <span class='op'>=</span> <span class='va'>token</span>, fill <span class='op'>=</span> <span class='va'>proporcao</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_tile.html'>geom_tile</a></span><span class='op'>(</span>color <span class='op'>=</span> <span class='st'>'black'</span>, show.legend <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_text.html'>geom_text</a></span><span class='op'>(</span>mapping <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>label <span class='op'>=</span> <span class='va'>ocorrencias</span>, color <span class='op'>=</span> <span class='va'>proporcao</span> <span class='op'>&gt;</span> <span class='fl'>0.5</span><span class='op'>)</span>, show.legend <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_viridis.html'>scale_fill_viridis_c</a></span><span class='op'>(</span>begin <span class='op'>=</span> <span class='fl'>0.2</span>, end <span class='op'>=</span> <span class='fl'>0.9</span>, na.value <span class='op'>=</span> <span class='st'>'white'</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_manual.html'>scale_color_manual</a></span><span class='op'>(</span>values <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>'white'</span>, <span class='st'>'black'</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/labs.html'>labs</a></span><span class='op'>(</span>
+    title <span class='op'>=</span> <span class='st'>'Quais os tipos de habilidade associados às cartas de cada facção?'</span>
+  <span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/theme.html'>theme</a></span><span class='op'>(</span>
+    axis.title <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_blank</a></span><span class='op'>(</span><span class='op'>)</span>
+  <span class='op'>)</span>
+</code></pre>
+</div>
+</details>
+<p><img src="quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/figure-html5/fig_habilidade_carta-1.png" width="1600" style="display: block; margin: auto;" /></p>
+</div>
+<p>Habilidades únicas às facções.</p>
+<div class="layout-chunk" data-layout="l-body-outset">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>cartas</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># quebrando o string em tokens</span>
+  <span class='fu'><a href='https://rdrr.io/pkg/tidytext/man/unnest_tokens.html'>unnest_tokens</a></span><span class='op'>(</span>output <span class='op'>=</span> <span class='va'>token</span>, input <span class='op'>=</span> <span class='va'>keywords</span>, to_lower <span class='op'>=</span> <span class='cn'>FALSE</span>, 
+                token <span class='op'>=</span> <span class='st'>'regex'</span>, pattern <span class='op'>=</span> <span class='st'>';'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># removendo os NAs</span>
+  <span class='fu'><a href='https://rdrr.io/r/stats/filter.html'>filter</a></span><span class='op'>(</span><span class='op'>!</span><span class='fu'><a href='https://rdrr.io/r/base/NA.html'>is.na</a></span><span class='op'>(</span><span class='va'>token</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
+  <span class='co'># contando as categorias por faccao</span>
+  <span class='fu'>count</span><span class='op'>(</span><span class='va'>slug</span>, <span class='va'>token</span>, name <span class='op'>=</span> <span class='st'>'ocorrencias'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># calculando o tf-idf</span>
+  <span class='fu'><a href='https://rdrr.io/pkg/tidytext/man/bind_tf_idf.html'>bind_tf_idf</a></span><span class='op'>(</span>term <span class='op'>=</span> <span class='va'>token</span>, document <span class='op'>=</span> <span class='va'>slug</span>, n <span class='op'>=</span> <span class='va'>ocorrencias</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># agrupando pela faccao</span>
+  <span class='fu'>group_by</span><span class='op'>(</span><span class='va'>slug</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># pegando os 10 tokens com maior tf-idf</span>
+  <span class='fu'>slice_max</span><span class='op'>(</span>order_by <span class='op'>=</span> <span class='va'>tf_idf</span>, n <span class='op'>=</span> <span class='fl'>10</span>, with_ties <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># desagrupando</span>
+  <span class='va'>ungroup</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># ordenando as colunas</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>token <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/pkg/tidytext/man/reorder_within.html'>reorder_within</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>token</span>, by <span class='op'>=</span> <span class='va'>tf_idf</span>, within <span class='op'>=</span> <span class='va'>slug</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># criando a figura</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/ggplot.html'>ggplot</a></span><span class='op'>(</span>mapping <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>tf_idf</span>, y <span class='op'>=</span> <span class='va'>token</span>, fill <span class='op'>=</span> <span class='va'>slug</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/facet_wrap.html'>facet_wrap</a></span><span class='op'>(</span><span class='op'>~</span> <span class='va'>slug</span>, scales <span class='op'>=</span> <span class='st'>'free'</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_bar.html'>geom_col</a></span><span class='op'>(</span>color <span class='op'>=</span> <span class='st'>'black'</span>, show.legend <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://rdrr.io/pkg/tidytext/man/reorder_within.html'>scale_y_reordered</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_manual.html'>scale_fill_manual</a></span><span class='op'>(</span>values <span class='op'>=</span> <span class='va'>cores_por_faccao</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/labs.html'>labs</a></span><span class='op'>(</span>
+    title <span class='op'>=</span> <span class='st'>'Quais as habilidades particulares às cartas de cada facção?'</span>,
+    x     <span class='op'>=</span> <span class='st'>'TF-IDF'</span>
+  <span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/theme.html'>theme</a></span><span class='op'>(</span>axis.title.y <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_blank</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
+</code></pre>
+</div>
+</details>
+<p><img src="quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/figure-html5/fig_habilidade_tfidf-1.png" width="1800" style="display: block; margin: auto;" /></p>
+</div>
+<p>Texto da carta.</p>
+<div class="layout-chunk" data-layout="l-body-outset">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>cartas</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># quebrando o string em tokens</span>
+  <span class='fu'><a href='https://rdrr.io/pkg/tidytext/man/unnest_tokens.html'>unnest_tokens</a></span><span class='op'>(</span>output <span class='op'>=</span> <span class='va'>token</span>, input <span class='op'>=</span> <span class='va'>texto</span>, to_lower <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># removendo os NAs e algumas palavras que não ajudam a visualização</span>
+  <span class='fu'><a href='https://rdrr.io/r/stats/filter.html'>filter</a></span><span class='op'>(</span><span class='op'>!</span><span class='fu'><a href='https://rdrr.io/r/base/NA.html'>is.na</a></span><span class='op'>(</span><span class='va'>token</span><span class='op'>)</span>, 
+         <span class='fu'>str_detect</span><span class='op'>(</span>string <span class='op'>=</span> <span class='va'>token</span>, pattern <span class='op'>=</span> <span class='st'>"scoia'tael|reinos|skellige|norte|dos"</span>, negate <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
+  <span class='co'># contando as categorias por faccao</span>
+  <span class='fu'>count</span><span class='op'>(</span><span class='va'>slug</span>, <span class='va'>token</span>, name <span class='op'>=</span> <span class='st'>'ocorrencias'</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># calculando o tf-idf</span>
+  <span class='fu'><a href='https://rdrr.io/pkg/tidytext/man/bind_tf_idf.html'>bind_tf_idf</a></span><span class='op'>(</span>term <span class='op'>=</span> <span class='va'>token</span>, document <span class='op'>=</span> <span class='va'>slug</span>, n <span class='op'>=</span> <span class='va'>ocorrencias</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># agrupando pela faccao</span>
+  <span class='fu'>group_by</span><span class='op'>(</span><span class='va'>slug</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># pegando os 15 tokens com maior tf-idf</span>
+  <span class='fu'>slice_max</span><span class='op'>(</span>order_by <span class='op'>=</span> <span class='va'>tf_idf</span>, n <span class='op'>=</span> <span class='fl'>15</span>, with_ties <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># desagrupando</span>
+  <span class='va'>ungroup</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># ordenando as colunas</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>token <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/pkg/tidytext/man/reorder_within.html'>reorder_within</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>token</span>, by <span class='op'>=</span> <span class='va'>tf_idf</span>, within <span class='op'>=</span> <span class='va'>slug</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='co'># criando a figura</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/ggplot.html'>ggplot</a></span><span class='op'>(</span>mapping <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>tf_idf</span>, y <span class='op'>=</span> <span class='va'>token</span>, fill <span class='op'>=</span> <span class='va'>slug</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/facet_wrap.html'>facet_wrap</a></span><span class='op'>(</span><span class='op'>~</span> <span class='va'>slug</span>, scales <span class='op'>=</span> <span class='st'>'free'</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_bar.html'>geom_col</a></span><span class='op'>(</span>color <span class='op'>=</span> <span class='st'>'black'</span>, show.legend <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://rdrr.io/pkg/tidytext/man/reorder_within.html'>scale_y_reordered</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/scale_manual.html'>scale_fill_manual</a></span><span class='op'>(</span>values <span class='op'>=</span> <span class='va'>cores_por_faccao</span><span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/labs.html'>labs</a></span><span class='op'>(</span>
+    title <span class='op'>=</span> <span class='st'>'Quais as habilidades particulares às cartas de cada facção?'</span>,
+    x     <span class='op'>=</span> <span class='st'>'TF-IDF'</span>
+  <span class='op'>)</span> <span class='op'>+</span>
+  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/theme.html'>theme</a></span><span class='op'>(</span>axis.title.y <span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/element.html'>element_blank</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
+</code></pre>
+</div>
+</details>
+<p><img src="quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao_files/figure-html5/fig_texto_tfidf-1.png" width="1800" style="display: block; margin: auto;" /></p>
+</div>
+<h1 id="stm">STM</h1>
+<h1 id="visualizando-o-embedding">Visualizando o Embedding</h1>
 <h1 id="conclusões">Conclusões</h1>
 <h1 id="possíveis-extensões">Possíveis Extensões</h1>
 <p>Dúvidas, sugestões ou críticas? É só me procurar pelo e-mail ou GitHub!</p>
