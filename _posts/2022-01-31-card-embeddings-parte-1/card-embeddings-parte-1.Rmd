@@ -1,5 +1,5 @@
 ---
-title: "Quao diferentes sao as cartas de Gwent de acordo com a sua faccao"
+title: "Que os temas que existem entre as cartas de Gwent?"
 description: |
   A short description of the post.
 author:
