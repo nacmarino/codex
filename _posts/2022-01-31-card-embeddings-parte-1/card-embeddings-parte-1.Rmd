@@ -59,7 +59,7 @@ library(ggridges) # para o ridge plot
 
 # carregando os dados
 cartas <- read_rds(file = 'data/cartas.rds')
-# cartas <- read_rds(file = '_posts/2022-01-23-quao-diferentes-sao-as-cartas-de-gwent-de-acordo-com-a-sua-faccao/data/cartas.rds')
+# cartas <- read_rds(file = '_posts/2022-01-31-card-embeddings-parte-1/data/cartas.rds')
 ```
 
 # Análise Exploratória de Dados
