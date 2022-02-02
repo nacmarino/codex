@@ -56,10 +56,26 @@ library(tidyverse) # core
 library(tidytext) # para manipular texto
 library(patchwork) # para compor figuras
 library(ggridges) # para o ridge plot
+library(stringi) # para trabalhar com texto
 
 # carregando os dados
 cartas <- read_rds(file = 'data/cartas.rds')
 # cartas <- read_rds(file = '_posts/2022-01-31-card-embeddings-parte-1/data/cartas.rds')
+
+# ajustando a tabela por conta de duas cartas má registradas
+cartas <- cartas %>% 
+  # removendo a carta Solução Engenhosa, que aparece duas vezes por conta de diferencas
+  # em seu nome em ingles
+  filter(!(localizedName == 'Solução engenhosa' & name != 'Blueprint')) %>% 
+  # ajustando o nome da carta Vidente, que aparece duas vezes pois existe uma na facção
+  # neutra e outra na Scoia'tael, mas sao cartas diferentes
+  mutate(
+    localizedName = case_when(localizedName == 'Vidente' ~ paste0(localizedName, ' (', slug, ')'),
+                              TRUE ~ localizedName)
+  ) %>% 
+  # colocando as cartas em ordem alfabetica
+  arrange(localizedName)
+cartas
 ```
 
 # Análise Exploratória de Dados
@@ -333,7 +349,63 @@ cartas %>%
   theme(axis.title.y = element_blank())
 ```
 
-# STM
+# Modelagem de Tópicos
+
+Lista de stopwords personalizada.
+
+```{r}
+my_stopwords <- c('a', 'ao', 'aos', 'cada', 'com', 'as', 'da', 'das', 'de', 'do', 'dos', 'disso', 'e', 'em', 'esta', 
+                   'ela', 'ele',  'elas', 'eles', 'foi', 'la', 'mais', 'nas', 'nesta', 'na', 'nas', 'nela', 'nele',
+                  'no', 'nos', 'o', 'os', 'ou', 'para', 'por', 'que', 'se', 'sem', 'seu', 'sua', 'si', 'todas', 
+                  'todos', 'um', 'uma', 'voce')
+```
+
+Preparando os dados.
+
+```{r cria_df_tokens}
+# contando ocorrencias de cada token por faccao
+df_tokens <- cartas %>% 
+  # quebrando o string em tokens
+  unnest_tokens(output = token, input = texto) %>% 
+  # removendo acentuacao
+  mutate(token = stri_trans_general(str = token, id = 'Latin-ASCII')) %>% 
+  # removendo stopwords
+  filter(!token %in% my_stopwords) %>% 
+  # removendo numeros
+  filter(str_detect(string = token, pattern = '[0-9]', negate = TRUE)) %>% 
+  # contando as categorias por faccao
+  count(localizedName, token, name = 'ocorrencias')
+df_tokens
+```
+
+Criando matriz DFM.
+
+```{r}
+# criando matriz no formato document-feature matrix
+df_esparsa <- df_tokens %>% 
+  cast_sparse(row = localizedName, column = token, value = ocorrencias)
+```
+
+Ajustando o modelo de tópicos
+
+```{r}
+# carregando mais pacotes
+library(stm) # para a modelagem de topicos
+
+# setando a seed
+set.seed(33)
+
+# buscando melhor valor de K
+modelo <- stm(documents = df_esparsa, init.type = 'Spectral', seed = 333, K = 6)
+```
+
+Visualizando os topicos encontrados.
+
+```{r}
+labelTopics(modelo)
+```
+
+
 
 # Visualizando o Embedding
 
