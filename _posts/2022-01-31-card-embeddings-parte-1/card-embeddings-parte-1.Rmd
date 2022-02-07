@@ -874,10 +874,31 @@ nearest_neighbors <- function(df, token) {
   df %>%
     widely(
       ~ {
+        # cria matriz n x m, onde n eh o numero de tokens e m eh o numero de dimensoes do svd
+        # essa matriz vai ter apenas o embedding do token em questao, de forma que cada linha
+        # vai repetir o nome do token tantas vezes quantas forem a quantidade de tokens e cada
+        # coluna vai ter o valor do embedding do token-alvo para aquela dimensao do SVD. Assim
+        # os elementos dentro de cada coluna vao ter todos o mesmo valor - i.e., o valor do
+        # embedding para aquela dimensao para o token-alvo
         y <- .[rep(token, nrow(.)), ]
-        res <- rowSums(. * y) / 
-          (sqrt(rowSums(. ^ 2)) * sqrt(sum(.[token, ] ^ 2)))
-        
+        # no codigo abaixo o '.' representa o embedding em si, que eh uma matriz n x m onde
+        # o n eh cada um dos tokens disponiveis e o m eh igual ao numero de dimensoes do svd
+        # o objeto res representa a similaridade do coseno entre os embeddings de cada token
+        # e o token alvo:
+        # - rowSums(. * y): multiplica a matriz do embedding de todos os tokens pela matriz
+        # do token alvo
+        # - sqrt(rowSums(. ^ 2)): retorna um vetor numerico, com um elemento por token. o valor
+        # associado à cada token representa o somatorio dos valores entre todas as dimensoes
+        # de seu embedding
+        # sqrt(sum(.[token, ] ^ 2)): retorna um valor numérico, que representa o somatorio dos
+        # valores entre todas as dimensoes do embedding para o token-alvo
+        # (sqrt(rowSums(. ^ 2)) * sqrt(sum(.[token, ] ^ 2))): multiplica o valor do embedding
+        # de cada token pelo token-alvo, servindo para padronizar a dissimilaridade calculada
+        # pelo 'rowSums(. * y)'
+        # o resultado do res entao representa a distancia do coseno entre o token-alvo e cada
+        # outro token no corpus
+        res <- rowSums(. * y) / (sqrt(rowSums(. ^ 2)) * sqrt(sum(.[token, ] ^ 2)))
+        # coloca o resultado em uma matriz
         matrix(res, ncol = 1, dimnames = list(x = names(res)))
       },
       sort = TRUE
