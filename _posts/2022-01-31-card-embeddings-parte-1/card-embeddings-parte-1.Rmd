@@ -22,7 +22,7 @@ draft: true
 
 ```{r setup, include=FALSE}
 # setando as opções gerais dos code chunks
-knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, cache = FALSE, dpi = 200, fig.align = 'center')
+knitr::opts_chunk$set(echo = FALSE, code_folding = FALSE, cache = TRUE, dpi = 200, fig.align = 'center')
 
 # presetando o ggplot2
 library(ggplot2)
@@ -90,7 +90,7 @@ cartas %>%
   mutate(slug = fct_reorder(.f = slug, .x = n_cartas)) %>%
   # criando a figura
   ggplot(mapping = aes(x = n_cartas, y = slug, fill = slug)) +
-  geom_col(color = 'black', show.legend = FALSE) +
+  geom_col(color = 'black', size = 0.3, show.legend = FALSE) +
   geom_text(mapping = aes(label = n_cartas), nudge_x = 10, fontface = 'bold') +
   scale_fill_manual(values = cores_por_faccao) +
   labs(
@@ -305,7 +305,7 @@ cartas %>%
   # criando a figura
   ggplot(mapping = aes(x = tf_idf, y = token, fill = slug)) +
   facet_wrap(~ slug, scales = 'free') +
-  geom_col(color = 'black', show.legend = FALSE) +
+  geom_col(color = 'black', size = 0.3, show.legend = FALSE) +
   scale_y_reordered() +
   scale_fill_manual(values = cores_por_faccao) +
   labs(
@@ -339,7 +339,7 @@ cartas %>%
   # criando a figura
   ggplot(mapping = aes(x = tf_idf, y = token, fill = slug)) +
   facet_wrap(~ slug, scales = 'free') +
-  geom_col(color = 'black', show.legend = FALSE) +
+  geom_col(color = 'black', size = 0.3, show.legend = FALSE) +
   scale_y_reordered() +
   scale_fill_manual(values = cores_por_faccao) +
   labs(
@@ -349,65 +349,543 @@ cartas %>%
   theme(axis.title.y = element_blank())
 ```
 
-# Modelagem de Tópicos
+# Ajustando um modelo de tópicos
 
 Lista de stopwords personalizada.
 
-```{r}
-my_stopwords <- c('a', 'ao', 'aos', 'cada', 'com', 'as', 'da', 'das', 'de', 'do', 'dos', 'disso', 'e', 'em', 'esta', 
-                   'ela', 'ele',  'elas', 'eles', 'foi', 'la', 'mais', 'nas', 'nesta', 'na', 'nas', 'nela', 'nele',
-                  'no', 'nos', 'o', 'os', 'ou', 'para', 'por', 'que', 'se', 'sem', 'seu', 'sua', 'si', 'todas', 
-                  'todos', 'um', 'uma', 'voce')
+```{r lista_stopwords}
+my_stopwords <- c('a', 'ao', 'aos', 'ate', 'cada', 'com', 'as', 'como', 'da', 'das', 
+                  'de', 'dela', 'delas', 'dele', 'desta',  'deste', 'destas', 'destes',
+                  'deles', 'do', 'dos', 'disso', 'e', 'es', 'em', 'esta',  'ela', 'ele',
+                  'elas', 'eles', 'for', 'foi', 'la', 'lhe', 'mais', 'nas', 'nesta', 
+                  'na', 'nas', 'nela', 'nele', 'no', 'nos', 'o', 'os', 'ou', 'para',
+                  'por', 'pelo', 'que', 'sao', 'se', 'so', 'sos', 'sem', 'seu', 'seus',
+                  'sua', 'suas', 's', 'si', 'todas', 'todos', 'tem', 'um', 'uma', 'voce',
+                  'vez', 'longa', 'distancia', 'corpo', 'duas', 'dois', 'metade', 'reinos',
+                  'norte', "scoia'tael", 'skellige', 'nilfgaard', 'sindicato', 'neutra',
+                  'concede', 'tiver', 'seguida', 'seja', 'caso', 'faz', 'usa', 'usar',
+                  'usando', 'usada', 'usado', 'tambem', 'houver', 'ha', 'pela', 'mesma',
+                  'tiver', 'nao', 'nessa', 'nessas', 'nesse', 'nesses', 'qualquer', 
+                  'estiver', 'entre', 'unidade', 'unidades', 'mobilizacao', 'sempre', 
+                  'mesmo', 'perto', 'apos', 'quando', 'neste', 'nestes', "scoia'tel",
+                  'enquanto')
 ```
 
 Preparando os dados.
 
 ```{r cria_df_tokens}
+txt <- 'Esta habilidade adiciona [0-9]{2} (?:(?:de )?recrutamento[s]? ao limite )?de recrutamento (ao limite )?do (?:seu )?baralho.'
+
 # contando ocorrencias de cada token por faccao
 df_tokens <- cartas %>% 
+  # removendo texto comum a todas as cartas de habilidade do lider
+  mutate(
+    texto = str_remove(string = texto, pattern = txt)
+  ) %>% 
   # quebrando o string em tokens
   unnest_tokens(output = token, input = texto) %>% 
   # removendo acentuacao
-  mutate(token = stri_trans_general(str = token, id = 'Latin-ASCII')) %>% 
+  mutate(token = stri_trans_general(str = token, id = 'Latin-ASCII')) %>%
   # removendo stopwords
   filter(!token %in% my_stopwords) %>% 
-  # removendo numeros
+  # removendo os digitos
   filter(str_detect(string = token, pattern = '[0-9]', negate = TRUE)) %>% 
-  # contando as categorias por faccao
-  count(localizedName, token, name = 'ocorrencias')
+  # substituindo algumas formas
+  mutate(
+    token = str_replace(string = token, pattern = '(?<=o|a)s$', replacement = ''),
+    token = str_replace(string = token, pattern = '(?<=d|t)es$', replacement = 'e'),
+    token = str_replace(string = token, pattern = '(?<=r)es$', replacement = ''),
+    token = str_replace(string = token, pattern = 'veneno|envenenamento|envenenad[ao]', replacement = 'envenena'),
+    token = str_replace(string = token, pattern = 'bloqueada|bloquei[ao]', replacement = 'bloqueio'),
+    token = str_replace(string = token, pattern = 'reforcad[ao]', replacement = 'reforcada'),
+    token = str_replace(string = token, pattern = 'anoes', replacement = 'anao'),
+    token = str_replace(string = token, pattern = 'aleatoriamente', replacement = 'aleatorio'),
+    token = str_replace(string = token, pattern = 'aleatoria', replacement = 'aleatorio'),
+    ) %>% 
+  # contando ocorrencia dos lemmas por carta
+  count(localizedName, token, name = 'ocorrencias') 
+df_tokens
+```
+
+Lematizando os tokens e contando-os.
+
+```{r eval=FALSE, code_folding = TRUE}
+# carregando mais pacotes
+library(spacyr) # para ajudar com lematizacao
+
+# inicializando o spacy
+spacy_initialize(model = 'pt_core_news_lg')
+
+# criando uma base de-para para lemmatizar os tokens
+de_para_lemma <- distinct(df_tokens, token) %>% 
+  # colocando os tokens em um vetor
+  pull(token) %>% 
+  # parseando os tokens para o spacyr
+  spacy_parse(pos = FALSE, tag = FALSE, lemma = TRUE, dependency = FALSE) %>% 
+  # passando o resultado para um tibble
+  tibble %>% 
+  # pegando apenas as colunas que interessam
+  select(token, lemma)
+  
+# lemmatizando os tokens e contando ocorrencias
+df_tokens <- df_tokens %>% 
+  # juntando o de-para de lemmas aos tokens
+  left_join(y = de_para_lemma, by = 'token') %>% 
+  # contando ocorrencia dos lemmas por carta
+  count(localizedName, lemma, name = 'ocorrencias')
 df_tokens
 ```
 
 Criando matriz DFM.
 
-```{r}
+```{r parse_para_esparsa}
 # criando matriz no formato document-feature matrix
 df_esparsa <- df_tokens %>% 
   cast_sparse(row = localizedName, column = token, value = ocorrencias)
 ```
 
-Ajustando o modelo de tópicos
+Procurando o valor de K.
 
-```{r}
+```{r procura_valor_k}
 # carregando mais pacotes
 library(stm) # para a modelagem de topicos
+library(furrr) # para paralelizar a busca
 
 # setando a seed
 set.seed(33)
 
+# setando o processamento paralelo
+plan(multisession)
+
 # buscando melhor valor de K
-modelo <- stm(documents = df_esparsa, init.type = 'Spectral', seed = 333, K = 6)
+search_K <- tibble(
+  K = seq(from = 6, to = 30, by = 3)
+) %>% 
+  mutate(
+    # rodando o STM sem nenhuma feature
+    padrao = future_map(.x = K, 
+                        .f = ~ stm(documents = df_esparsa, init.type = 'Spectral', 
+                                   seed = 333, K = .x, verbose = FALSE),
+                        .options = furrr_options(seed = TRUE)
+    ),
+    # passando a faccao para o content
+    features = future_map(.x = K, 
+                          .f = ~ stm(documents = df_esparsa, init.type = 'Spectral', 
+                                     seed = 333, K = .x, content = ~ slug, data = cartas,
+                                     verbose = FALSE),
+                          .options = furrr_options(seed = TRUE)
+    )
+  ) %>% 
+  pivot_longer(cols = c(padrao, features), names_to = 'tipo', values_to = 'modelos')
+
+# setando o processamento sequencial
+plan(sequential)
 ```
+
+Extraindo métricas de avaliação.
+
+```{r fig_metricas de avaliacao, layout = 'l-body-outset', code_folding = TRUE, fig.height = 6, fig.width = 8}
+# extraindo as metricas de avaliacao da clusterizacao
+metricas <- search_K %>% 
+  # calculando a exclusividade e a coerencia dos topicos
+  mutate(
+    exclusividade = map(.x = modelos, .f = safely(exclusivity)),
+    exclusividade = map(.x = exclusividade, .f = 'result'),
+    coerencia     = map(.x = modelos, .f = semanticCoherence, documents = df_esparsa),
+    residuos      = map(.x = modelos, .f = checkResiduals, df_esparsa),
+    residuos      = map(.x = residuos, 'dispersion')
+  ) %>% 
+  # dropando a coluna com os modelos
+  select(-modelos) %>% 
+  # desaninhando as colunas de coerencia e exclusividade
+  unnest(cols = c(exclusividade, coerencia, residuos))
+
+# plotando as metricas individualmente
+fig_painel_metricas <- metricas %>%
+  # passando a base para o formato longo
+  pivot_longer(cols = c(exclusividade, coerencia, residuos), 
+               names_to = 'metrica', values_to = 'valor') %>% 
+  # dropando valores nulos
+  drop_na() %>% 
+  # agrupando pelo valor de K e da metrica
+  group_by(K, metrica, tipo) %>% 
+  # calculando o valor da media da metrica por valor de K
+  summarise(
+    valor = mean(x = valor, na.rm = TRUE), .groups = 'drop'
+  ) %>% 
+  # renomeando as metricas
+  mutate(
+    metrica = case_when(metrica == 'coerencia' ~ 'Coerência Semântica',
+                        TRUE ~ str_to_title(string = metrica))
+  ) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = as.factor(K), y = valor, group = tipo, color = tipo)) +
+  facet_wrap(~ metrica, scales = 'free') +
+  geom_line(size = 1, show.legend = FALSE) +
+  geom_point(fill = 'white', color = 'black', shape = 21, size = 3, show.legend = FALSE) +
+  labs(
+    caption = 'A linha azul representa o modelo que não contempla que a ocorrência das palavras pode variar dentro dos tópicos em função da identidade da facção.',
+    x       = 'Quantidade de tópicos (K)',
+    y       = 'Valor da métrica'
+  )
+
+# plotando as metricas de coerencia vs exclusividade
+fig_coerencia_exclusividade <- metricas %>% 
+  # filtrando os resultado do modelo sem content
+  filter(tipo == 'padrao') %>% 
+  # adicionando a sequencia do numero de topicos
+  mutate(
+    K = ifelse(test = K < 10, yes = paste0('0', K), no = K),
+    K = paste(K, 'tópicos')
+  ) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = coerencia, y = exclusividade, color = K)) +
+  facet_wrap(~ K) +
+  geom_point(shape = 16, size = 3, show.legend = FALSE) +
+  scale_color_viridis_d(direction = -1, begin = 0.2, end = 0.9) +
+  labs(
+    x = 'Coerência Semântica',
+    y = 'Exclusividade'
+  )
+
+# criando o painel
+(fig_painel_metricas / fig_coerencia_exclusividade) +
+  plot_layout(heights = c(1, 2)) +
+  plot_annotation(
+    title = 'Quantos tópicos devemos usar?', 
+    subtitle = 'A quantidade de tópicos escolhida deve atender ao melhor balanço entre uma alta coerência semântica e exclusividade',
+    tag_levels = 'A', tag_prefix = '(', tag_suffix = ')') & 
+  theme(plot.tag = element_text(size = 10, face = 'bold'))
+```
+
+Ajustando o modelo de tópicos
+
+```{r ajusta_modelo}
+# setando a seed
+set.seed(33)
+
+# buscando melhor valor de K
+modelo <- stm(documents = df_esparsa, init.type = 'Spectral', seed = 333, 
+              K = 18, verbose = FALSE)
+```
+
+# Entendendo os tópicos
 
 Visualizando os topicos encontrados.
 
-```{r}
-labelTopics(modelo)
+```{r fig_beta_padrao, layout = 'l-body-outset', code_folding = TRUE, fig.height = 9, fig.width = 9}
+# criando figura das palavras por topicos
+tidy(x = modelo, matrix = 'beta') %>% 
+  # agrupando pelo topico
+  group_by(topic) %>% 
+  # pegando as 10 palavras com maior afinade com cada tópico
+  slice_max(order_by = beta, n = 10, with_ties = FALSE) %>% 
+  # criando escala numerica para colorir dentro dos topicos
+  mutate(escala = beta / max(beta)) %>% 
+  # desagrupando os dados
+  ungroup %>% 
+  # organizando as informacoes para plotar
+  mutate(
+    topic = ifelse(test = topic < 10, 
+                   yes = paste0('Tópico 0', topic), no = paste0('Tópico', topic)),
+    term = reorder_within(x = term, by = beta, within = topic)
+  ) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = beta, y = term, fill = escala)) +
+  facet_wrap(~ topic, scales = 'free', ncol = 4) +
+  geom_col(color = 'black', size = 0.3, show.legend = FALSE) +
+  scale_y_reordered() +
+  scale_fill_viridis_c(begin = 0.2, end = 0.9) +
+  labs(
+    title    = 'Quais as palavras mais prováveis de serem observadas em cada tópico?',
+    x        = expression(bold(paste('Probabilidade de ocorrência, ', beta)))
+  ) +
+  theme(axis.title.y = element_blank())
 ```
 
+Visualizando os topicos encontrados - parte 2.
 
+```{r fig_beta, eval=FALSE, layout = 'l-body-outset', code_folding = TRUE, fig.height = 9, fig.width = 9}
+# extraindo os dados dos betas por topico
+df_betas <- modelo$beta %>% 
+  # pegando a matriz com o log das probabilidades para o beta
+  pluck('logbeta') %>% 
+  # parseando as matrizes para um dataframe
+  map(.f = data.frame) %>% 
+  # passando o log da probabilidade para probabilidade
+  map(.f = exp) %>% 
+  # colocando o nome nas colunas
+  map(.f = ~ `colnames<-`(x = ., value = df_esparsa@Dimnames[[2]])) %>%
+  # adicionando o identificador do topico a cada linha
+  map(.f = mutate, topic = 1:n()) %>% 
+  # renomeando os elementos da lista
+  `names<-`(value = c('Monsters', 'Neutral', 'Nilfgaard', 'Northern Realms', 
+                      "Scoia'tael", 'Skellige', 'Syndicate')) %>% 
+  # juntando todos
+  map_dfr(tibble, .id = 'slug') %>%
+  # passando a base para o formato longo
+  pivot_longer(cols = -c(slug, topic), names_to = 'term', values_to = 'beta')
 
-# Visualizando o Embedding
+# criando figura das palavras por topicos
+df_betas %>% 
+  # agrupando pelo topico e token
+  group_by(topic, term) %>% 
+  # calculando a media da probabilidade para aquele token naquele topico
+  summarise(beta = mean(x = beta, na.rm = TRUE), .groups = 'drop') %>% 
+  # agrupando pelo topico
+  group_by(topic) %>% 
+  # pegando as 10 palavras com maior afinade com cada tópico
+  slice_max(order_by = beta, n = 10, with_ties = FALSE) %>% 
+  # criando escala numerica para colorir dentro dos topicos
+  mutate(escala = beta / max(beta)) %>% 
+  # desagrupando os dados
+  ungroup %>% 
+  # organizando as informacoes para plotar
+  mutate(
+    topic = ifelse(test = topic < 10, 
+                   yes = paste0('Tópico 0', topic), no = paste0('Tópico', topic)),
+    term = reorder_within(x = term, by = beta, within = topic)
+  ) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = beta, y = term, fill = escala)) +
+  facet_wrap(~ topic, scales = 'free', ncol = 4) +
+  geom_col(color = 'black', size = 0.3, show.legend = FALSE) +
+  scale_y_reordered() +
+  scale_fill_viridis_c(begin = 0.2, end = 0.9) +
+  labs(
+    title    = 'Quais as palavras mais prováveis de serem observadas em cada tópico?',
+    x        = expression(bold(paste('Probabilidade de ocorrência, ', beta)))
+  ) +
+  theme(axis.title.y = element_blank())
+```
+
+Visualizando a proporcao de topicos.
+
+```{r fig_gamma, layout = 'l-body-outset', code_folding = TRUE, fig.height = 6, fig.width = 10}
+# criando tabela com as 5 palavras mais frequentes por topico para plotarmos abaixo
+df_top_palavras <- tidy(x = modelo, matrix = 'beta') %>%
+  # agrupando pelo topico
+  group_by(topic) %>%
+  # pegando as 10 palavras com maior afinade com cada tópico
+  slice_max(order_by = beta, n = 5, with_ties = FALSE) %>%
+  # colocando essas palavras em um vetor
+  summarise(palavras = paste0(term, collapse = ', '))
+
+# se usarmos o content quando rodar o STM, é necessário descomentar as linhas abaixo
+# df_top_palavras <- df_betas %>%
+#   # agrupando pelo topico e token
+#   group_by(topic, term) %>% 
+#   # calculando a media da probabilidade para aquele token naquele topico
+#   summarise(beta = mean(x = beta, na.rm = TRUE), .groups = 'drop') %>% 
+#   # agrupando pelo topico
+#   group_by(topic) %>%
+#   # pegando as 10 palavras com maior afinade com cada tópico
+#   slice_max(order_by = beta, n = 5, with_ties = FALSE) %>%
+#   # colocando essas palavras em um vetor
+#   summarise(palavras = paste0(term, collapse = ', '))
+
+# criando a figura de prevalencia por topico
+tidy(x = modelo, matrix = 'gamma') %>% 
+  # agrupando pelo topico
+  group_by(topic) %>% 
+  # extraindo a media da probabilidade para cada topico
+  # esse é o valor esperado da prevalencia do tópico
+  summarise(
+    media = mean(x = gamma), .groups = 'drop'
+  ) %>% 
+  # juntando as 5 palavras mais frequentes por topico
+  left_join(y = df_top_palavras, by = 'topic') %>% 
+  # reordenando as colunas
+  mutate(
+    topic = ifelse(test = topic < 10, yes = paste0('0', topic), no = topic),
+    topic = paste('Tópico', topic),
+    topic = fct_reorder(.f = topic, .x = media)
+  ) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = media, y = topic, fill = media)) +
+  geom_col(color = 'black', size = 0.3, show.legend = FALSE) +
+  geom_text(mapping = aes(label = round(x = media, digits = 3), color = media <= 0.04), 
+            nudge_x = -0.01, fontface = 'bold', show.legend = FALSE) +
+  geom_text(mapping = aes(label = palavras), nudge_x = 0.005, hjust = 0) +
+  scale_x_continuous(breaks = seq(from = 0, to = 0.25, by = 0.05),
+                     limits = c(0, 0.27)) +
+  scale_fill_viridis_c(begin = 0.2, end = 0.9) +
+  scale_color_manual(values = c('black', 'white')) +
+  labs(
+    title = 'Quais os tópicos mais prevalentes entre as cartas?',
+    x     = expression(bold(paste('Probabilidade de ocorrência, ', gamma)))
+  ) +
+  theme(axis.title.y = element_blank())
+```
+
+Visualiza correlação entre topicos.
+
+```{r fig_correlacao_topicos, layout = 'l-body-outset', code_folding = TRUE, fig.height=3, fig.width=3}
+# carregando pacotes
+library(corrr) # para o plot abaixo
+
+# criando uma plot de correlacao entre os topicos
+topicCorr(model = modelo) %>% 
+  # pegando a matriz de correlacao
+  pluck('cor') %>% 
+  # colocando o nome das dimensoes
+  `rownames<-`(value = paste0('Tópico ', 1:18)) %>% 
+  `colnames<-`(value = paste0('Tópico ', 1:18)) %>% 
+  # passando para uma matriz do corrr
+  as_cordf() %>% 
+  # passando a matriz de correlacao para o formato longo
+  stretch(na.rm = TRUE, remove.dups = TRUE) %>% 
+  # adicionando contagem de ocorrencias de x e y para ordenar as linhas
+  # e colunas da figura
+  add_count(x, name = 'n_x') %>% 
+  add_count(y, name = 'n_y') %>% 
+  mutate(
+    y = fct_reorder(.f = y, .x = n_y, .desc = TRUE),
+    x = fct_reorder(.f = x, .x = n_x, .desc = TRUE)
+  ) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = x, y = y, fill = r)) +
+  geom_tile(color = 'black') +
+  geom_text(mapping = aes(label = round(x = r, digits = 2), color = abs(x = r) > 0.3), 
+            fontface = 'bold', show.legend = FALSE) +
+  scale_fill_gradient2(low = 'midnightblue', mid = 'white', high = 'firebrick', midpoint = 0) +
+  scale_color_manual(values = c('NA', 'black')) +
+  labs(
+    title    = 'Qual a relação entre os tópicos identificados?',
+    subtitle = 'São poucos os tópicos que compartilham algum tipo de relação'
+  ) +
+  theme(
+    axis.title  = element_blank(),
+    panel.grid  = element_blank(),
+    axis.text.x = element_text(angle = 30, hjust = 1)
+  )
+```
+
+Estimando a relacao entre topicos e metadados.
+
+```{r modela_topicos_metadados, layout = 'l-body-outset', code_folding = TRUE,  fig.height = 9, fig.width = 9}
+# estimando a contribuicao das features para explicar os clusters
+explica_topicos <- estimateEffect(1:18 ~ 0 + slug, stmobj = modelo, 
+                                  metadata = cartas, uncertainty = 'Global')
+
+# pegando os slopes das regressoes
+tidy(x = explica_topicos) %>% 
+  # ajustando os dados para plotar
+  mutate(
+    # ajustando o nome das faccoes
+    term  = str_remove(string = term, pattern = 'slug'),
+    term  = str_replace_all(string = term, pattern = '\\(Intercept\\)', replacement = 'Monsters'),
+    # criando codificacao de cor a partir do nome original da faccao
+    cores = term,
+    # ajustando o nome dos topicos
+    topic = ifelse(test = topic < 10, yes = paste0('Tópico 0', topic), no = paste0('Tópico ', topic)),
+    # ordenando as faccoes dentro dos topicos atraves da estimativa do slope
+    term  = reorder_within(x = term, by = estimate, within = topic)
+  ) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = estimate, y = term, fill = cores, group = 1)) +
+  facet_wrap(~ topic, scales = 'free', ncol = 4) +
+  geom_point()
+  geom_col(color = 'black', size = 0.3, show.legend = FALSE) +
+  scale_y_reordered() +
+  scale_fill_manual(values = cores_por_faccao) +
+  labs(
+    title = 'Quais as facções mais relacionadas com cada tópico?',
+    x     = 'Coeficientes da regressão'
+  ) +
+  theme(axis.title.y = element_blank())
+```
+
+# Utilizando os tópicos
+
+Juntando probabilidades às cartas.
+
+```{r embedding_matrix}
+# pegando a matriz gamma - as probabilidade de cada topico por documento
+embeddings <- tidy(x = modelo, matrix = 'gamma') %>% 
+  # juntando o prefixo topic_ ao numero de cada topico
+  mutate(topic = paste0('topic_', topic)) %>% 
+  # pivoteando a tabela para o formato largo
+  pivot_wider(id_cols = document, names_from = topic, values_from = gamma) %>% 
+  # agrupando o dataframe por linha
+  rowwise() %>% 
+  # extraindo o topico mais provavel por linha
+  mutate(
+    topK = which.max(c_across(contains('topic_'))),
+    topK = ifelse(test = topK < 10, yes = paste0('Tópico 0', topK), no = paste0('Tópico ', topK))
+  ) %>% 
+  # desagrupando o dataframe
+  ungroup %>% 
+  # colocando o nome das cartas na coluna do nome do documento
+  mutate(document = cartas$localizedName) %>% 
+  # juntando os metadados das cartas
+  left_join(y = cartas, by = c('document' = 'localizedName'))
+embeddings
+```
+
+Ajustando TSNE.
+
+```{r visualiza_tsne, layout = 'l-body-outset', code_folding = TRUE, fig.height=6, fig.width=8}
+# carregando o pacote
+library(Rtsne) # para rodar o TSNE
+library(plotly) # para visualizar o TSNE
+
+# setando a seed
+set.seed(33)
+
+# ajustando o TSNE
+tsne_results <- select(embeddings, contains('topic_')) %>% 
+  # passando objeto para matrix
+  as.matrix() %>% 
+  # ajustando tSNE
+  Rtsne(check_duplicates = FALSE, perplexity = 50)
+
+# plotando resultados do TSNE
+tsne_results %>% 
+  # pegando os resultado do TSNE
+  pluck('Y') %>% 
+  # passando para um dataframe
+  data.frame %>% 
+  # renomeando as colunas
+  `names<-`(value = c('tsne1', 'tsne2')) %>% 
+  # passando para um tibble
+  tibble %>% 
+  # juntando com o nome das cartas
+  bind_cols(embeddings) %>% 
+  # criando a figura
+  plot_ly(x = ~ tsne1, y = ~ tsne2, color = ~ slug, data = ., colors = cores_por_faccao,
+          mode = 'markers', type = 'scatter', marker = list(size = 7, opacity = 0.7),
+          hoverinfo = 'text', 
+          hovertext = ~ paste0(
+            '<b>Tópico prevalente:</b> ', topK, '<br>',
+            '<b>Carta:</b> ', document, '<br>',
+            '<b>Raridade:</b> ', rarity, '<br>',
+            '<b>Tipo:</b> ', type, '<br>',
+            str_wrap(string = texto, width = 50)
+            )
+  ) %>% 
+  layout(xaxis = list(title = 'Dimensão 1'), yaxis = list(title = 'Dimensão 2'))
+```
+
+Nearest neighbors.
+
+```{r nearest_neighbors}
+nearest_neighbors <- function(df, token) {
+  df %>%
+    widely(
+      ~ {
+        y <- .[rep(token, nrow(.)), ]
+        res <- rowSums(. * y) / 
+          (sqrt(rowSums(. ^ 2)) * sqrt(sum(.[token, ] ^ 2)))
+        
+        matrix(res, ncol = 1, dimnames = list(x = names(res)))
+      },
+      sort = TRUE
+    )(item1, dimension, value) %>%
+    select(-item2)
+}
+```
+
 
 # Conclusões
 
