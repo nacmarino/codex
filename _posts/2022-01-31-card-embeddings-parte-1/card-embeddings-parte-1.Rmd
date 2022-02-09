@@ -1,19 +1,20 @@
 ---
-title: "Que os temas que existem entre as cartas de Gwent?"
+title: "Como encontrar as cartas de Gwent mais similares entre si?"
 description: |
-  A short description of the post.
+  Já olhamos os decks de Gwent para identificar e explorar as regras de associação entre as cartas, o que alavanca as estratégias de utilização das mesmas conhecidas pela comunidade. Neste post vamos tomar outra abordagem e buscar os pares de cartas cujas características são mais similares entre si e que, portanto, poderia fornecer algum outro tipo de estratégia ainda não explorada e/ou facilitar a nossa vida quanto à escolha das cartas que colocaremos em um deck
 author:
   - first_name: Nicholas 
     last_name: Marino
     url: https://github.com/nacmarino
 date: 01-31-2022
+bibliography: bibliografia.bib
 categories:
   - boardgames
-  - tidymodels
-  - vegan
+  - topic models
+  - stm
 output:
   distill::distill_article:
-    self_contained: false
+    self_contained: true
     toc: true
     code_folding: true
     highlight: rstudio
@@ -48,6 +49,14 @@ cores_por_faccao <- c('Monsters' = 'red', 'Nilfgaard' = 'grey30', 'Northern Real
 
 # Motivação
 
+Há algum tempo atrás construí um _scrapper_ para raspar a biblioteca de decks de Gwent, de forma à usar esses dados para me ajudar a tomar melhores decisões na hora de montar meus próprios decks. Neste sentido, uma das primeiras coisas que fiz foi tentar entender os padrões de co-ocorrência das cartas de Gwent entre os decks contribuídos pela comunidade, utilizando para isso uma análise orientada à regras de associação - técnica muito utilizada em análises de carrinho de compra (_i.e._, _market basket analysis_), além de ser uma ferramenta útil na hora de uma análise exploratória de dados. Este primeiro exercício acabou sendo bastante positivo, pois consegui extrair alguns insights bastante importantes que eu não tinha visibilidade, e que acabaram melhorando a minha estratégia e experiência de jogo.
+
+Um ponto importante daquela primeira análise é que ela olha para os padrões de co-ocorrência de cartas _conhecidos_ e _explorados_ pela comunidade, deixando de fora àquelas combinações de cartas que teriam o _potencial_ de funcionar juntas mas que nunca foram testadas. Por exemplo, existe uma mecânica de envenenamento, no qual se uma carta receber este _status_ duas vezes ela é imediatamente destruída. Nesse contexto, existem algumas cartas específicas que são usadas com uma frequência muito alta para implementar esta mecânica, ainda que existam muitas outras cartas que também o possam fazer mas que não são usualmente postas nos decks. As mecânicas implementadas por cada carta são apresentadas em sua descrição, mas existem algumas formas diferentes de descrever um mesmo tipo de mecânica além de diferenças na forma como elas são disparadas entre as as facções. Assim, identificar as cartas que têm mecânicas similares e o potencial de serem usadas juntas passa a ser uma tarefa viável se pudéssemos agrupar as cartas de acordo com os padrões de texto existente em suas descrições.
+
+Uma forma de implementar este agrupamento através do texto é através da modelagem de tópicos, que é uma técnica de aprendizado não-supervisionado que faz uso de modelos estatísticos para encontrar tópicos abstratos que ocorrem em uma coleção de textos através das palavras que os compõem. Existem alguns modelos que podem ser implementados para esta finalidade, sendo o mais conhecido deles a LDA - _Latent Dirichlet Allocation_; todavia, vou utilizar este post para estudar, explorar e demonstrar as funcionalidades de um outro modelo de tópicos, o STM - _Structural Topic Model_ (@stm). Meu objetivo com isso será utilizar este modelo para criar uma representação do quão similares as cartas são de acordo com seus padrões de texto e utilizar àquela representação para encontrar as cartas mais similares àquela que eu resolver buscar. 
+
+Antes de chegar aos objetivos finais desta análise vamos cobrir alguns pontos importantes. Iniciaremos falando um pouco sobre a aquisição dos dados, passando na sequência para uma breve análise exploratória. Começaremos a modelagem de tópicos falando um pouquinho mais da intuição por trás do STM e, então, vamos implementar tanto uma busca pela quantidade de tópicos que devemos utilizar antes de ajustar o modelo em si. A partir daí conduziremos algumas análises para o pós-processamento, entedimento dos tópicos e validação do modelo, e fecharemos então o post mostrando a aplicação do modelo para atingir os objetivos que defini anteriormente. 
+
 # Carregando os Dados
 
 ```{r carrega_dados}
@@ -57,6 +66,8 @@ library(tidytext) # para manipular texto
 library(patchwork) # para compor figuras
 library(ggridges) # para o ridge plot
 library(stringi) # para trabalhar com texto
+library(reactable) # para tabelas interativas
+library(reactablefmtr) # para ajudar com o reactable
 
 # carregando os dados
 cartas <- read_rds(file = 'data/cartas.rds')
@@ -720,7 +731,7 @@ tidy(x = modelo, matrix = 'gamma') %>%
 
 Visualiza correlação entre topicos.
 
-```{r fig_correlacao_topicos, layout = 'l-body-outset', code_folding = TRUE, fig.height=3, fig.width=3}
+```{r fig_correlacao_topicos, layout = 'l-body-outset', code_folding = TRUE, fig.height=5, fig.width=8}
 # carregando pacotes
 library(corrr) # para o plot abaixo
 
@@ -785,7 +796,6 @@ tidy(x = explica_topicos) %>%
   # criando a figura
   ggplot(mapping = aes(x = estimate, y = term, fill = cores, group = 1)) +
   facet_wrap(~ topic, scales = 'free', ncol = 4) +
-  geom_point()
   geom_col(color = 'black', size = 0.3, show.legend = FALSE) +
   scale_y_reordered() +
   scale_fill_manual(values = cores_por_faccao) +
@@ -825,7 +835,7 @@ embeddings
 
 Ajustando TSNE.
 
-```{r visualiza_tsne, layout = 'l-body-outset', code_folding = TRUE, fig.height=6, fig.width=8}
+```{r visualiza_tsne, layout = 'l-body-outset', code_folding = TRUE}
 # carregando o pacote
 library(Rtsne) # para rodar o TSNE
 library(plotly) # para visualizar o TSNE
@@ -838,7 +848,7 @@ tsne_results <- select(embeddings, contains('topic_')) %>%
   # passando objeto para matrix
   as.matrix() %>% 
   # ajustando tSNE
-  Rtsne(check_duplicates = FALSE, perplexity = 50)
+  Rtsne(check_duplicates = FALSE, perplexity = 20)
 
 # plotando resultados do TSNE
 tsne_results %>% 
@@ -870,43 +880,168 @@ tsne_results %>%
 Nearest neighbors.
 
 ```{r nearest_neighbors}
-nearest_neighbors <- function(df, token) {
+# carregando funcoes
+library(widyr) # para trabalhar em formato largo
+
+# colocando os embeddings no formato para a funcao abaixo
+df_embedding <- select(embeddings, document, contains('topic_')) %>% 
+  # passando a base para o formato longo
+  pivot_longer(cols = contains('topic_'), names_to = 'topico', values_to = 'probabilidade')
+
+# criando funcao para calcular o nearest neighbors
+nearest_neighbors <- function(df, carta, vizinhos) {
+  
+  # pegando a faccao da carta selecionada
+  faccao_selecionada <- cartas %>% 
+    # filtrando a carta selecionada
+    filter(localizedName == carta) %>% 
+    # pegando a faccao da carta
+    pull(slug)
+  
+  # filtrando as cartas que serao comparadas
+  if(faccao_selecionada != 'Neutral') {
+  cartas_usaveis <- cartas %>% 
+    # filtrando todas as cartas da faccao da carta selecionada
+    filter(slug %in% faccao_selecionada) %>% 
+    # pegando o nome das cartas
+    pull(localizedName)
+  # pegando todas as cartas caso a facção da carta alvo seja a neutra
+  } else {
+    cartas_usaveis <- pull(cartas, localizedName)
+  }
+  
+  # calculando a similaridade de coseno entre todas as cartas e a carta alvo
   df %>%
+    # filtrando apenas as cartas que serao comparadas
+    filter(document %in% cartas_usaveis) %>% 
+    # aplicando a funcao
     widely(
       ~ {
-        # cria matriz n x m, onde n eh o numero de tokens e m eh o numero de dimensoes do svd
-        # essa matriz vai ter apenas o embedding do token em questao, de forma que cada linha
-        # vai repetir o nome do token tantas vezes quantas forem a quantidade de tokens e cada
-        # coluna vai ter o valor do embedding do token-alvo para aquela dimensao do SVD. Assim
-        # os elementos dentro de cada coluna vao ter todos o mesmo valor - i.e., o valor do
-        # embedding para aquela dimensao para o token-alvo
-        y <- .[rep(token, nrow(.)), ]
-        # no codigo abaixo o '.' representa o embedding em si, que eh uma matriz n x m onde
-        # o n eh cada um dos tokens disponiveis e o m eh igual ao numero de dimensoes do svd
-        # o objeto res representa a similaridade do coseno entre os embeddings de cada token
-        # e o token alvo:
-        # - rowSums(. * y): multiplica a matriz do embedding de todos os tokens pela matriz
-        # do token alvo
-        # - sqrt(rowSums(. ^ 2)): retorna um vetor numerico, com um elemento por token. o valor
-        # associado à cada token representa o somatorio dos valores entre todas as dimensoes
-        # de seu embedding
-        # sqrt(sum(.[token, ] ^ 2)): retorna um valor numérico, que representa o somatorio dos
-        # valores entre todas as dimensoes do embedding para o token-alvo
+        # cria matriz n x m, onde n eh o numero de cartas que existem na base de dados, e m
+        # é o número de tópicos identificados através do STM - o conteúdo de cada célular na
+        # matriz é a probabilidade de que àquela carta esteja associada aquele tópico
+        y <- .[rep(carta, nrow(.)), ]
+        # no codigo abaixo o '.' representa a matriz de probablidades de cada carta possuir
+        # cada tópico, e é uma matriz n x m onde o n é cada uma das cartas e o m corresponde
+        # a várias colunas que representam cada um dos tópicos. Calcularemos então a similaridade
+        # do conseno a carta selecionado e o embedding representado por cada outra carta:
+        # - rowSums(. * y): multiplica a matriz do embedding de todos as cartas pela matriz
+        # da carta selecionada
+        # - sqrt(rowSums(. ^ 2)): retorna um vetor numerico, com um elemento por carta o valor
+        # associado à cada carta representa o somatorio dos valores entre todas as dimensoes
+        # de seu embedding (i.e., todos os topicos associado àquela carta)
+        # sqrt(sum(.[token, ] ^ 2)): retorna um valor numérico, que representa o somatório dos
+        # valores entre todas as dimensoes do embedding para a carta selecionada
         # (sqrt(rowSums(. ^ 2)) * sqrt(sum(.[token, ] ^ 2))): multiplica o valor do embedding
-        # de cada token pelo token-alvo, servindo para padronizar a dissimilaridade calculada
+        # de cada carta pelo da carta selecionado, padronizando a similaridade calculada
         # pelo 'rowSums(. * y)'
-        # o resultado do res entao representa a distancia do coseno entre o token-alvo e cada
-        # outro token no corpus
-        res <- rowSums(. * y) / (sqrt(rowSums(. ^ 2)) * sqrt(sum(.[token, ] ^ 2)))
-        # coloca o resultado em uma matriz
-        matrix(res, ncol = 1, dimnames = list(x = names(res)))
+        similaridade_coseno <- rowSums(. * y) / (sqrt(rowSums(. ^ 2)) * sqrt(sum(.[carta, ] ^ 2)))
+        # coloca o resultado em uma matriz com o nome de linha vinda do nome das cartas
+        #matrix(similaridade_coseno, ncol = 1, dimnames = list(x = names(similaridade_coseno)))
       },
       sort = TRUE
-    )(item1, dimension, value) %>%
-    select(-item2)
+    )(document, topico, probabilidade) %>%
+    # organizando as cartas em ordem decrescente de similaridade
+    arrange(desc(item2)) %>% 
+    # pegando apenas a quantidade desejada de cartas similares
+    slice_max(order_by = item2, n = vizinhos) %>% 
+    # juntando com metadados das cartas resultantes
+    left_join(y = select(cartas, localizedName, slug, small, texto), by = c('item1' = 'localizedName'))
 }
 ```
 
+Exemplo Scoia'tael.
+
+```{r nearest_neighbors_scoiatael, code_folding = TRUE, layout = 'l-body-outset'}
+df_embedding %>% 
+  # calculando o nearest neighbors
+  nearest_neighbors(carta = 'Bruxo Gato', vizinhos = 5) %>% 
+  # selecionando as colunas que vamos plotar
+  select(small, item1, item2, texto) %>% 
+  # adicionando o prefixo do link para a imagem
+  mutate(small = paste0('https://www.playgwent.com/', small)) %>%
+  # colocando os exemplos em um reactable
+  reactable(
+    compact = TRUE, borderless = TRUE, defaultColDef = colDef(align = 'left'), 
+    style = list(fontFamily = "Roboto", fontSize = "12px"),
+    columns = list(
+      small = colDef(name = '', cell = embed_img(height = 80, width = 60), maxWidth = 80),
+      item1 = colDef(name = 'Carta', maxWidth = 90),
+      item2 = colDef(name = 'Similaridade', maxWidth = 90, format = colFormat(digits = 3)),
+      texto = colDef(name = 'Descrição')
+    )
+  )
+```
+
+Exemplo Northern Realms.
+
+```{r nearest_neighbors_northern_realms, code_folding = TRUE, layout = 'l-body-outset'}
+df_embedding %>% 
+  # calculando o nearest neighbors
+  nearest_neighbors(carta = 'Imortais', vizinhos = 5) %>% 
+  # selecionando as colunas que vamos plotar
+  select(small, item1, item2, texto) %>% 
+  # adicionando o prefixo do link para a imagem
+  mutate(small = paste0('https://www.playgwent.com/', small)) %>%
+  # colocando os exemplos em um reactable
+  reactable(
+    compact = TRUE, borderless = TRUE, defaultColDef = colDef(align = 'left'), 
+    style = list(fontFamily = "Roboto", fontSize = "12px"),
+    columns = list(
+      small = colDef(name = '', cell = embed_img(height = 80, width = 60), maxWidth = 80),
+      item1 = colDef(name = 'Carta', maxWidth = 140),
+      item2 = colDef(name = 'Similaridade', maxWidth = 90, format = colFormat(digits = 3)),
+      texto = colDef(name = 'Descrição')
+    )
+  )
+```
+
+Exemplo Nilfgaard.
+
+```{r nearest_neighbors_nilfgaard, code_folding = TRUE, layout = 'l-body-outset'}
+df_embedding %>% 
+  # calculando o nearest neighbors
+  nearest_neighbors(carta = 'Artorius Viggo', vizinhos = 5) %>% 
+  # selecionando as colunas que vamos plotar
+  select(small, item1, item2, texto) %>% 
+  # adicionando o prefixo do link para a imagem
+  mutate(small = paste0('https://www.playgwent.com/', small)) %>%
+  # colocando os exemplos em um reactable
+  reactable(
+    compact = TRUE, borderless = TRUE, defaultColDef = colDef(align = 'left'), 
+    style = list(fontFamily = "Roboto", fontSize = "12px"),
+    columns = list(
+      small = colDef(name = '', cell = embed_img(height = 80, width = 60), maxWidth = 80),
+      item1 = colDef(name = 'Carta', maxWidth = 140),
+      item2 = colDef(name = 'Similaridade', maxWidth = 90, format = colFormat(digits = 3)),
+      texto = colDef(name = 'Descrição')
+    )
+  )
+```
+
+Exemplo Neutral.
+
+```{r nearest_neighbors_neutral, code_folding = TRUE, layout = 'l-body-outset'}
+df_embedding %>% 
+  # calculando o nearest neighbors
+  nearest_neighbors(carta = 'Alzur', vizinhos = 5) %>% 
+  # selecionando as colunas que vamos plotar
+  select(small, item1, slug, item2, texto) %>%
+  # adicionando o prefixo do link para a imagem
+  mutate(small = paste0('https://www.playgwent.com/', small)) %>% 
+  # colocando os exemplos em um reactable
+  reactable(
+    compact = TRUE, borderless = TRUE, defaultColDef = colDef(align = 'left'),
+    style = list(fontFamily = "Roboto", fontSize = "12px"),
+    columns = list(
+      small = colDef(name = '', cell = embed_img(height = 80, width = 60), maxWidth = 80),
+      item1 = colDef(name = 'Carta', maxWidth = 140),
+      slug  = colDef(name = 'Facção', maxWidth = 90),
+      item2 = colDef(name = 'Similaridade', maxWidth = 90, format = colFormat(digits = 3)),
+      texto = colDef(name = 'Descrição')
+    )
+  )
+```
 
 # Conclusões
 
