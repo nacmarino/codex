@@ -49,22 +49,28 @@ cores_por_faccao <- c('Monsters' = 'red', 'Nilfgaard' = 'grey30', 'Northern Real
 
 # Motivação
 
-Há algum tempo atrás construí um _scrapper_ para raspar a biblioteca de decks de Gwent, de forma à usar esses dados para me ajudar a tomar melhores decisões na hora de montar meus próprios decks. Neste sentido, uma das primeiras coisas que fiz foi tentar entender os padrões de co-ocorrência das cartas de Gwent entre os decks contribuídos pela comunidade, utilizando para isso uma análise orientada à regras de associação - técnica muito utilizada em análises de carrinho de compra (_i.e._, _market basket analysis_), além de ser uma ferramenta útil na hora de uma análise exploratória de dados. Este primeiro exercício acabou sendo bastante positivo, pois consegui extrair alguns insights bastante importantes que eu não tinha visibilidade, e que acabaram melhorando a minha estratégia e experiência de jogo.
+Há algum tempo atrás [construí](https://nacmarino.github.io/codex/posts/2021-11-30-raspando-a-biblioteca-de-decks-de-gwent/) um _scrapper_ para raspar a biblioteca de decks de Gwent, de forma à usar esses dados para me ajudar à tomar melhores decisões na hora de montar meus próprios decks. Uma das primeiras análises que fiz com aqueles dados foi tentar entender os [padrões de co-ocorrência das cartas](https://nacmarino.github.io/codex/posts/2022-01-08-quais-as-associacoes-existentes-entre-as-cartas-dos-decks-de-gwent/) de Gwent entre os decks contribuídos pela comunidade, utilizando para isso uma análise orientada à regras de associação. Este primeiro exercício acabou sendo bastante positivo, pois consegui extrair alguns insights bastante relevantes, que acabaram melhorando a minha estratégia e experiência de jogo.
 
-Um ponto importante daquela primeira análise é que ela olha para os padrões de co-ocorrência de cartas _conhecidos_ e _explorados_ pela comunidade, deixando de fora àquelas combinações de cartas que teriam o _potencial_ de funcionar juntas mas que nunca foram testadas. Por exemplo, existe uma mecânica de envenenamento, no qual se uma carta receber este _status_ duas vezes ela é imediatamente destruída. Nesse contexto, existem algumas cartas específicas que são usadas com uma frequência muito alta para implementar esta mecânica, ainda que existam muitas outras cartas que também o possam fazer mas que não são usualmente postas nos decks. As mecânicas implementadas por cada carta são apresentadas em sua descrição, mas existem algumas formas diferentes de descrever um mesmo tipo de mecânica além de diferenças na forma como elas são disparadas entre as as facções. Assim, identificar as cartas que têm mecânicas similares e o potencial de serem usadas juntas passa a ser uma tarefa viável se pudéssemos agrupar as cartas de acordo com os padrões de texto existente em suas descrições.
+Um ponto importante daquela primeira análise é que ela olhou para os padrões de co-ocorrência de cartas _conhecidos_ e _explorados_ pela comunidade, deixando de fora àquelas combinações de cartas que teriam o _potencial_ de funcionar juntas, mas que nunca foram testadas. Estas combinações normalmente implementam mecânicas específicas de jogo, que podem ser identificadas através da descrição dos efeitos associados à cada carta. Assim, se pudéssemos agrupar as cartas de acordo com os padrões de texto existente em suas descrições, então poderíamos identificar as cartas que implementam mecânicas similares e, portanto, poderiam ser usadas juntas.
 
-Uma forma de implementar este agrupamento através do texto é através da modelagem de tópicos, que é uma técnica de aprendizado não-supervisionado que faz uso de modelos estatísticos para encontrar tópicos abstratos que ocorrem em uma coleção de textos através das palavras que os compõem. Existem alguns modelos que podem ser implementados para esta finalidade, sendo o mais conhecido deles a LDA - _Latent Dirichlet Allocation_; todavia, vou utilizar este post para estudar, explorar e demonstrar as funcionalidades de um outro modelo de tópicos, o STM - _Structural Topic Model_ (@stm). Meu objetivo com isso será utilizar este modelo para criar uma representação do quão similares as cartas são de acordo com seus padrões de texto e utilizar àquela representação para encontrar as cartas mais similares àquela que eu resolver buscar. 
+Uma forma de implementar este tipo de agrupamento é através da modelagem de tópicos, uma técnica de aprendizado não-supervisionado que faz uso de modelos estatísticos para identificar temas abstratos de acordo com as palavras compõem os textos em uma coleção dos mesmos. Existem alguns modelos que podem ser implementados para esta finalidade, sendo o mais conhecido deles a LDA - _Latent Dirichlet Allocation_; todavia, vou utilizar este post para estudar, explorar e demonstrar as funcionalidades de um outro modelo de tópicos: o STM, _Structural Topic Model_ (@stm). Meu objetivo com isso será utilizar este modelo para criar uma representação do quão similares as cartas são de acordo com seus padrões de texto e utilizar esta representação para encontrar as cartas mais similares àquela que eu resolver buscar. 
 
-Antes de chegar aos objetivos finais desta análise vamos cobrir alguns pontos importantes. Iniciaremos falando um pouco sobre a aquisição dos dados, passando na sequência para uma breve análise exploratória. Começaremos a modelagem de tópicos falando um pouquinho mais da intuição por trás do STM e, então, vamos implementar tanto uma busca pela quantidade de tópicos que devemos utilizar antes de ajustar o modelo em si. A partir daí conduziremos algumas análises para o pós-processamento, entedimento dos tópicos e validação do modelo, e fecharemos então o post mostrando a aplicação do modelo para atingir os objetivos que defini anteriormente. 
+Antes de chegar aos objetivos finais desta análise vamos cobrir alguns pontos importantes. Iniciaremos falando um pouco sobre a aquisição dos dados e, então, passaremos para uma breve análise exploratória. Começaremos a modelagem de tópicos falando um pouquinho mais da intuição por trás do STM e, então, vamos implementar tanto uma busca pela quantidade de tópicos que devemos utilizar antes de ajustar o modelo em si. A partir daí conduziremos algumas análises relacionadas ao pós-processamento e entedimento dos tópicos, bem como a validação do modelo. Fecharemos então o post mostrando a aplicação do modelo para atingir os objetivos principais que definimos. 
 
 # Carregando os Dados
+
+Os dados que vamos utilizar neste post podem ser obtidos utilizando o _scrapper_ apresentado neste [post](https://nacmarino.github.io/codex/posts/2021-11-30-raspando-a-biblioteca-de-decks-de-gwent/). O resultado daquele processamento retorna um `tibble` com a composição de cartas em cada um dos decks rasparados, bem como os metadados associados à cada uma das cartas. Assim, podemos reduzir àquela base à uma que fale apenas das cartas se usarmos um `distict` focando apenas no nome das cartas e em seus metadados. Você pode encontrar esta etapa do pós-processamento no código que acompanha este post.
+
+Assumindo que já temos a base de dados com os metadados de cada carta, vamos carregar alguns pacotes que usaremos neste post e, na sequência, carregar a base de dados. Precisaremos fazer dois pequenos ajustes, para resolver duas inconsistências que existem neles:  
+
+- A carta `Solução engenhosa` possui dois nomes em inglês - `Blueprint` e `Engineering solution` -, o que faz com que esta carta esteja duplicada na nossa base de dados. Assim, precisaremos remover uma ocorrência dela (selecionei remover a `Blueprint`, mas não faz diferença); e,  
+- Existem duas cartas diferentes com o mesmo nome: `Vidente`, mas uma pentercente à facção `Scoia'tael` e a outra é uma carta Neutra. Assim, para evitar confusões, vamos adicionar o nome da facção ao nome da carta.  
 
 ```{r carrega_dados}
 # carregando os pacotes
 library(tidyverse) # core
 library(tidytext) # para manipular texto
 library(patchwork) # para compor figuras
-library(ggridges) # para o ridge plot
 library(stringi) # para trabalhar com texto
 library(reactable) # para tabelas interativas
 library(reactablefmtr) # para ajudar com o reactable
@@ -89,11 +95,9 @@ cartas <- cartas %>%
 cartas
 ```
 
-# Análise Exploratória de Dados
+Se tudo estiver correto, devemos ter `r format(x = nrow(cartas), big.mark = '.', decimal.mark = ',')` cartas em nossa base de dados. Além disso, devemos ter muito mais cartas Neutras do que cartas de facção dentro da nossa base, um pouquinho mais de cartas da facção `Syndicate` do que das demais facções, e um número similar de cartas entre todas as outras cinco facções - conforme apresentado na figura abaixo. Estes padrões de variação na quantidade de cartas parecem estar associados à natureza daquelas duas primeiras: cartas neutras podem ser utilizadas com os decks de qualquer facção, assim como algumas cartas específicas da facção `Syndicate`.
 
-Quantas cartas diferentes existem por facção?
-
-```{r fig_cartas_por_faccao}
+```{r fig_cartas_por_faccao, code_folding = TRUE}
 cartas %>% 
   # contando quantidade de cartas existentes por faccao
   count(slug, name = 'n_cartas') %>% 
@@ -111,106 +115,51 @@ cartas %>%
   theme(axis.title.y = element_blank())
 ```
 
-Quais as diferenças nas características das cartas?
+Com tudo carregado, podemos começar a análise exploratória dos dados das cartas. Nosso principal foco será entender de onde vem as principais diferenças entre as cartas dentro e entre as facções, e como isto está relacionado às estratégias e mecânicas de jogo.
 
-```{r fig_painel, layout = 'l-body-outset', code_folding = TRUE, fig.height=8, fig.width=10}
-## raridade das cartas por faccao
-fig_raridade <- cartas %>% 
-  # contando quantidade de cartas existentes por faccao
-  count(slug, rarity, name = 'n_cartas') %>% 
-  # ordenando as colunas
-  mutate(
-    slug = fct_reorder(.f = slug, .x = n_cartas, .fun = sum, .desc = FALSE),
-    rarity = fct_reorder(.f = rarity, .x = n_cartas, .fun = sum, .desc = TRUE),
-  ) %>%
-  # agrupando pela raridade
+# Análise Exploratória de Dados
+
+Vamos começar olhando as nossas análises focando nos textos de descrição associados à cada carta. Para isso, vamos quebrar os textos em tokens utilizando a função `unnest_tokens`, remover os nomes de algumas das facções que estejam entre os resultados (bem como as cartas que simplesmente não tem nenhum texto associado) e, finalmente, contar quantas vezes cada palavra ocorre em cada carta. Uma vez que tenhamos essa estrutura de dados, vamos usar a função `bind_tf_idf` para calcular o _tf-idf (term frequency-inverse document frequency)_ associado à cada palavra entre as cartas dentro de cada facção. Esta métrica representa o equilíbrio entre a frequência de ocorrência de uma palavra entre todas as cartas de uma dada facção e a frequência com a qual àquela mesma palavra ocorre entre todas as cartas: quanto mais exclusiva à uma facção for uma palavra, maior será o valor desta métrica. Desta forma, esta métrica nos ajuda à identificar mais facilmente as palavras mais representativas das cartas de cada facção. 
+
+Os resultados desta análise preliminar são apresentados na figura abaixo, que confirma a expectativa de que existem diferenças nas palavras associadas aos textos de descrição de cada carta. Ao que podemos observar, estes textos são muito informativos de alguns temas que parecem ser inerentes à cada facção e outros temas que parecem ser comuns entre elas. 
+
+```{r fig_texto_tfidf, layout = 'l-body-outset', code_folding = TRUE, fig.height=8, fig.width=9}
+cartas %>% 
+  # quebrando o string em tokens
+  unnest_tokens(output = token, input = texto, to_lower = TRUE) %>% 
+  # removendo os NAs e algumas palavras que não ajudam a visualização
+  filter(!is.na(token), 
+         str_detect(string = token, pattern = "scoia'tael|reinos|skellige|norte|dos", negate = TRUE)) %>%
+  # contando as categorias por faccao
+  count(slug, token, name = 'ocorrencias') %>% 
+  # calculando o tf-idf
+  bind_tf_idf(term = token, document = slug, n = ocorrencias) %>% 
+  # agrupando pela faccao
   group_by(slug) %>% 
-  # calculando a proporcao de cartas por faccao
-  mutate(
-    proporcao = n_cartas / max(n_cartas)
-  ) %>% 
-  # criando a figura
-  ggplot(mapping = aes(y = slug, x = rarity, fill = proporcao)) +
-  geom_tile(color = 'white', show.legend = FALSE) +
-  geom_text(mapping = aes(label = n_cartas), color = 'white') +
-  scale_fill_viridis_c(begin = 0.1, end = 0.8) +
-  labs(title = 'Raridade das cartas') +
-  theme(axis.title = element_blank())
-
-# tipo de carta por faccao
-fig_tipo <- cartas %>% 
-  # contando quantidade de cartas existentes por faccao
-  count(slug, type, name = 'n_cartas') %>% 
+  # pegando os 15 tokens com maior tf-idf
+  slice_max(order_by = tf_idf, n = 15, with_ties = FALSE) %>% 
+  # desagrupando
+  ungroup %>% 
   # ordenando as colunas
-  mutate(
-    type = fct_reorder(.f = type, .x = n_cartas, .fun = sum, .desc = TRUE),
-    slug = fct_reorder(.f = slug, .x = n_cartas, .fun = sum, .desc = FALSE)
-  ) %>%
-  # agrupando pela raridade
-  group_by(slug) %>% 
-  # calculando a proporcao de cartas por faccao
-  mutate(
-    proporcao = n_cartas / max(n_cartas)
-  ) %>% 
-  # completando todas as combinacoes de tipo e faccao
-  complete(slug, type) %>% 
+  mutate(token = reorder_within(x = token, by = tf_idf, within = slug)) %>% 
   # criando a figura
-  ggplot(mapping = aes(y = slug, x = type, fill = proporcao)) +
-  geom_tile(color = 'white', show.legend = FALSE) +
-  geom_text(mapping = aes(label = n_cartas), color = 'white') +
-  scale_fill_viridis_c(begin = 0.1, end = 0.8, na.value = 'white') +
-  labs(title = 'Tipos de cartas') +
-  theme(axis.title = element_blank())
-
-# poder das cartas por faccao
-fig_poder <- cartas %>% 
-  # pegando apenas as cartas de unidade
-  filter(type == 'Unidade') %>% 
-  # ordenando as colunas
-  mutate(slug = fct_reorder(.f = slug, .x = power, .fun = mean)) %>% 
-  # criando a figura
-  ggplot(mapping = aes(x = power, y = slug, fill = slug)) +
-  geom_density_ridges(scale = 0.95, show.legend = FALSE,
-                      jittered_points = TRUE,
-                      position = position_points_jitter(width = 0.01, height = 0),
-                      point_shape = '|', point_size = 3, point_alpha = 1, alpha = 0.7) +
-  scale_fill_manual(values = cores_por_faccao)  +
-  scale_x_continuous(breaks = seq(from = 0, to = 15, by = 1)) +
-  labs(
-    title = 'Poder das cartas do tipo Unidade',
-    x     = 'Poder'
-  ) +
-  theme(axis.title.y = element_blank())
-
-# poder das cartas por faccao
-fig_armadura <- cartas %>% 
-  # pegando apenas as cartas de unidade
-  filter(type == 'Unidade') %>% 
-  # ordenando as colunas
-  mutate(slug = fct_reorder(.f = slug, .x = armour, .fun = mean)) %>% 
-  # criando a figura
-  ggplot(mapping = aes(x = armour, y = slug, fill = slug)) +
-  geom_density_ridges(scale = 0.95, show.legend = FALSE,
-                      jittered_points = TRUE,
-                      position = position_points_jitter(width = 0.01, height = 0),
-                      point_shape = '|', point_size = 3, point_alpha = 1, alpha = 0.7) +
+  ggplot(mapping = aes(x = tf_idf, y = token, fill = slug)) +
+  facet_wrap(~ slug, scales = 'free') +
+  geom_col(color = 'black', size = 0.3, show.legend = FALSE) +
+  scale_y_reordered() +
+  scale_x_continuous(labels = scales::label_number(accuracy = 0.001)) +
   scale_fill_manual(values = cores_por_faccao) +
-  scale_x_continuous(breaks = seq(from = 0, to = 10, by = 1)) +
   labs(
-    title = 'Armadura das cartas do tipo Unidade',
-    x     = 'Armadura'
+    title    = 'Quais as palavras mais representativas das cartas de cada facção?',
+    subtitle = 'As palavras associadas à cada facção remetem às mecânicas, estratégias e personagens associados à cada uma delas',
+    x        = 'TF-IDF'
   ) +
   theme(axis.title.y = element_blank())
-
-# compondo a figura
-(fig_raridade + fig_tipo) / (fig_poder + fig_armadura) +
-  plot_annotation(tag_levels = 'A', tag_prefix = '(', tag_suffix = ')') & 
-  theme(plot.tag = element_text(size = 10, face = 'bold'))
 ```
 
-De que forma as categorias das cartas de Unidade variam entre facções?
+Um dos temas comuns que pudemos observar na figura acima é a citação à diversos tipos de personagens comuns em gêneros de RPG. O exemplo mais claro disso é aquele observado na facção `Scoia'tael`, onde vimos que palavras como _elfo_, _anão_ e _dríade_ são bastante característicos. Para validar essa observação, calculei o _tf-idf_ focando na informação dos tipos de personagem associados à cada carta, de forma à identificar mais claramente os personagens característicos de cada facção. Em linha com o que esperávamos, os personagens associados à cada facção retratam a natureza de cada uma delas: observamos diversos monstros e nenhum bruxo na facção `Monsters`, muitas criaturas da floresta, elfos e anões na facção `Scoia'tael` e diversos personagens associados à guerras e batalhas nas facções `Nilfgaard` e `Northern Realms`. Conhecer essas associações são importantes pois algumas mecânicas de jogo dependem do tipo de personagem associado à cada carta (_e.g._, 'invoca uma carta da Caçada Selvagem') e, ainda, existem modos de jogo que favorecem alguns tipos de personagens específicos (_e.g._, bruxos não são penalizados).
 
-```{r fig_categoria_carta, layout = 'l-body-outset', code_folding = TRUE, fig.height=9, fig.width=8}
+```{r fig_tipo_personagem, layout = 'l-body-outset', code_folding = TRUE, fig.height=7, fig.width=8}
 cartas %>% 
   # pegando apenas as cartas de unidade
   filter(type == 'Unidade') %>% 
@@ -219,80 +168,36 @@ cartas %>%
                 token = 'regex', pattern = ', ') %>% 
   # contando as categorias por faccao
   count(slug, token, name = 'ocorrencias') %>% 
-  # contando quantas vezes cada token aparece entre as faccoes
-  add_count(token, name = 'faccoes_nos_tokens') %>% 
-  # contando quantas vezes as faccoes aparecem entre os tokens
-  add_count(slug, name = 'tokens_nas_faccoes') %>% 
-  # agrupando por faccao
-  mutate(
-    token = fct_reorder(.f = token, .x = faccoes_nos_tokens, .desc = FALSE),
-    slug = fct_reorder(.f = slug, .x = tokens_nas_faccoes, .desc = TRUE)
-  ) %>% 
-  # agrupando pelo token
-  group_by(token) %>% 
-  # proporcao de vezes que cada token aparece entre as faccoes
-  mutate(proporcao = ocorrencias / max(ocorrencias)) %>% 
-  # desagrupando o dataframe
+  # calculando o tf-idf
+  bind_tf_idf(term = token, document = slug, n = ocorrencias) %>% 
+  # agrupando pela faccao
+  group_by(slug) %>% 
+  # pegando os 15 tokens com maior tf-idf
+  slice_max(order_by = tf_idf, n = 10, with_ties = FALSE) %>% 
+  # desagrupando
   ungroup %>% 
-  # completando as combinacoes faltantes de token e faccao
-  complete(token, slug) %>% 
+  # ordenando as colunas
+  mutate(token = reorder_within(x = token, by = tf_idf, within = slug)) %>% 
   # criando a figura
-  ggplot(mapping = aes(x = slug, y = token, fill = proporcao)) +
-  geom_tile(color = 'black', show.legend = FALSE) +
-  geom_text(mapping = aes(label = ocorrencias, color = proporcao > 0.5), show.legend = FALSE) +
-  scale_fill_viridis_c(begin = 0.2, end = 0.9, na.value = 'white') +
-  scale_color_manual(values = c('white', 'black')) +
+  ggplot(mapping = aes(x = tf_idf, y = token, fill = slug)) +
+  facet_wrap(~ slug, scales = 'free') +
+  geom_col(color = 'black', size = 0.3, show.legend = FALSE) +
+  scale_y_reordered() +
+  scale_x_continuous(breaks = seq(from = 0, to = 0.3, by = 0.05)) +
+  scale_fill_manual(values = cores_por_faccao) +
   labs(
-    title = 'Quais os tipos de personagem associados às cartas de cada facção?'
+    title    = 'Quais os tipos de personagem associados às cartas de cada facção?',
+    subtitle = 'Os personagens associados à cada facção retratam a natureza de cada uma delas',
+    x        = 'TF-IDF'
   ) +
-  theme(
-    axis.title = element_blank()
-  )
+  theme(axis.title.y = element_blank())
 ```
 
-Quais as habilidades mais comuns das cartas por facção?
+Além do texto de descrição das cartas tocar no tema dos tipos de personagem, ela também toca nos tipos de habilidade que cada carta implementa. Na realidade, existem `r length(unique(purrr::simplify(.x = stringr::str_split(string = cartas$keywords, pattern = ';'))))` habilidades diferentes que podem estar associadas às cartas, sendo que cada carta pode ter um número qualquer de habilidades - de nenhuma à várias. As habilidades associadas à cada carta são apresentadas na coluna `keywords`, e são separadas umas das outras através de um ponto-e-vírgula. Para construir o mesmo tipo de intuição sobre as habilidades mais representativas das cartas de cada facção, utilizei novamente o _tf-idf_. O resultado dessa análise é apresentada através da figura abaixo, onde podemos ver que:  
 
-```{r fig_habilidade_carta, layout = 'l-body-outset', code_folding = TRUE, fig.height=12, fig.width=8}
-cartas %>% 
-  # quebrando o string em tokens
-  unnest_tokens(output = token, input = keywords, to_lower = FALSE, 
-                token = 'regex', pattern = ';') %>% 
-  # removendo os NAs
-  filter(!is.na(token)) %>%
-  # contando as categorias por faccao
-  count(slug, token, name = 'ocorrencias') %>% 
-  # contando quantas vezes cada token aparece entre as faccoes
-  add_count(token, name = 'faccoes_com_token') %>% 
-  # contando quantas vezes as faccoes aparecem entre os tokens
-  add_count(slug, name = 'tokens_nas_faccoes') %>% 
-  # agrupando por faccao
-  mutate(
-    token = fct_reorder(.f = token, .x = faccoes_com_token, .desc = FALSE),
-    slug = fct_reorder(.f = slug, .x = tokens_nas_faccoes, .desc = TRUE)
-  ) %>% 
-  # agrupando pelo token
-  group_by(token) %>% 
-  # proporcao de vezes que cada token aparece entre as faccoes
-  mutate(proporcao = ocorrencias / max(ocorrencias)) %>% 
-  # desagrupando o dataframe
-  ungroup %>% 
-  # completando as combinacoes faltantes de token e faccao
-  complete(token, slug) %>% 
-  # criando a figura
-  ggplot(mapping = aes(x = slug, y = token, fill = proporcao)) +
-  geom_tile(color = 'black', show.legend = FALSE) +
-  geom_text(mapping = aes(label = ocorrencias, color = proporcao > 0.5), show.legend = FALSE) +
-  scale_fill_viridis_c(begin = 0.2, end = 0.9, na.value = 'white') +
-  scale_color_manual(values = c('white', 'black')) +
-  labs(
-    title = 'Quais os tipos de habilidade associados às cartas de cada facção?'
-  ) +
-  theme(
-    axis.title = element_blank()
-  )
-```
-
-Habilidades únicas às facções.
++ Algumas habilidades parecem ser exckusivas à uma determinada facção. Alguns exemplos disso são: `consumir` (`consume`) da facção `Monsters`, `lucrar` (`profit`) e `moedas` (`coin`) da facção `Syndycate` e `assimilar` (`assimilate`) da facção `Nilfgaard`;  
++ Existem habilidades que parecem estar associadas à mais de uma facção, como `desejo de morte` (`deathwish`; `Monsters`, `Northern Realms` e `Skellige`) e `envenenamento` (`poison`; `Neutral`, `Nilfgaard`, `Scoia'tael` e `Syndicate`); e,  
++ Mesmo as cartas Neutras parecem ter habilidades que são mais frequentes ali do que nas outras facções, como `iniciativa` (`initiative`) e `cataclisma` (`cataclysm`).  
 
 ```{r fig_habilidade_tfidf, layout = 'l-body-outset', code_folding = TRUE, fig.height=8, fig.width=9}
 cartas %>% 
@@ -320,29 +225,35 @@ cartas %>%
   scale_y_reordered() +
   scale_fill_manual(values = cores_por_faccao) +
   labs(
-    title = 'Quais as habilidades particulares às cartas de cada facção?',
-    x     = 'TF-IDF'
+    title    = 'Quais as habilidades mais representativas das cartas de cada facção?',
+    subtitle = 'Algumas habilidades parecem ser específicas de certas facções, outras são compartilhadas entre poucas',
+    x        = 'TF-IDF'
   ) +
   theme(axis.title.y = element_blank())
 ```
 
-Texto da carta.
+Se a informação dos tipos de habilidades que uma carta têm está relacionada à descrição da carta, então não bastaria utilizarmos àquela primeira informação para achar as cartas mais similares entre si? Embora essa lógica não esteja errada, ela perde de vista um segundo aspecto importante que podemos encontrar nos textos de descrição de cada carta: a forma como as suas habilidades são implementadas. Vamos tomar como exemplo a habilidade `sangramento` (_i.e._, `bleeding`), que está presente entre as cartas de todas as facções: a carta que possui esta habilidade pode adicionar um _status_ à uma carta inimiga, fazendo com que ela perca um ponto de poder por turno de jogo até um limite _n_ de turnos (que depende da carta). Apesar da ideia por trás desta habilidade ser simples, podemos ver através da figura abaixo que as cartas à implementam de forma bem diferente entre e dentro das facções: _e.g._ pagando algum tipo de custo, assim que são postas no tabuleiro, quando estão com seu poder aumentado ou quando tem o seu poder aumentado e etc. Assim, é interessante então que agrupemos as cartas não só pelas habilidades que elas compartilham, mas também pela forma como as implementam.  
 
-```{r fig_texto_tfidf, layout = 'l-body-outset', code_folding = TRUE, fig.height=8, fig.width=9}
+```{r fig_habilidade_comum_tfidf, layout = 'l-body-outset', code_folding = TRUE, fig.height=8, fig.width=9}
 cartas %>% 
+  # filtrando cartas com uma habilidade especifica
+  filter(str_detect(string = keywords, pattern = 'bleeding')) %>% 
   # quebrando o string em tokens
   unnest_tokens(output = token, input = texto, to_lower = TRUE) %>% 
-  # removendo os NAs e algumas palavras que não ajudam a visualização
-  filter(!is.na(token), 
-         str_detect(string = token, pattern = "scoia'tael|reinos|skellige|norte|dos", negate = TRUE)) %>%
+  # removendo os NAs e numeros
+  filter(
+    !is.na(token),
+    str_detect(string = token, pattern = '[0-9]', negate = TRUE),
+    !token %in% c('a', 'à', 'ao', 'com', 'de', 'e', 'na', 'no', 'o', 'um')
+  ) %>%
   # contando as categorias por faccao
   count(slug, token, name = 'ocorrencias') %>% 
   # calculando o tf-idf
   bind_tf_idf(term = token, document = slug, n = ocorrencias) %>% 
   # agrupando pela faccao
   group_by(slug) %>% 
-  # pegando os 15 tokens com maior tf-idf
-  slice_max(order_by = tf_idf, n = 15, with_ties = FALSE) %>% 
+  # pegando os 10 tokens com maior tf-idf
+  slice_max(order_by = tf_idf, n = 10, with_ties = FALSE) %>% 
   # desagrupando
   ungroup %>% 
   # ordenando as colunas
@@ -354,13 +265,36 @@ cartas %>%
   scale_y_reordered() +
   scale_fill_manual(values = cores_por_faccao) +
   labs(
-    title = 'Quais as habilidades particulares às cartas de cada facção?',
-    x     = 'TF-IDF'
+    title    = 'Como a habilidade sangramento é implementada entre facções?',
+    subtitle = 'Uma mesma habilidade pode ser implementada de diferentes formas entre e dentro das facções',
+    x        = 'TF-IDF'
   ) +
   theme(axis.title.y = element_blank())
 ```
 
-# Ajustando um modelo de tópicos
+Acredito que já conseguimos ter um bom entendimento da relação do texto de descrição das cartas com os tipos de mecânica de jogo e as suas implementações. Vamos agora passar para a modelagem de tópicos, onde buscaremos segmentar as cartas de acordo com estes padrões.
+
+# Modelagem
+
+Vamos começar dando um pouco mais de contexto sobre a modelagem de tópicos e de que forma o STM se encaixa dentro deste arcabouço. A partir daí vamos avançar para a preparação dos dados para o modelo, a busca pela quantidade de tópicos que devemos utilizar e, finalmente, ajustaremos o modelo selecionado.
+
+## Intuição geral sobre o STM
+
+Os modelos de tópicos são uma família de modelos estatísticos usados para identificar os temas abstratos que permeiam uma coleção de textos, baseando-se na ideia de que se um texto fala sobre um determinado tema, então algumas palavras devem ocorrer com mais frequência ali do que em textos que falam sobre outros temas. Por exemplo, esse texto fala sobre o jogo Gwent, então possivelmente existirão muito mais citações à palavra 'cartas' aqui do que nos posts que focam em [análises sobre os dados da Fórmula 1](https://nacmarino.github.io/codex/posts/2021-10-08-entendendo-os-padroes-de-duracao-das-provas-da-formula-1/). Neste contexto, os modelos de tópicos pertencem à classe de algoritmos de aprendizagem não-supersionado, que buscam identificar as estruturas latentes dentro de um conjunto de dados sem que estas sejam apresentadas explicitamente ao algoritmo.
+
+Um dos modelos de tópico mais famosos é a LDA (_i.e._, _Latent Dirichlet Allocation_)
+
+```{r racional_lda, code_folding = TRUE, out.width="80%"}
+knitr::include_graphics(path = 'images/lda_rationale.png')
+```
+
+Explica STM.
+
+```{r racional_stm, code_folding = TRUE, out.width="100%"}
+knitr::include_graphics(path = 'images/stm_rationale.png')
+```
+
+## Preparação dos dados
 
 Lista de stopwords personalizada.
 
@@ -454,6 +388,8 @@ Criando matriz DFM.
 df_esparsa <- df_tokens %>% 
   cast_sparse(row = localizedName, column = token, value = ocorrencias)
 ```
+
+## Determinando a quantidade de tópicos
 
 Procurando o valor de K.
 
@@ -568,6 +504,8 @@ fig_coerencia_exclusividade <- metricas %>%
     tag_levels = 'A', tag_prefix = '(', tag_suffix = ')') & 
   theme(plot.tag = element_text(size = 10, face = 'bold'))
 ```
+
+## Ajustando o modelo
 
 Ajustando o modelo de tópicos
 
