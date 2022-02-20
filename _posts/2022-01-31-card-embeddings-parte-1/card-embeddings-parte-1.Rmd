@@ -72,6 +72,7 @@ library(tidyverse) # core
 library(tidytext) # para manipular texto
 library(patchwork) # para compor figuras
 library(stringi) # para trabalhar com texto
+library(ggrepel) # para ajudar a plotar
 library(reactable) # para tabelas interativas
 library(reactablefmtr) # para ajudar com o reactable
 
@@ -282,23 +283,28 @@ Vamos começar dando um pouco mais de contexto sobre a modelagem de tópicos e d
 
 Os modelos de tópicos são uma família de modelos estatísticos usados para identificar os temas abstratos que permeiam uma coleção de textos, baseando-se na ideia de que se um texto fala sobre um determinado tema, então algumas palavras devem ocorrer com mais frequência ali do que em textos que falam sobre outros temas. Por exemplo, esse texto fala sobre o jogo Gwent, então possivelmente existirão muito mais citações à palavra 'cartas' aqui do que nos posts que focam em [análises sobre os dados da Fórmula 1](https://nacmarino.github.io/codex/posts/2021-10-08-entendendo-os-padroes-de-duracao-das-provas-da-formula-1/). Neste contexto, os modelos de tópicos pertencem à classe de algoritmos de aprendizagem não-supersionado, que buscam identificar as estruturas latentes dentro de um conjunto de dados sem que estas sejam apresentadas explicitamente ao algoritmo.
 
-Um dos modelos de tópico mais famosos é a LDA (_i.e._, _Latent Dirichlet Allocation_)
+Um dos modelos de tópico mais famosos é a LDA (_Latent Dirichlet Allocation_), que tem como premissa principal que cada texto pode ser representado por uma distribuição de tópicos (_i.e._, prevalência de tópicos) e cada tópico é representado por uma distribuição de palavras (_i.e._, conteúdo dos tópicos). Posto de outra forma (e de maneira simplista), se conhecermos a frequência de ocorrência das palavras dentro do texto, então podemos saber quais os principais temas que ele aborda. Isto é possível pois a LDA é um modelo generativo, que enxerga cada um dos textos analisados como tendo sido amostrados a partir de uma distribuição de probabilidade que descreve uma coleção de tópicos e estes, por sua vez, de uma amostra de palavras vindas de outra distribuição de probabilidade. Ambas as probabilidades são governadas pela distribuição de Dirichlet, sendo que a distribuição dos tópicos entre os documentos $\theta_{d}$ (_i.e._, a prevalência dos tópicos entre os documentos) é governada pelo parâmetro $\alpha$ daquela distribuição, enquanto a distribuição das palavras por tópico $\phi_{t}$ (_i.e._, as palavras ou o conteúdo dos tópicos) é determinada pelo parâmetro $\beta$^[A distribuição de Dirichlet possui dois parâmetros, _K_ e $\alpha$: o primeiro representa a quantidade de categorias que serão descritas e o segundo é um parâmetro que controla quão concentrado em torno de uma categoria é a distribuição de probabilidade - maiores valores de $\alpha$ levam à uma distribuição de probabilidade mais uniforme. Assim, o $\alpha$ e o $\beta$ descritos no texto representam o mesmo parâmetro, mas parecem receber nomes diferentes apenas para não causar confusão]. Você pode encontrar alguns tutoriais e explicações sobre a LDA [aqui](http://brooksandrew.github.io/simpleblog/articles/latent-dirichlet-allocation-under-the-hood/), [aqui](https://www.depends-on-the-definition.com/lda-from-scratch/#:~:text=collection%20of%20documents.-,The%20latent%20Dirichlet%20allocation%20model,by%20a%20distribution%20over%20words.), [aqui](http://blog.echen.me/2011/08/22/introduction-to-latent-dirichlet-allocation/) e [aqui](https://towardsdatascience.com/latent-dirichlet-allocation-lda-9d1cd064ffa2).
 
 ```{r racional_lda, code_folding = TRUE, out.width="80%"}
 knitr::include_graphics(path = 'images/lda_rationale.png')
 ```
 
-Explica STM.
+Apesar do processo de modelagem da LDA parecer ser complexo, a sua implementação em código é bastante simples. Ela consiste em (a) inicializar aleatoriamente a associação das palavras _w_ e dos documentos _d_ aos tópicos e, então, iterar entre os documentos _d_ e as palavras _w_ e atualizar (a) a estimativa da probabilidade de que cada documento _d_ pertença a um tópico _t_ olhando com que frequência palavras naquele documento são associadss ao tópico _t_ e (b) a estimativa da probabilidade de que cada palavra _w_ pertença a um tópico _t_ com base na quantidade de documentos _d_ que contém a palavra _w_ que foram associados ao tópico _t_. Com isso, ao longo das iterações, acabamos tendo probabilidades bem calculadas que associam cada documento _d_ e cada palavra _w_ a um tópico _t_ (links para exemplos de implementação da LDA a partir do zero em [Python](https://www.depends-on-the-definition.com/lda-from-scratch/#:~:text=collection%20of%20documents.-,The%20latent%20Dirichlet%20allocation%20model,by%20a%20distribution%20over%20words.) e em [R](http://brooksandrew.github.io/simpleblog/articles/latent-dirichlet-allocation-under-the-hood/)). Todavia, essa simplicidade também traz consigo algumas premissas bem frágeis, como: (1) a independência entre os tópicos, (2) o fato de que as palavras associadas à cada tópico não devem diferir entre os documentos, (3) que os tópicos são determinados exclusivamente pelas palavras que os compõem e, (4) que a ordem das palavras no texto não é relevante para a identificação dos tópicos, apenas a frequência de ocorrência das palavras. Apesar do modelo parar de pé mesmo com essas premissas, elas dificilmente são válidas no mundo real e, portanto, existe um _gap_ de possibilidades que podem ser endereçados por outras alternativas.
+
+Uma das alternativas que surgiram para sanar os _gaps_ da LDA foi o _Structural Topic Model_ (@stm). A primeira novidade implementada por esse modelo é que tanto o $\theta_{d}$ (_i.e._, prevalência dos tópicos) quanto o $\phi_{t}$ (_i.e._, conteúdo dos tópicos) podem ser moderados através do efeito de covariáveis (_i.e._, o $X$ e o $\tau$ na figura abaixo). Isto é, algumas covariáveis podem fazer com que a prevalência de alguns tópicos seja naturalmente maior em alguns documentos (_e.g._, uma característica geral desses documentos) e/ou que algumas palavras de um tópico sejam usadas com mais frequência em algumas condições do que em outras. Outra novidade importante, é que o $\theta_{d}$ é gerado a partir de uma distribuição LogNormal, o que permite que passemos a incorporar uma estrutura de correlação entre os tópicos (_i.e._, o $\epsilon$ na figura abaixo). Finalmente, o $\phi_{t}$ passa a ser gerado através da soma de algumas distribuições exponenciais, que descrevem coisas como a a frequeência de ocorrência média das palavras nos tópicos, a contribuição das covariáveis sobre a ocorrência das palavras e da ocorrência das palavras dentros tópicos (_i.e._, o $\mu$ e o $\tau$ na figura abaixo). Todas estas melhorias contribuem para que o STM tenha um potencial de uso maior do que aquele da LDA, muito embora a sua utilização para resolução de problemas de modelagem de tópicos ainda pareça ser bem limitada.
 
 ```{r racional_stm, code_folding = TRUE, out.width="100%"}
 knitr::include_graphics(path = 'images/stm_rationale.png')
 ```
 
+A implementação do _Structural Topic Model_ (STM) que vamos usar é àquela disponível no pacote `stm` do R. Enquanto escrevo este post, não existe uma implementação deste modelo para o Python, embora existam algumas issues e _threads_ aberta no GitHub do STM com pedidos e discussões. Com essa visão geral sobre o STM, vamos prosseguir agora para a preparação dos dados para a modelagem.
+
 ## Preparação dos dados
 
-Lista de stopwords personalizada.
+A estrutura de dados que o `stm` espera receber é uma matriz esparsa onde teremos as cartas como as linhas e as palavras associadas àquela carta como colunas. Além disso, o conteúdo de cada 'célula' deve ser a quantidade de vezes que àquela palavra apareceu naquela carta. Colocar os dados nessa estrutura não é uma tarefa tão complexa, embora exija cuidado com alguns detalhes. Em primeiro lugar, vamos precisar remover algumas palavras da nossa matriz simplesmente porque elas são muito frequentes e pouco informativas. Nesse sentido, criei o vetor abaixo para armazenar todas as palavras que serão removidas durante a preparação dos dados - note que existem muitas preposições, substantivos e alguns pronomes entre elas, bem como o nome de algumas facções. Outro ponto importante é que existe uma frase-padrão que é sempre observada ao final do texto das cartas de líder de cada facção. Este texto não é nem um pouco informativo sobre as habilidades da carta e, portanto, devemos removê-lo também - note que temos que usar expressões regulares para isso, uma vez que existe alguma diferença na forma como a frase é escrita entre algumas cartas.
 
 ```{r lista_stopwords}
+# lista de palavras para remover
 my_stopwords <- c('a', 'ao', 'aos', 'ate', 'cada', 'com', 'as', 'como', 'da', 'das', 
                   'de', 'dela', 'delas', 'dele', 'desta',  'deste', 'destas', 'destes',
                   'deles', 'do', 'dos', 'disso', 'e', 'es', 'em', 'esta',  'ela', 'ele',
@@ -314,13 +320,15 @@ my_stopwords <- c('a', 'ao', 'aos', 'ate', 'cada', 'com', 'as', 'como', 'da', 'd
                   'estiver', 'entre', 'unidade', 'unidades', 'mobilizacao', 'sempre', 
                   'mesmo', 'perto', 'apos', 'quando', 'neste', 'nestes', "scoia'tel",
                   'enquanto')
+
+# regex da frase que precisaremos remover
+txt <- paste('Esta habilidade adiciona [0-9]{2} (?:(?:de )?recrutamento[s]?',
+             'ao limite )?de recrutamento (ao limite )?do (?:seu )?baralho.')
 ```
 
-Preparando os dados.
+Tendo criado os vetores de palavras e a frase que precisaremos remover, vamos agora processar os textos de cada carta de forma a acabarmos em uma estrutura de dados `tidy`, que contenha uma coluna para o nome da carta, uma outra para a palavra e uma terceira para a quantidade de vezes que àquela palavra foi observada naquela carta. Para isso, vamos primeiro remover aquele padrão de texto com expressões regulares do campo de descrição da carta usando o `str_remove` e, na sequência, vamos quebrar o texto em palavras utilizando a função `unnest_tokens`. Vamos então remover toda a acentuação das palavras restantes usando o `stri_trans_general` e, então, remover todas àquelas palavras que listamos anteriormente e todos os números. A partir daí vamos utilizar a função `str_replace` para substiuir a forma do plural para o singular de algumas palavras e padronizar a escrita de algumas palavras. Finalmente, vamos utilizar a função `count` para determinar quantas vezes cada palavra ocorreu em cada carta. Com isso, chegamos ao resultado que havíamos planejado.
 
 ```{r cria_df_tokens}
-txt <- 'Esta habilidade adiciona [0-9]{2} (?:(?:de )?recrutamento[s]? ao limite )?de recrutamento (ao limite )?do (?:seu )?baralho.'
-
 # contando ocorrencias de cada token por faccao
 df_tokens <- cartas %>% 
   # removendo texto comum a todas as cartas de habilidade do lider
@@ -331,30 +339,38 @@ df_tokens <- cartas %>%
   unnest_tokens(output = token, input = texto) %>% 
   # removendo acentuacao
   mutate(token = stri_trans_general(str = token, id = 'Latin-ASCII')) %>%
-  # removendo stopwords
-  filter(!token %in% my_stopwords) %>% 
-  # removendo os digitos
-  filter(str_detect(string = token, pattern = '[0-9]', negate = TRUE)) %>% 
-  # substituindo algumas formas
+  # removendo stopwords e os digitos
+  filter(!token %in% my_stopwords,
+         str_detect(string = token, pattern = '[0-9]', negate = TRUE)) %>% 
+  # substituindo algumas as formas de algumas palavras
   mutate(
+    # removendo o plural de algumas palavras em especifico
     token = str_replace(string = token, pattern = '(?<=o|a)s$', replacement = ''),
     token = str_replace(string = token, pattern = '(?<=d|t)es$', replacement = 'e'),
     token = str_replace(string = token, pattern = '(?<=r)es$', replacement = ''),
+    # padronizando a escrita de algumas habilidades e condicoes
     token = str_replace(string = token, pattern = 'veneno|envenenamento|envenenad[ao]', replacement = 'envenena'),
     token = str_replace(string = token, pattern = 'bloqueada|bloquei[ao]', replacement = 'bloqueio'),
     token = str_replace(string = token, pattern = 'reforcad[ao]', replacement = 'reforcada'),
+    # padronizando a escrita de outras palavras
     token = str_replace(string = token, pattern = 'anoes', replacement = 'anao'),
-    token = str_replace(string = token, pattern = 'aleatoriamente', replacement = 'aleatorio'),
-    token = str_replace(string = token, pattern = 'aleatoria', replacement = 'aleatorio'),
+    token = str_replace(string = token, pattern = 'aleatoria(?:mente)?', replacement = 'aleatorio')
     ) %>% 
   # contando ocorrencia dos lemmas por carta
   count(localizedName, token, name = 'ocorrencias') 
 df_tokens
 ```
 
-Lematizando os tokens e contando-os.
+Podemos criar a matriz esparsa de input para o `stm` a partir do output do bloco de código anterior utilizando a função `tidytext::cast_sparse`. Essa função espera receber como argumentos o nome da variavel que será mapeada para as linhas da matriz esparsa (_i.e._, `row = localizedName` - o nome das cartas), à que será mapeada para as colunas (_i.e._, `column = token` - cada uma das palavras) e àquela que contém os valores de cada célula da matriz (_i.e._, `value = ocorrencias` - a frequência com a qual cada palavra ocorre em cada carta). Com isso chegamos à matriz esparsa que precisamos para ajudar o STM aos dados.
 
-```{r eval=FALSE, code_folding = TRUE}
+```{r parse_para_esparsa}
+# criando matriz no formato document-feature matrix
+df_esparsa <- cast_sparse(data = df_tokens, row = localizedName, column = token, value = ocorrencias)
+```
+
+Antes de fechar essa seção, existe uma coisa que acredito que valha a pena comentar. Eu acabei optando por passar algumas palavras para o singular e padronizar a escrita de outras palavras específicas em um dos blocos de código anteriores. Fiz isso pois os resultados preliminares da modelagem não ficaram muito legais inicialmente, uma vez que reparei que os tópicos às vezes separavam só as formas do singular para o plural e, em outros casos, falhavam em incluir as variantes de algumas palavras (_e.g._, bloqueada, bloqueio e bloqueia). Eu tentei usar o `spacyr` para corrigir a inflexão das palavras de forma mais robusta (_i.e._, lemmatização), mas como o corpus do `spacy` não tem palavras que remetam ao universo dos jogos de RPG, os resultados acabaram sendo até piores (e bizonhos). Assim, resolvi manter simples, e só corrigir aquilo que de fato parecia estar tendo um maior impacto na modelagem. De toda forma, deixo o código que usei para tentar fazer a lemmatização abaixo só para referência no bloco abaixo (ele não tem nenhum efeito sobre o objeto `df_tokens`).
+
+```{r teste_do_spacyr, eval=FALSE, code_folding = TRUE}
 # carregando mais pacotes
 library(spacyr) # para ajudar com lematizacao
 
@@ -378,20 +394,50 @@ df_tokens <- df_tokens %>%
   left_join(y = de_para_lemma, by = 'token') %>% 
   # contando ocorrencia dos lemmas por carta
   count(localizedName, lemma, name = 'ocorrencias')
-df_tokens
 ```
 
-Criando matriz DFM.
+## Criando features
 
-```{r parse_para_esparsa}
-# criando matriz no formato document-feature matrix
-df_esparsa <- df_tokens %>% 
-  cast_sparse(row = localizedName, column = token, value = ocorrencias)
+Como o STM dá suporte ao uso de covariáveis para modelar a prevalência (_i.e._, 'quais são os tópicos?') e o conteúdo dos tópicos (_i.e._, 'quais palavras representam os tópicos?'), vamos criar um `tibble` com alguns metadados sobre cada carta que podem nos ajudar na modelagem. Mais especificamente, a análise exploratória que fizemos sugere que:  
++ Os textos de descrição das cartas representam temas distintos, mas que parecem estar relacionados ao conjunto de habilidades que cada carta possui. Posto de outra forma, existe a expectativa de que a prevalência dos tópicos deve variar em função das habilidades existentes entre as cartas (_e.g._, vai existir um tópico para habilidades relacionadas ao envenenamento, outro tópico para habilidades que causam dano direto e etc.); e,  
++ A forma pela qual uma mesma habilidade é implementada varia entre as facções, e pode ser mapeada através de diferenças no texto de descrição das cartas que possuem a mesma habilidade. Isto é, espera-se que o conteúdo de cada tópico varie em função da facção à qual as cartas pertençam (_e.g._, se existe um tópico relacionado à habilidade de envenamento, as palavras que caracterizam este tópico vão variar facção à facção).  
+
+Dada estas duas hipóteses, vamos focar então em criar um `tibble` que nos permita endereçá-las de forma mais simples e objetiva possivel. Neste contexto, representar a relação entre o conteúdo do tópico e as facções é relativamente fácil: basta termos uma coluna que indique à qual facção pertence cada carta. Por outro lado, representar a relação entre a prevalência dos tópicos e as habilidades das cartas é uma tarefa bem mais complexa, uma vez que existem `r format(x = nrow(cartas), big.mark = '.', decimal.mark = ',')` habilidades distintas. Assim, codificar a presença ou ausência de cada habilidade para cada uma das cartas faria com que o número de covariáveis ficasse grande demais (fora ainda que algumas habilidades são observadas em 2 ou 3 cartas e, portanto, teríamos problemas de ortogonalidade). Uma alternativa que encontrei para tentar resolver este problema foi o de separar as habilidades em 3 grupos distintos: as habilidades que causam ou dão algum tipo de status à uma carta, as habilidades que têm algum tipo de área de efeito (_e.g._, 'causam dano à todas as unidades inimigas') e todas as habilidades que não se encaixarem nestes dois últimos grupos. Embora esse agrupamento esteja longe de ser a melhor solução, acredito que ele possa servir pelo menos para nos dar uma noção mínima da relevância de usar explicitamente a informação das habilidades para modelar a prevalência _vs_ deixar com que o modelo de tópicos descubra esse agrupamento latente sozinho. O bloco de código abaixo cria todas estas covariáveis e as organiza no `tibble` `df_covariáveis`, que será usado dentro da função `stm` mais tarde.  
+
+```{r cria_covariaveis}
+# listando todas as habilidades associadas a um status
+hab_status <- c('bleeding', 'blood_moon', 'bounty', 'defender', 'doomed', 'immune', 
+                'lock', 'poison', 'resilient', 'rupture', 'shield', 'spying', 'vitality',
+                'veil')
+
+# listando todas as habilidade que causam algum tipo de efeito de area
+hab_aoe <- c('blood_moon', 'cataclysm', 'dragons_dream', 'fog', 'frost', 'rain', 'storm')
+
+# criando tabela com as covariaveis de cada carta
+df_covariaveis <- cartas %>% 
+  # codificando os dois grupos bem marcados de habilidades e criando um nivel para tudo o que
+  # nao se encaixa naqueles dois
+  mutate(
+    # habilidades associadas que causam ou dao um status a carta
+    habilidade_status = str_detect(string = keywords, 
+                                   pattern = paste0(hab_status, collapse = '|')),
+    # habilidades com efeito de area
+    habilidade_aoe = str_detect(string = keywords, 
+                                pattern = paste0(hab_aoe, collapse = '|')),
+    # todas as habilidades que não se encaixarem nas duas ultimas
+    habilidade_outras = str_detect(string = keywords, negate = TRUE,
+                                   pattern = paste0(c(hab_status, hab_aoe), collapse = '|'))
+  ) %>% 
+  # selecionando apenas as covariaveis que vamos usar
+  select(localizedName, slug, contains('habilidade')) %>% 
+  # substituindo os valores faltantes nas colunas das habilidades por FALSE
+  mutate(across(.cols = contains('habilidade'), .fns = replace_na, FALSE))
+df_covariaveis
 ```
 
 ## Determinando a quantidade de tópicos
 
-Procurando o valor de K.
+Como em outras técnicas de aprendizado não-supervisionado voltadas ao agrupamento por similaridade, precisamos determinar a quantidade de tópicos K a ser utilizada pelo STM antes de ajustá-lo. Como não temos noção de antemão do melhor valor de K, faremos uma busca em passos incrementais de 3 tópicos dentro de um intervalo de K = 6 à K = 30 tópicos. Além disso, aproveitaremos para determinar se faz sentido ou não utilizar as covariáveis para modelar o conteúdo dos tópicos, a prevalência dos tópicos ou ambos ajustando quatro STM distintas. Nesse contexto, utilizaremos a identidade da facção como a covariável para modelar a variação no conteúdo dos tópicos (_i.e._, testar a hipótese de que as palavras que representam um mesmo tópico variam entre facções), e a presença ou ausência de cada um dos três grupos de habilidades na carta para modelar a prevalência dos tópicos (_i.e._, testar a hipótese de que os tópicos falam sobre estes três grupos de habilidades e/ou variações deles). Como precisaremos ajustar 36 modelos de tópicos aos dados (9 valores de K x 4 tipos de modelo), essa será uma etapa bem demorada e, portanto, vamos alavancar o processo multisessão do `furrr` para ganhar um pouco mais de velocidade. 
 
 ```{r procura_valor_k}
 # carregando mais pacotes
@@ -409,46 +455,64 @@ search_K <- tibble(
   K = seq(from = 6, to = 30, by = 3)
 ) %>% 
   mutate(
-    # rodando o STM sem nenhuma feature
-    padrao = future_map(.x = K, 
-                        .f = ~ stm(documents = df_esparsa, init.type = 'Spectral', 
-                                   seed = 333, K = .x, verbose = FALSE),
-                        .options = furrr_options(seed = TRUE)
+    # rodando o STM padrao
+    Nenhuma = future_map(.x = K, 
+                         .f = ~ stm(documents = df_esparsa, init.type = 'Spectral', 
+                                    seed = 333, K = .x, verbose = FALSE),
+                         .options = furrr_options(seed = TRUE)
     ),
-    # passando a faccao para o content
-    features = future_map(.x = K, 
+    # rodando o STM com covariaveis apenas para o conteudo dos topicos
+    Conteudo = future_map(.x = K, 
                           .f = ~ stm(documents = df_esparsa, init.type = 'Spectral', 
-                                     seed = 333, K = .x, content = ~ slug, data = cartas,
+                                     seed = 333, K = .x, content = ~ slug, data = df_covariaveis,
                                      verbose = FALSE),
                           .options = furrr_options(seed = TRUE)
+    ),
+    # rodando o STM com covariaveis apenas para a prevalencia dos topicos
+    Prevalencia = future_map(.x = K, 
+                             .f = ~ stm(documents = df_esparsa, init.type = 'Spectral', 
+                                        seed = 333, K = .x, 
+                                        prevalence = ~ habilidade_status + habilidade_aoe + habilidade_outras, 
+                                        data = df_covariaveis, verbose = FALSE),
+                             .options = furrr_options(seed = TRUE)
+    ),
+    # rodando o STM com covariaveis para o conteudo o prevalencia dos topicos
+    Ambas = future_map(.x = K, 
+                       .f = ~ stm(documents = df_esparsa, init.type = 'Spectral', 
+                                  seed = 333, K = .x, content = ~ slug,
+                                  prevalence = ~ habilidade_status + habilidade_aoe + habilidade_outras, 
+                                  data = df_covariaveis, verbose = FALSE),
+                       .options = furrr_options(seed = TRUE)
     )
   ) %>% 
-  pivot_longer(cols = c(padrao, features), names_to = 'tipo', values_to = 'modelos')
+  pivot_longer(cols = c(Nenhuma, Conteudo, Prevalencia, Ambas), names_to = 'tipo', values_to = 'modelos')
 
 # setando o processamento sequencial
 plan(sequential)
 ```
 
-Extraindo métricas de avaliação.
+Uma vez que os modelos estejam ajustados, vamos calcular três métricas para nos ajudar a avaliar o ajuste do modelo aos dados para cada combinação de valor de K e tipo de modelo. A primeira métrica que vamos avaliar é a coerência semântica, que é uma medida do quão frequente as palavras que compõem um tópico co-ocorrem entre os documentos: quanto maior o valor desta métrica (_i.e._, menos negativo), maior a qualidade da segmentação entre os tópicos. A métrica seguinte é a exclusividade, que mede o quanto as palavras associadas a um tópico são exclusivas a ele: quanto maior o valor desta métrica, menor o compartilhamento de palavras entre tópicos e, portanto, maior a qualidade da segmentação entre os tópicos. Um ponto importante aqui é que a métrica de exclusividade foi pensada para modelos sem covariáveis para o conteúdo dos tópicos, então não conseguiremos extrai-la para 2 dos 4 tipos de modelos que ajustamos; não há uma explicação junto a documentação da função ou do pacote sobre isso, mas acredito que isto ocorra pelo fato de que ao passar estas covariáveis estamos fazendo com que o modelo considere o fato de que as palavras podem sim ser compartilhadas entre os tópicos, dependendo do contexto das covariáveis. Finalmente, olharemos a dispersão dos resíduos do STM: quanto mais próximo de 1 são os resíduos, maior a força da evidência de que a quantidade de tópicos está bem ajustada.  
 
-```{r fig_metricas de avaliacao, layout = 'l-body-outset', code_folding = TRUE, fig.height = 6, fig.width = 8}
+A figura abaixo apresenta os resultados da variação daquelas três métricas de acordo com o valor de K e o tipo de modelo implementado. Alguns padrões importantes são:  
++ Modelos com a covariável da identidade da facção para o conteúdo atingem maior coerência semântica e menor dispersão dos resíduos do que modelos que não fazem uso dessa covariável para um mesmo valor de K;  
++ Apesar da coerência semântica voltar a aumentar quando usamos mais de 27 tópicos, os resíduos do modelo de tópicos aumentam muito; e,  
++ A exclusividade das palavras aumenta com o valor de K, mas parece aumentar de forma mais devagar depois dos 18 tópicos.   
+
+```{r fig_metricas de avaliacao, layout = 'l-body-outset', code_folding = TRUE, fig.height = 4, fig.width = 8}
 # extraindo as metricas de avaliacao da clusterizacao
-metricas <- search_K %>% 
+search_K %>% 
   # calculando a exclusividade e a coerencia dos topicos
   mutate(
+    coerencia     = map(.x = modelos, .f = semanticCoherence, documents = df_esparsa),
     exclusividade = map(.x = modelos, .f = safely(exclusivity)),
     exclusividade = map(.x = exclusividade, .f = 'result'),
-    coerencia     = map(.x = modelos, .f = semanticCoherence, documents = df_esparsa),
     residuos      = map(.x = modelos, .f = checkResiduals, df_esparsa),
     residuos      = map(.x = residuos, 'dispersion')
   ) %>% 
   # dropando a coluna com os modelos
   select(-modelos) %>% 
   # desaninhando as colunas de coerencia e exclusividade
-  unnest(cols = c(exclusividade, coerencia, residuos))
-
-# plotando as metricas individualmente
-fig_painel_metricas <- metricas %>%
+  unnest(cols = c(exclusividade, coerencia, residuos)) %>% 
   # passando a base para o formato longo
   pivot_longer(cols = c(exclusividade, coerencia, residuos), 
                names_to = 'metrica', values_to = 'valor') %>% 
@@ -468,93 +532,42 @@ fig_painel_metricas <- metricas %>%
   # criando a figura
   ggplot(mapping = aes(x = as.factor(K), y = valor, group = tipo, color = tipo)) +
   facet_wrap(~ metrica, scales = 'free') +
-  geom_line(size = 1, show.legend = FALSE) +
-  geom_point(fill = 'white', color = 'black', shape = 21, size = 3, show.legend = FALSE) +
+  geom_line(size = 1, show.legend = TRUE) +
+  geom_point(fill = 'white', color = 'black', shape = 21, size = 2, show.legend = FALSE) +
   labs(
-    caption = 'A linha azul representa o modelo que não contempla que a ocorrência das palavras pode variar dentro dos tópicos em função da identidade da facção.',
-    x       = 'Quantidade de tópicos (K)',
-    y       = 'Valor da métrica'
+    title    = 'Quantos tópicos devemos usar?', 
+    subtitle = 'A quantidade de tópicos escolhida deve atender ao melhor balanço entre uma alta coerência semântica e exclusividade, mas baixos resíduos',
+    x        = 'Quantidade de tópicos (K)',
+    y        = 'Valor da métrica',
+    color    = 'Covariáveis'
+  ) +
+  theme(
+    legend.position = 'bottom'
   )
-
-# plotando as metricas de coerencia vs exclusividade
-fig_coerencia_exclusividade <- metricas %>% 
-  # filtrando os resultado do modelo sem content
-  filter(tipo == 'padrao') %>% 
-  # adicionando a sequencia do numero de topicos
-  mutate(
-    K = ifelse(test = K < 10, yes = paste0('0', K), no = K),
-    K = paste(K, 'tópicos')
-  ) %>% 
-  # criando a figura
-  ggplot(mapping = aes(x = coerencia, y = exclusividade, color = K)) +
-  facet_wrap(~ K) +
-  geom_point(shape = 16, size = 3, show.legend = FALSE) +
-  scale_color_viridis_d(direction = -1, begin = 0.2, end = 0.9) +
-  labs(
-    x = 'Coerência Semântica',
-    y = 'Exclusividade'
-  )
-
-# criando o painel
-(fig_painel_metricas / fig_coerencia_exclusividade) +
-  plot_layout(heights = c(1, 2)) +
-  plot_annotation(
-    title = 'Quantos tópicos devemos usar?', 
-    subtitle = 'A quantidade de tópicos escolhida deve atender ao melhor balanço entre uma alta coerência semântica e exclusividade',
-    tag_levels = 'A', tag_prefix = '(', tag_suffix = ')') & 
-  theme(plot.tag = element_text(size = 10, face = 'bold'))
 ```
+
+De acordo com os padrões observados acima e usando um pouco de parsimônia, parece que o melhor modelo de tópicos a ser utilizado é aquele que faz uso de 18 tópicos e usa apenas a covariável da identidade da facção para modelar o conteúdo dos tópicos (esse modelo é mais simples do que aquele que faz uso de covariáveis para o conteúdo e a prevalência dos tópicos).
 
 ## Ajustando o modelo
 
-Ajustando o modelo de tópicos
+Como já ajustamos o modelo descrito acima quando fizemos a busca pelo valor de K e o tipo de modelo, não precisamos repetir todo o processo. Para poupar esse tempo, basta filtramos a linha correspondente aquele modelo de dentro do `tibble` que armazena os resultados da busca e extrairmos o objeto do modelo treinado.
 
-```{r ajusta_modelo}
-# setando a seed
-set.seed(33)
-
-# buscando melhor valor de K
-modelo <- stm(documents = df_esparsa, init.type = 'Spectral', seed = 333, 
-              K = 18, verbose = FALSE)
+```{r pega_modelo}
+# extraindo o melhor modelo
+modelo <- search_K %>% 
+  # pegando o modelo selecionado
+  filter(K == 18, tipo == 'Conteudo') %>% 
+  # extraindo o modelo selecionado
+  pull(modelos) %>% 
+  # tirando o modelo da lista
+  pluck(1)
 ```
 
 # Entendendo os tópicos
 
 Visualizando os topicos encontrados.
 
-```{r fig_beta_padrao, layout = 'l-body-outset', code_folding = TRUE, fig.height = 9, fig.width = 9}
-# criando figura das palavras por topicos
-tidy(x = modelo, matrix = 'beta') %>% 
-  # agrupando pelo topico
-  group_by(topic) %>% 
-  # pegando as 10 palavras com maior afinade com cada tópico
-  slice_max(order_by = beta, n = 10, with_ties = FALSE) %>% 
-  # criando escala numerica para colorir dentro dos topicos
-  mutate(escala = beta / max(beta)) %>% 
-  # desagrupando os dados
-  ungroup %>% 
-  # organizando as informacoes para plotar
-  mutate(
-    topic = ifelse(test = topic < 10, 
-                   yes = paste0('Tópico 0', topic), no = paste0('Tópico', topic)),
-    term = reorder_within(x = term, by = beta, within = topic)
-  ) %>% 
-  # criando a figura
-  ggplot(mapping = aes(x = beta, y = term, fill = escala)) +
-  facet_wrap(~ topic, scales = 'free', ncol = 4) +
-  geom_col(color = 'black', size = 0.3, show.legend = FALSE) +
-  scale_y_reordered() +
-  scale_fill_viridis_c(begin = 0.2, end = 0.9) +
-  labs(
-    title    = 'Quais as palavras mais prováveis de serem observadas em cada tópico?',
-    x        = expression(bold(paste('Probabilidade de ocorrência, ', beta)))
-  ) +
-  theme(axis.title.y = element_blank())
-```
-
-Visualizando os topicos encontrados - parte 2.
-
-```{r fig_beta, eval=FALSE, layout = 'l-body-outset', code_folding = TRUE, fig.height = 9, fig.width = 9}
+```{r fig_beta, layout = 'l-body-outset', code_folding = TRUE, fig.height = 9, fig.width = 9}
 # extraindo os dados dos betas por topico
 df_betas <- modelo$beta %>% 
   # pegando a matriz com o log das probabilidades para o beta
@@ -606,32 +619,63 @@ df_betas %>%
     x        = expression(bold(paste('Probabilidade de ocorrência, ', beta)))
   ) +
   theme(axis.title.y = element_blank())
+
+# o codigo abaixo pode ser usado para criar a figura das palavras mais relacionadas com
+# cada topico no caso de não utilizarmos covariáveis para modelar o conteúdo dos tópicos,
+# uma vez que nesse caso temos apenas uma matriz beta como output do modelo
+# tidy(x = modelo, matrix = 'beta') %>% 
+#   # agrupando pelo topico
+#   group_by(topic) %>% 
+#   # pegando as 10 palavras com maior afinade com cada tópico
+#   slice_max(order_by = beta, n = 10, with_ties = FALSE) %>% 
+#   # criando escala numerica para colorir dentro dos topicos
+#   mutate(escala = beta / max(beta)) %>% 
+#   # desagrupando os dados
+#   ungroup %>% 
+#   # organizando as informacoes para plotar
+#   mutate(
+#     topic = ifelse(test = topic < 10, 
+#                    yes = paste0('Tópico 0', topic), no = paste0('Tópico', topic)),
+#     term = reorder_within(x = term, by = beta, within = topic)
+#   ) %>% 
+#   # criando a figura
+#   ggplot(mapping = aes(x = beta, y = term, fill = escala)) +
+#   facet_wrap(~ topic, scales = 'free', ncol = 4) +
+#   geom_col(color = 'black', size = 0.3, show.legend = FALSE) +
+#   scale_y_reordered() +
+#   scale_fill_viridis_c(begin = 0.2, end = 0.9) +
+#   labs(
+#     title    = 'Quais as palavras mais prováveis de serem observadas em cada tópico?',
+#     x        = expression(bold(paste('Probabilidade de ocorrência, ', beta)))
+#   ) +
+#   theme(axis.title.y = element_blank())
 ```
 
 Visualizando a proporcao de topicos.
 
 ```{r fig_gamma, layout = 'l-body-outset', code_folding = TRUE, fig.height = 6, fig.width = 10}
-# criando tabela com as 5 palavras mais frequentes por topico para plotarmos abaixo
-df_top_palavras <- tidy(x = modelo, matrix = 'beta') %>%
-  # agrupando pelo topico
-  group_by(topic) %>%
-  # pegando as 10 palavras com maior afinade com cada tópico
-  slice_max(order_by = beta, n = 5, with_ties = FALSE) %>%
-  # colocando essas palavras em um vetor
-  summarise(palavras = paste0(term, collapse = ', '))
-
-# se usarmos o content quando rodar o STM, é necessário descomentar as linhas abaixo
-# df_top_palavras <- df_betas %>%
-#   # agrupando pelo topico e token
-#   group_by(topic, term) %>% 
-#   # calculando a media da probabilidade para aquele token naquele topico
-#   summarise(beta = mean(x = beta, na.rm = TRUE), .groups = 'drop') %>% 
+# # criando dataframe com as palavras mais frequentes por topico na media
+# # é necessário descomentar as linhas abaixo se usarmos o modelo sem covariáveis no conteudo
+# df_top_palavras <- tidy(x = modelo, matrix = 'beta') %>%
 #   # agrupando pelo topico
 #   group_by(topic) %>%
 #   # pegando as 10 palavras com maior afinade com cada tópico
 #   slice_max(order_by = beta, n = 5, with_ties = FALSE) %>%
 #   # colocando essas palavras em um vetor
 #   summarise(palavras = paste0(term, collapse = ', '))
+
+# é necessário descomentar as linhas abaixo se usarmos o modelo com covariáveis no conteudo
+df_top_palavras <- df_betas %>%
+  # agrupando pelo topico e token
+  group_by(topic, term) %>% 
+  # calculando a media da probabilidade para aquele token naquele topico
+  summarise(beta = mean(x = beta, na.rm = TRUE), .groups = 'drop') %>% 
+  # agrupando pelo topico
+  group_by(topic) %>%
+  # pegando as 10 palavras com maior afinade com cada tópico
+  slice_max(order_by = beta, n = 5, with_ties = FALSE) %>%
+  # colocando essas palavras em um vetor
+  summarise(palavras = paste0(term, collapse = ', '))
 
 # criando a figura de prevalencia por topico
 tidy(x = modelo, matrix = 'gamma') %>% 
@@ -661,8 +705,9 @@ tidy(x = modelo, matrix = 'gamma') %>%
   scale_fill_viridis_c(begin = 0.2, end = 0.9) +
   scale_color_manual(values = c('black', 'white')) +
   labs(
-    title = 'Quais os tópicos mais prevalentes entre as cartas?',
-    x     = expression(bold(paste('Probabilidade de ocorrência, ', gamma)))
+    title    = 'Quais os tópicos mais prevalentes entre as cartas?',
+    subtitle = '',
+    x        = expression(bold(paste('Probabilidade de ocorrência, ', gamma)))
   ) +
   theme(axis.title.y = element_blank())
 ```
@@ -697,7 +742,7 @@ topicCorr(model = modelo) %>%
   geom_tile(color = 'black') +
   geom_text(mapping = aes(label = round(x = r, digits = 2), color = abs(x = r) > 0.3), 
             fontface = 'bold', show.legend = FALSE) +
-  scale_fill_gradient2(low = 'midnightblue', mid = 'white', high = 'firebrick', midpoint = 0) +
+  scale_fill_gradient2(low = 'firebrick', mid = 'white', high = 'dodgerblue2', midpoint = 0) +
   scale_color_manual(values = c('NA', 'black')) +
   labs(
     title    = 'Qual a relação entre os tópicos identificados?',
@@ -712,36 +757,70 @@ topicCorr(model = modelo) %>%
 
 Estimando a relacao entre topicos e metadados.
 
-```{r modela_topicos_metadados, layout = 'l-body-outset', code_folding = TRUE,  fig.height = 9, fig.width = 9}
-# estimando a contribuicao das features para explicar os clusters
+```{r modela_topicos_metadados}
+# estimando a contribuicao das features para explicar os topicos
 explica_topicos <- estimateEffect(1:18 ~ 0 + slug, stmobj = modelo, 
-                                  metadata = cartas, uncertainty = 'Global')
+                                  metadata = df_covariaveis, uncertainty = 'Global')
+# pegando um output de exemplo
+pluck(summary(explica_topicos), 'tables', 15)
+```
 
-# pegando os slopes das regressoes
-tidy(x = explica_topicos) %>% 
+
+```{r fig_topicos_explicados, layout = 'l-body-outset', code_folding = TRUE,  fig.height = 6, fig.width = 6}
+# pegando as estimativas do modelo e ajustando elas à uma PCA usando o vegan
+df_beta_escores <- tidy(x = explica_topicos) %>% 
   # ajustando os dados para plotar
   mutate(
     # ajustando o nome das faccoes
     term  = str_remove(string = term, pattern = 'slug'),
-    term  = str_replace_all(string = term, pattern = '\\(Intercept\\)', replacement = 'Monsters'),
-    # criando codificacao de cor a partir do nome original da faccao
-    cores = term,
     # ajustando o nome dos topicos
-    topic = ifelse(test = topic < 10, yes = paste0('Tópico 0', topic), no = paste0('Tópico ', topic)),
-    # ordenando as faccoes dentro dos topicos atraves da estimativa do slope
-    term  = reorder_within(x = term, by = estimate, within = topic)
+    topic = ifelse(
+      test = topic < 10, yes = paste0('T0', topic), no = paste0('T', topic)
+    )
   ) %>% 
-  # criando a figura
-  ggplot(mapping = aes(x = estimate, y = term, fill = cores, group = 1)) +
-  facet_wrap(~ topic, scales = 'free', ncol = 4) +
-  geom_col(color = 'black', size = 0.3, show.legend = FALSE) +
-  scale_y_reordered() +
-  scale_fill_manual(values = cores_por_faccao) +
+  # pegando apenas o topico, o nome da faccao e o beta da regressao
+  select(topic, term, estimate) %>% 
+  # passando o tibble para o formato largo, com as faccoes nas linhas, os topicos
+  # nas colunas e os betas como os valores das celulas
+  pivot_wider(id_cols = term, names_from = topic, values_from = estimate) %>% 
+  # passando o tibble para um dataframe, de forma a conseguirmos usar rownames
+  data.frame %>% 
+  # passando o nome da faccao para o rownames
+  `rownames<-`(value = .$term) %>% 
+  # dropando a coluna com o nome da faccao
+  select(-term) %>% 
+  # padronizando os betas topico a topico
+  scale %>%
+  # ajustando a PCA usando o vegan
+  vegan::rda() %>% 
+  # extraindo os escores da PCA
+  vegan::scores() %>% 
+  # passando o objeto resultante para um dataframe
+  map(.f = data.frame) %>% 
+  # colocando o nome da faccao ou topico como uma coluna
+  map(.f = rownames_to_column, var = 'nome')
+
+# criando a figura
+ggplot() +
+  geom_hline(yintercept = 0, color = 'grey70') +
+  geom_vline(xintercept = 0, color = 'grey70') +
+  geom_point(data = pluck(df_beta_escores, 'sites'), 
+             mapping = aes(x = PC1, y = PC2, fill = nome), 
+             size = 3, shape = 21) +
+  geom_text_repel(data = pluck(df_beta_escores, 'sites'), 
+                  mapping = aes(x = PC1, y = PC2, label = nome, color = nome),
+                  fontface = 'bold', seed = 33) +
+  geom_text(data = pluck(df_beta_escores, 'species'), 
+            mapping = aes(x = PC1, y = PC2, label = nome)) +
+  scale_fill_manual(values = cores_por_faccao) + 
+  scale_color_manual(values = cores_por_faccao) +
   labs(
-    title = 'Quais as facções mais relacionadas com cada tópico?',
-    x     = 'Coeficientes da regressão'
+    title    = 'Quais facções estão mais fortemente associadas com quais tópicos?',
+    subtitle = 'Algumas facções parecem estar mais relacionadas à determinados tópicos do que outras'
   ) +
-  theme(axis.title.y = element_blank())
+  theme(
+    legend.position = 'none'
+  )
 ```
 
 # Utilizando os tópicos
@@ -893,7 +972,7 @@ Exemplo Scoia'tael.
 ```{r nearest_neighbors_scoiatael, code_folding = TRUE, layout = 'l-body-outset'}
 df_embedding %>% 
   # calculando o nearest neighbors
-  nearest_neighbors(carta = 'Bruxo Gato', vizinhos = 5) %>% 
+  nearest_neighbors(carta = 'Zoltan Chivay', vizinhos = 5) %>% 
   # selecionando as colunas que vamos plotar
   select(small, item1, item2, texto) %>% 
   # adicionando o prefixo do link para a imagem
