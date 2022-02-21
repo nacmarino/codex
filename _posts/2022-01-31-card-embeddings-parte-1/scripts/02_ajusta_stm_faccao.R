@@ -14,35 +14,16 @@ library(furrr) # para paralelizar o STM
 library(plotly) # para graficos interativos
 library(Rtsne) # para calcular o TSNE
 library(widyr) # para ajudar a calcular o nearest neighbors
+library(reactable) # para tabelas interativas
+library(reactablefmtr) # para embedar imagens nas tabelas
 
 # definindo funcoes -----------------------------------------------------------------
 
 # funcao para calcular o nearest neighbors para um determinado input
 nearest_neighbors <- function(df, carta, vizinhos) {
   
-  # pegando a faccao da carta selecionada
-  faccao_selecionada <- cartas %>% 
-    # filtrando a carta selecionada
-    filter(localizedName == carta) %>% 
-    # pegando a faccao da carta
-    pull(slug)
-  
-  # filtrando as cartas que serao comparadas
-  if(faccao_selecionada != 'Neutral') {
-    cartas_usaveis <- cartas %>% 
-      # filtrando todas as cartas da faccao da carta selecionada
-      filter(slug %in% faccao_selecionada) %>% 
-      # pegando o nome das cartas
-      pull(localizedName)
-    # pegando todas as cartas caso a facção da carta alvo seja a neutra
-  } else {
-    cartas_usaveis <- pull(cartas, localizedName)
-  }
-  
   # calculando a similaridade de coseno entre todas as cartas e a carta alvo
   df %>%
-    # filtrando apenas as cartas que serao comparadas
-    filter(document %in% cartas_usaveis) %>% 
     # aplicando a funcao
     widely(
       ~ {
@@ -82,6 +63,11 @@ nearest_neighbors <- function(df, carta, vizinhos) {
 
 # carregando os dados
 cartas <- read_rds(file = '_posts/2022-01-31-card-embeddings-parte-1/data/cartas.rds')
+
+# definindo a paleta de cores por faccao
+cores_por_faccao <- c('Monsters' = 'red', 'Nilfgaard' = 'grey30', 'Northern Realms' = 'deepskyblue2', 
+                      "Scoia'tael" = 'forestgreen', 'Skellige' = 'purple3', 'Syndicate' = 'orange2',
+                      'Neutral' = 'tan4')
 
 # ajustando os dados antes de prosseguir --------------------------------------------
 
@@ -294,7 +280,7 @@ search_K %>%
 # extraindo o melhor modelo
 modelo <- search_K %>% 
   # pegando o modelo selecionado
-  filter(K == 18, tipo == 'Conteudo') %>% 
+  filter(K == 15, tipo == 'Prevalencia') %>% 
   # extraindo o modelo selecionado
   pull(modelos) %>% 
   # tirando o modelo da lista
@@ -369,7 +355,7 @@ df_embedding <- select(embeddings, document, contains('topic_')) %>%
 # testando o embedding
 df_embedding %>% 
   # calculando o nearest neighbors
-  nearest_neighbors(carta = 'Zoltan Chivay', vizinhos = 5) %>% 
+  nearest_neighbors(carta = 'Bruxo Gato', vizinhos = 5) %>% 
   # selecionando as colunas que vamos plotar
   select(small, item1, item2, texto) %>% 
   # adicionando o prefixo do link para a imagem
@@ -386,4 +372,9 @@ df_embedding %>%
     )
   )
 
-# salvando o modelo -----------------------------------------------------------------
+# salvando os outputs ---------------------------------------------------------------
+
+## escrevendo o objeto do modelo
+write_rds(x = modelo, file = '_posts/2022-01-31-card-embeddings-parte-1/modelos/stm_scoiatael.rds')
+## escrevendo os embeddings
+write_rds(x = df_embedding, file = '_posts/2022-01-31-card-embeddings-parte-1/data/embeddings_scoiatael.rds')
