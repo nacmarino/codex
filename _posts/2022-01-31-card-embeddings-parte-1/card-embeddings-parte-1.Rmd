@@ -565,13 +565,15 @@ modelo <- search_K %>%
 
 # Entendendo os tópicos
 
-Visualizando os topicos encontrados.
+A primeira coisa que vamos olhar são os padrões de ocorrência das palavras entre os tópicos, o que nos permitirá ter uma noção de qual conjunto de palavras melhor caracterizam cada tópico e, consequentemente, do que se trata cada tópico. Esta informação é àquela que está dentro da matriz $\beta$, que descreve a probabilidade de ocorrência de cada palavra em cada tópico e, normalmente, poderia ser extraída usando a função `tidy` especificando o argumento `matrix = 'beta'`. Todavia, esta função não funciona direito para esse propósito quando utilizamos uma covariável para modelar o conteúdo dos tópicos, que foi o que fizemos. Nesse sentido, precisaremos aplicar a função `pluck` ao modelo treinado para extrair as matrizes $\beta$ associadas à cada uma das facções: quando usamos essa covariável, o que fizemos foi 'pedir' para o STM calcular uma matriz $\beta$ para cada uma delas, e utilizar a média dos $\beta$'s entre elas para mapear as palavras associadas à cada tópico. Um ponto importante é que a informação dessas matrizes corresponde ao logarítimo das probabilidades de cada palavra estar associada à cada tópico, além do fato de que os dados chegam em uma estrutura não muito `tidy`.
+
+Depois de tratar àquelas matrizes, podemos observar as 10 palavras com maior probabilidade média de ocorrência em cada tópico na figura abaixo.
 
 ```{r fig_beta, layout = 'l-body-outset', code_folding = TRUE, fig.height = 9, fig.width = 9}
 # extraindo os dados dos betas por topico
-df_betas <- modelo$beta %>% 
+df_betas <- modelo %>% 
   # pegando a matriz com o log das probabilidades para o beta
-  pluck('logbeta') %>% 
+  pluck('beta', 'logbeta') %>% 
   # parseando as matrizes para um dataframe
   map(.f = data.frame) %>% 
   # passando o log da probabilidade para probabilidade
