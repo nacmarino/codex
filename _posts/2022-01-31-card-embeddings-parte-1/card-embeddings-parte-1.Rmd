@@ -747,7 +747,7 @@ topicCorr(model = modelo) %>%
   scale_fill_gradient2(low = 'firebrick', mid = 'white', high = 'dodgerblue2', midpoint = 0) +
   scale_color_manual(values = c('NA', 'black')) +
   labs(
-    title    = 'Qual a relação entre os tópicos identificados?',
+    title    = 'Qual a relação entre os tópicos?',
     subtitle = 'São poucos os tópicos que compartilham algum tipo de relação'
   ) +
   theme(
@@ -768,7 +768,7 @@ pluck(summary(explica_topicos), 'tables', 15)
 ```
 
 
-```{r fig_topicos_explicados, layout = 'l-body-outset', code_folding = TRUE,  fig.height = 6, fig.width = 6}
+```{r fig_topicos_explicados, layout = 'l-body-outset', code_folding = TRUE,  fig.height = 5, fig.width = 7}
 # pegando as estimativas do modelo e ajustando elas à uma PCA usando o vegan
 df_beta_escores <- tidy(x = explica_topicos) %>% 
   # ajustando os dados para plotar
@@ -811,7 +811,7 @@ ggplot() +
              size = 3, shape = 21) +
   geom_text_repel(data = pluck(df_beta_escores, 'sites'), 
                   mapping = aes(x = PC1, y = PC2, label = nome, color = nome),
-                  fontface = 'bold', seed = 33) +
+                  fontface = 'bold', seed = 66) +
   geom_text(data = pluck(df_beta_escores, 'species'), 
             mapping = aes(x = PC1, y = PC2, label = nome)) +
   scale_fill_manual(values = cores_por_faccao) + 
@@ -867,7 +867,7 @@ tsne_results <- select(embeddings, contains('topic_')) %>%
   # passando objeto para matrix
   as.matrix() %>% 
   # ajustando tSNE
-  Rtsne(check_duplicates = FALSE, perplexity = 20)
+  Rtsne(check_duplicates = FALSE, perplexity = 15)
 
 # plotando resultados do TSNE
 tsne_results %>% 
@@ -1061,6 +1061,8 @@ df_embedding %>%
     )
   )
 ```
+
+# Tinha uma pedra no meio do caminho...
 
 # Conclusões
 
