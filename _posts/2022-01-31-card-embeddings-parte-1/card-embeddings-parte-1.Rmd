@@ -567,7 +567,11 @@ modelo <- search_K %>%
 
 A primeira coisa que vamos olhar são os padrões de ocorrência das palavras entre os tópicos, o que nos permitirá ter uma noção de qual conjunto de palavras melhor caracterizam cada tópico e, consequentemente, do que se trata cada tópico. Esta informação é àquela que está dentro da matriz $\beta$, que descreve a probabilidade de ocorrência de cada palavra em cada tópico e, normalmente, poderia ser extraída usando a função `tidy` especificando o argumento `matrix = 'beta'`. Todavia, esta função não funciona direito para esse propósito quando utilizamos uma covariável para modelar o conteúdo dos tópicos, que foi o que fizemos. Nesse sentido, precisaremos aplicar a função `pluck` ao modelo treinado para extrair as matrizes $\beta$ associadas à cada uma das facções: quando usamos essa covariável, o que fizemos foi 'pedir' para o STM calcular uma matriz $\beta$ para cada uma delas, e utilizar a média dos $\beta$'s entre elas para mapear as palavras associadas à cada tópico. Um ponto importante é que a informação dessas matrizes corresponde ao logarítimo das probabilidades de cada palavra estar associada à cada tópico, além do fato de que os dados chegam em uma estrutura não muito `tidy`.
 
-Depois de tratar àquelas matrizes, podemos observar as 10 palavras com maior probabilidade média de ocorrência em cada tópico na figura abaixo.
+Depois de tratar àquelas matrizes, podemos observar as 10 palavras com maior probabilidade média de ocorrência em cada tópico na figura abaixo. No geral, podemos observar quatro padrões gerais nos temas que emergem de cada tópico:  
++ Alguns tópicos misturam um pouco as habilidades entre e dentro das facções, como no caso do Tópico 1 que fala claramente sobre a implementação das habilidades sangramento e envenamento;  
++ Existem casos em que os tópicos falam sobre estratégias de jogo, como no caso do Tópico 2 e do Tópico 4: o primeiro fala de uma estratégia de usar a habilidade de escudo para aumentar o poder das cartas e o segundo sobre movimentar cartas para a pilha de descarte e/ou banil-las^[Sei que essa leitura parece um tanto quanto abstrata, mas para quem joga o jogo isso é bastante claro - então peço para que você confie em mim.];  
++ Também é possível observar casos que falam muito sobre um tipo de carta. Isto é especialmente marcante no Tópico 16, onde as palavras-chave remetem diretamente às cartas de cenário: essas são cartas cujas habilidades são disparadas ao longo de três capítulos, cada um dos quais são disparados cada vez que você joga uma carta de um tipo de personagem específico; e,  
++ Existem tópicos que parecem focar exclusivamente nas habilidades e cartas associadas à uma única facção. Isso pode ser observado, por exemplo no Tópico 5, cujas palavras remetem diretamente à alguns padrões sabidos de serem observados entre as cartas da facção `Syndicate`.  
 
 ```{r fig_beta, layout = 'l-body-outset', code_folding = TRUE, fig.height = 9, fig.width = 9}
 # extraindo os dados dos betas por topico
@@ -651,6 +655,74 @@ df_betas %>%
 #     x        = expression(bold(paste('Probabilidade de ocorrência, ', beta)))
 #   ) +
 #   theme(axis.title.y = element_blank())
+```
+
+Ao que o resultado acima indica, parece não existir uma associação assim tão forte entre as facções e os tópicos: apesar de vermos um ou outro tópico falar muito sobre os temas relacionados à uma facção específica, parece que todo tópico tem alguma coisa de alguma facção. Para validar esse entendimento, podemos utilizar a função `estimateEffect` do pacote `stm`, que ajusta uma regressão para cada tópico através da qual podemos determinar de que forma a proporção dos tópicos varia em função de um conjunto de covariáveis.. 
+
+```{r modela_topicos_metadados}
+# estimando a contribuicao das features para explicar os topicos
+explica_topicos <- estimateEffect(1:18 ~ 0 + slug, stmobj = modelo, 
+                                  metadata = df_covariaveis, uncertainty = 'Global')
+# pegando um output de exemplo
+pluck(summary(explica_topicos), 'tables', 15)
+```
+
+
+```{r fig_topicos_explicados, layout = 'l-body-outset', code_folding = TRUE,  fig.height = 5, fig.width = 7}
+# pegando as estimativas do modelo e ajustando elas à uma PCA usando o vegan
+df_beta_escores <- tidy(x = explica_topicos) %>% 
+  # ajustando os dados para plotar
+  mutate(
+    # ajustando o nome das faccoes
+    term  = str_remove(string = term, pattern = 'slug'),
+    # ajustando o nome dos topicos
+    topic = ifelse(
+      test = topic < 10, yes = paste0('T0', topic), no = paste0('T', topic)
+    )
+  ) %>% 
+  # pegando apenas o topico, o nome da faccao e o beta da regressao
+  select(topic, term, estimate) %>% 
+  # passando o tibble para o formato largo, com as faccoes nas linhas, os topicos
+  # nas colunas e os betas como os valores das celulas
+  pivot_wider(id_cols = term, names_from = topic, values_from = estimate) %>% 
+  # passando o tibble para um dataframe, de forma a conseguirmos usar rownames
+  data.frame %>% 
+  # passando o nome da faccao para o rownames
+  `rownames<-`(value = .$term) %>% 
+  # dropando a coluna com o nome da faccao
+  select(-term) %>% 
+  # padronizando os betas topico a topico
+  scale %>%
+  # ajustando a PCA usando o vegan
+  vegan::rda() %>% 
+  # extraindo os escores da PCA
+  vegan::scores() %>% 
+  # passando o objeto resultante para um dataframe
+  map(.f = data.frame) %>% 
+  # colocando o nome da faccao ou topico como uma coluna
+  map(.f = rownames_to_column, var = 'nome')
+
+# criando a figura
+ggplot() +
+  geom_hline(yintercept = 0, color = 'grey70') +
+  geom_vline(xintercept = 0, color = 'grey70') +
+  geom_point(data = pluck(df_beta_escores, 'sites'), 
+             mapping = aes(x = PC1, y = PC2, fill = nome), 
+             size = 3, shape = 21) +
+  geom_text_repel(data = pluck(df_beta_escores, 'sites'), 
+                  mapping = aes(x = PC1, y = PC2, label = nome, color = nome),
+                  fontface = 'bold', seed = 66) +
+  geom_text(data = pluck(df_beta_escores, 'species'), 
+            mapping = aes(x = PC1, y = PC2, label = nome)) +
+  scale_fill_manual(values = cores_por_faccao) + 
+  scale_color_manual(values = cores_por_faccao) +
+  labs(
+    title    = 'Quais facções estão mais fortemente associadas com quais tópicos?',
+    subtitle = 'Algumas facções parecem estar mais relacionadas à determinados tópicos do que outras'
+  ) +
+  theme(
+    legend.position = 'none'
+  )
 ```
 
 Visualizando a proporcao de topicos.
@@ -754,74 +826,6 @@ topicCorr(model = modelo) %>%
     axis.title  = element_blank(),
     panel.grid  = element_blank(),
     axis.text.x = element_text(angle = 30, hjust = 1)
-  )
-```
-
-Estimando a relacao entre topicos e metadados.
-
-```{r modela_topicos_metadados}
-# estimando a contribuicao das features para explicar os topicos
-explica_topicos <- estimateEffect(1:18 ~ 0 + slug, stmobj = modelo, 
-                                  metadata = df_covariaveis, uncertainty = 'Global')
-# pegando um output de exemplo
-pluck(summary(explica_topicos), 'tables', 15)
-```
-
-
-```{r fig_topicos_explicados, layout = 'l-body-outset', code_folding = TRUE,  fig.height = 5, fig.width = 7}
-# pegando as estimativas do modelo e ajustando elas à uma PCA usando o vegan
-df_beta_escores <- tidy(x = explica_topicos) %>% 
-  # ajustando os dados para plotar
-  mutate(
-    # ajustando o nome das faccoes
-    term  = str_remove(string = term, pattern = 'slug'),
-    # ajustando o nome dos topicos
-    topic = ifelse(
-      test = topic < 10, yes = paste0('T0', topic), no = paste0('T', topic)
-    )
-  ) %>% 
-  # pegando apenas o topico, o nome da faccao e o beta da regressao
-  select(topic, term, estimate) %>% 
-  # passando o tibble para o formato largo, com as faccoes nas linhas, os topicos
-  # nas colunas e os betas como os valores das celulas
-  pivot_wider(id_cols = term, names_from = topic, values_from = estimate) %>% 
-  # passando o tibble para um dataframe, de forma a conseguirmos usar rownames
-  data.frame %>% 
-  # passando o nome da faccao para o rownames
-  `rownames<-`(value = .$term) %>% 
-  # dropando a coluna com o nome da faccao
-  select(-term) %>% 
-  # padronizando os betas topico a topico
-  scale %>%
-  # ajustando a PCA usando o vegan
-  vegan::rda() %>% 
-  # extraindo os escores da PCA
-  vegan::scores() %>% 
-  # passando o objeto resultante para um dataframe
-  map(.f = data.frame) %>% 
-  # colocando o nome da faccao ou topico como uma coluna
-  map(.f = rownames_to_column, var = 'nome')
-
-# criando a figura
-ggplot() +
-  geom_hline(yintercept = 0, color = 'grey70') +
-  geom_vline(xintercept = 0, color = 'grey70') +
-  geom_point(data = pluck(df_beta_escores, 'sites'), 
-             mapping = aes(x = PC1, y = PC2, fill = nome), 
-             size = 3, shape = 21) +
-  geom_text_repel(data = pluck(df_beta_escores, 'sites'), 
-                  mapping = aes(x = PC1, y = PC2, label = nome, color = nome),
-                  fontface = 'bold', seed = 66) +
-  geom_text(data = pluck(df_beta_escores, 'species'), 
-            mapping = aes(x = PC1, y = PC2, label = nome)) +
-  scale_fill_manual(values = cores_por_faccao) + 
-  scale_color_manual(values = cores_por_faccao) +
-  labs(
-    title    = 'Quais facções estão mais fortemente associadas com quais tópicos?',
-    subtitle = 'Algumas facções parecem estar mais relacionadas à determinados tópicos do que outras'
-  ) +
-  theme(
-    legend.position = 'none'
   )
 ```
 
