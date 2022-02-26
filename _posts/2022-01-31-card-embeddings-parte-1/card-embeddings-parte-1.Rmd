@@ -804,7 +804,7 @@ tidy(x = modelo, matrix = 'gamma') %>%
   theme(axis.title.y = element_blank())
 ```
 
-Finalmente, uma das vantagens de utilizarmos o STM está no fato dele incorporar que os tópicos não são independentes entre si. 
+Finalmente, uma das vantagens de utilizarmos o STM está no fato dele incorporar a não independência entre os tópicos. Isto significa que a prevalência de um tópico em uma carta, por exemplo, passa a ser informativo da prevalência de outros tópicos: e.g., . Podemos ter acesso à essa informação a partir do modelo que treinamos utilizando a função `topicCorr`, e extraindo a matriz `cor` do objeto resultante. Os padrões de correlação observados entre os tópicos que encontramos pode ser observado na figura abaixo, onde aproveitei para surprimir os valores de correlação menores do que |0.3| entre pares de tópicos. Como podemos ver, poucos tópicos compartilham uma correlação um pouco mais forte (positiva ou negativa), mas aqueles que o fazem são bastante ilustrativos. Por exemplos: 
 
 ```{r fig_correlacao_topicos, layout = 'l-body-outset', code_folding = TRUE, fig.height=5, fig.width=8}
 # carregando pacotes
