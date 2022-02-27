@@ -6,7 +6,7 @@ author:
   - first_name: Nicholas 
     last_name: Marino
     url: https://github.com/nacmarino
-date: 01-31-2022
+date: 02-28-2022
 bibliography: bibliografia.bib
 categories:
   - boardgames
