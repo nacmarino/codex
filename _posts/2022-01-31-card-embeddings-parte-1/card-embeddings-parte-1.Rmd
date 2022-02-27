@@ -457,11 +457,11 @@ Como em outras técnicas de aprendizado não-supervisionado voltadas ao agrupame
 library(stm) # para a modelagem de topicos
 library(furrr) # para paralelizar a busca
 
-# setando a seed
-set.seed(33)
-
 # setando o processamento paralelo
 plan(multisession)
+
+# setando a seed
+set.seed(33)
 
 # buscando melhor valor de K
 search_K <- tibble(
@@ -635,6 +635,7 @@ df_betas %>%
   scale_fill_viridis_c(begin = 0.2, end = 0.9) +
   labs(
     title    = 'Quais as palavras mais prováveis de serem observadas em cada tópico?',
+    subtitle = 'Os temas de que tratam cada tópico podem ser identificados através da análise das palavras mais fortementes associadas à cada tópico',
     x        = expression(bold(paste('Probabilidade de ocorrência, ', beta)))
   ) +
   theme(axis.title.y = element_blank())
@@ -736,7 +737,9 @@ ggplot() +
   scale_color_manual(values = cores_por_faccao) +
   labs(
     title    = 'Quais facções estão mais fortemente associadas com quais tópicos?',
-    subtitle = 'Algumas facções parecem estar mais relacionadas à determinados tópicos do que outras'
+    subtitle = 'A disposição das facções na ordenação representa a similaridade nos padrões de prevalência dos tópicos',
+    x        = 'Componente Principal 1',
+    y        = 'Componente Principal 2'
   ) +
   theme(
     legend.position = 'none'
@@ -804,7 +807,7 @@ tidy(x = modelo, matrix = 'gamma') %>%
   theme(axis.title.y = element_blank())
 ```
 
-Finalmente, uma das vantagens de utilizarmos o STM está no fato dele incorporar a não independência entre os tópicos. Isto significa que a prevalência de um tópico em uma carta, por exemplo, passa a ser informativo da prevalência de outros tópicos: e.g., . Podemos ter acesso à essa informação a partir do modelo que treinamos utilizando a função `topicCorr`, e extraindo a matriz `cor` do objeto resultante. Os padrões de correlação observados entre os tópicos que encontramos pode ser observado na figura abaixo, onde aproveitei para surprimir os valores de correlação menores do que |0.3| entre pares de tópicos. Como podemos ver, poucos tópicos compartilham uma correlação um pouco mais forte (positiva ou negativa), mas aqueles que o fazem são bastante ilustrativos. Por exemplos: 
+O outro padrão que podemos explorar a partir do modelo que treinamos é a correlação entre os tópicos. Podemos ter acesso à essa informação a partir do modelo que treinamos utilizando a função `topicCorr` e extraindo a matriz `cor` do objeto resultante. Os padrões de correlação observados entre os tópicos que encontramos pode ser observado na figura abaixo, onde aproveitei para suprimir as correlações menores do que |0.3| apenas para facilitar a visualização. Como podemos ver, poucos tópicos compartilham uma correlação um pouco mais forte (positiva ou negativa), mas aqueles que o fazem ilustram a vantagem dessa aplicação no STM. A correlação entre os tópicos 4 e 15, por exemplo, é bastante compreensível pois ambos falam de mecânicas de movimentação de deck (_i.e._, mover cartas para a pilha de descarte, comprar cartas do deck, criar cópias de cartas e etc) que podem acabar co-ocorrendo entre as cartas.
 
 ```{r fig_correlacao_topicos, layout = 'l-body-outset', code_folding = TRUE, fig.height=5, fig.width=8}
 # carregando pacotes
@@ -838,7 +841,7 @@ topicCorr(model = modelo) %>%
   scale_color_manual(values = c('NA', 'black')) +
   labs(
     title    = 'Qual a relação entre os tópicos?',
-    subtitle = 'São poucos os tópicos que compartilham algum tipo de relação'
+    subtitle = 'São poucos os tópicos que compartilham algum tipo de relação entre si'
   ) +
   theme(
     axis.title  = element_blank(),
@@ -851,7 +854,7 @@ Acredito que podemos parar por aqui o entendimento dos tópicos e passar agora p
 
 # Utilizando os tópicos
 
-Juntando probabilidades às cartas.
+Como comentado anteriormente, uma das ideias principais da modelagem de tópicos é que cada texto analisado é representado por diferentes proporções dos K tópicos identificados. Desta forma, podemos alavancar esta ideia e usar a proporção de cada tópico que caracteriza cada carta para criar uma representação abstrata de cada uma delas. A partir deste _embedding_ podemos então visualizar e buscar as cartas mais similares entre si de acordo com o seu texto de descrição. Para obter este _embedding_ basta usarmos a função `tidy` para extrair a matriz $\theta_{d}$ do modelo treinado - é confuso, mas precisamos usar o argumento `matrix = 'gamma'` para isso -, e aproveitarei para enriquecer a matriz resultante com alguns metadados sobre cada carta.
 
 ```{r embedding_matrix}
 # pegando a matriz gamma - as probabilidade de cada topico por documento
@@ -876,7 +879,7 @@ embeddings <- tidy(x = modelo, matrix = 'gamma') %>%
 embeddings
 ```
 
-Ajustando TSNE.
+Na sequência, vamos usar o t-SNE para criar uma projeção daquele _embedding_ em duas dimensões, que nos ajudará à entender a similaridade entre as cartas de acordo com o seu texto de descrição. Como podemos observar, as cartas tendem a ser agrupar em torno dos tópicos mais prevalentes entre elas, mas é difícil identificar grupos que estejam muito separados uns dos outros. Isso não é surpreendente, uma vez que a modelagem de tópicos prevê que cada texto vai ter uma contribuição de cada tópico, ainda que pequena. De toda forma, ainda é possível visualizar alguns padrões consistentes de similaridade entre as cartas. Um exemplo disto é uma nuvem de cartas no canto esquerdo, onde todas as cartas falam de diferentes implementações da habilidade de reforço (_i.e._, aumento do poder base da carta): quando a carta têm ou recebe um _status_, quando outras cartas recebem um _status_, quando um custo é pago e etc. Assim, parece que a modelagem de tópicos foi capaz sim de atingir o objetivo de agrupar as cartas pela similaridade entre os textos de descrição.
 
 ```{r visualiza_tsne, layout = 'l-body-outset', code_folding = TRUE}
 # carregando o pacote
@@ -891,7 +894,7 @@ tsne_results <- select(embeddings, contains('topic_')) %>%
   # passando objeto para matrix
   as.matrix() %>% 
   # ajustando tSNE
-  Rtsne(check_duplicates = FALSE, perplexity = 15)
+  Rtsne(check_duplicates = FALSE, perplexity = 25)
 
 # plotando resultados do TSNE
 tsne_results %>% 
@@ -917,10 +920,14 @@ tsne_results %>%
             str_wrap(string = texto, width = 50)
             )
   ) %>% 
-  layout(xaxis = list(title = 'Dimensão 1'), yaxis = list(title = 'Dimensão 2'))
+  layout(
+    title = '<b>Como estão organizadas as cartas de Gwent de acordo com a similaridade em seu texto de descrição?</b>',
+    xaxis = list(title = '<b>Dimensão 1</b>'), 
+    yaxis = list(title = '<b>Dimensão 2</b>')
+  )
 ```
 
-Nearest neighbors.
+Uma vez que validamos o uso dos _embeddings_ criados através da STM, podemos agora implementar um algoritmo para nos ajudar a encontrar os vizinhos mais próximos de cada carta que selecionarmos. Para isso, eu usei o algoritmo que é apresentado no capítulo 5 do livro _Supervised Machine Learning for Text Analysis in R_ (@smlta), fazendo algumas pequenas alterações em seu funcionamento para que ele atendesse às peculiaridades do problema de dados que estamos trabalhando. Mais especificamente, como no geral não podemos misturar as cartas de facções diferentes a não ser com as cartas neutras, eu trabalhei na função para que ela recebesse o nome de uma carta e extraísse a facção à qual ela pertence para que, a partir daí, ela trabalhasse apenas com o subconjunto das cartas que são passíveis de serem usadas juntas. Um ponto importante na implementação desse algoritmo é que ele faz uso da função `widely` do pacote `widyr`, que recebe como _input_ uma base em formato longo e aplica uma função empacotada à ela, passando a base para o formato largo durante o processamento (_i.e._, tipo como se desse um `pivot_wider` na hora de aplicar a função) e retornando novamente uma base no formato longo (_i.e._, como se desse um `pivot_longer` no resultado da função empacotada). Eu nunca tinha usado esse pacote, e achei a ideia por trás dele bastante interessante. O código para o algoritmo de vizinhos mais próximos que implementei está abaixo, assim como uma descrição detalhada do que está sendo feito dentro da função empacota no `widely` linha-a-linha.
 
 ```{r nearest_neighbors}
 # carregando funcoes
@@ -987,13 +994,16 @@ nearest_neighbors <- function(df, carta, vizinhos) {
     # organizando as cartas em ordem decrescente de similaridade
     arrange(desc(item2)) %>% 
     # pegando apenas a quantidade desejada de cartas similares
-    slice_max(order_by = item2, n = vizinhos) %>% 
+    slice_max(order_by = item2, n = vizinhos + 1) %>% 
     # juntando com metadados das cartas resultantes
-    left_join(y = select(cartas, localizedName, slug, small, texto), by = c('item1' = 'localizedName'))
+    left_join(
+      y = select(cartas, localizedName, slug, small, texto), 
+      by = c('item1' = 'localizedName')
+    )
 }
 ```
 
-Exemplo Scoia'tael.
+Uma vez que tenhamos a função que implementa o algoritmo de vizinhos mais próximos definida, vamos aplicá-la a uma carta aleatória de algumas facções para encontrar os seus 5 vizinhos mais próximos. Começando pela facção `Scoia'tael`, vamos aplicar à busca com base na carta `Zoltan Chivay`...
 
 ```{r nearest_neighbors_scoiatael, code_folding = TRUE, layout = 'l-body-outset'}
 df_embedding %>% 
@@ -1016,7 +1026,7 @@ df_embedding %>%
   )
 ```
 
-Exemplo Northern Realms.
+...à carta `Imortais` da facção `Northern Realms`...
 
 ```{r nearest_neighbors_northern_realms, code_folding = TRUE, layout = 'l-body-outset'}
 df_embedding %>% 
@@ -1039,7 +1049,7 @@ df_embedding %>%
   )
 ```
 
-Exemplo Nilfgaard.
+..à carta `Artorius Viggo` da facção `Nilfgaard`...
 
 ```{r nearest_neighbors_nilfgaard, code_folding = TRUE, layout = 'l-body-outset'}
 df_embedding %>% 
@@ -1062,12 +1072,12 @@ df_embedding %>%
   )
 ```
 
-Exemplo Neutral.
+..e à carta neutra `Regis`.
 
 ```{r nearest_neighbors_neutral, code_folding = TRUE, layout = 'l-body-outset'}
 df_embedding %>% 
   # calculando o nearest neighbors
-  nearest_neighbors(carta = 'Alzur', vizinhos = 5) %>% 
+  nearest_neighbors(carta = 'Regis', vizinhos = 5) %>% 
   # selecionando as colunas que vamos plotar
   select(small, item1, slug, item2, texto) %>%
   # adicionando o prefixo do link para a imagem
@@ -1086,11 +1096,74 @@ df_embedding %>%
   )
 ```
 
-# Tinha uma pedra no meio do caminho...
+Salvo uma ou outra exceção, os vizinhos mais próximos das cartas selecionadas parecem fazer algum sentido. Isso fornece mais evidências de que os _embeddings_ criados através do STM são capazes de nos fornecer uma boa noção da similaridade entre as cartas de acordo com o seu texto de descrição. Desta forma, acredito que estamos quase prontos para concluir o post...só tem uma coisinha que eu ainda queria falar...
+
+# E se focássemos em uma facção só?
+
+Enquanto eu escrevia esse post, resolvi testar os _embeddings_ usando algumas cartas específicas que eu uso em alguns decks, e que sei que basicamente funcionam como o motor principal dos combos que uso. Um exemplo de carta que testei foi a `Bruxo Gato`, da facção `Scoia'tael`, que ajuda em um combo baseado na mecânica de movimentação de cartas no tabuleiro (esse combo é descrito em detalhes no início desse post [aqui](https://nacmarino.github.io/codex/posts/2022-01-08-quais-as-associacoes-existentes-entre-as-cartas-dos-decks-de-gwent/). Quando usei os _embeddings_ que criamos para achar os vizinhos mais próximos à essa carta, acabei chegando ao resultado abaixo.
+
+```{r nearest_neighbors_scoiatael_demo, code_folding = TRUE, layout = 'l-body-outset'}
+df_embedding %>% 
+  # calculando o nearest neighbors
+  nearest_neighbors(carta = 'Bruxo Gato', vizinhos = 5) %>% 
+  # selecionando as colunas que vamos plotar
+  select(small, item1, item2, texto) %>% 
+  # adicionando o prefixo do link para a imagem
+  mutate(small = paste0('https://www.playgwent.com/', small)) %>%
+  # colocando os exemplos em um reactable
+  reactable(
+    compact = TRUE, borderless = TRUE, defaultColDef = colDef(align = 'left'), 
+    style = list(fontFamily = "Roboto", fontSize = "12px"),
+    columns = list(
+      small = colDef(name = '', cell = embed_img(height = 80, width = 60), maxWidth = 80),
+      item1 = colDef(name = 'Carta', maxWidth = 90),
+      item2 = colDef(name = 'Similaridade', maxWidth = 90, format = colFormat(digits = 3)),
+      texto = colDef(name = 'Descrição')
+    )
+  )
+```
+
+Conhecendo as cartas da facção `Scoia'tael`, acabei achando estranha a combinação de cartas que foi sugerida, uma vez que eu esperava que algumas outras cartas fossem acabar aparecendo e não vi muito sentido em algumas outras cartas que foram sugeridas (_e.g._, `Dríade Jovem`). Pensei um pouco, e me ocorreu se não seria o caso de que ao combinar as cartas de várias facções distintas ao criar os _embeddings_, eu tivesse acabado por colocar muita heterogeneidade na segmentação das cartas entre os tópicos e perdido um pouco dos padrões de similaridade mais finos entre as cartas. Com base nisso, resolvi rodar a modelagem de tópicos toda de novo, mas desta vez focando apenas nas cartas Neutras e da facção `Scoia'tael` (que podem ser combinadas no mesmo deck) - você encontra o script que usei aqui. De forma geral, encontrei novamente 18 tópicos como sendo a melhor quantidade para segmentar as cartas, mas o modelo selecionado foi aquele que incorporava as covariáveis do tipo de habilidade das cartas como preditor da prevalência dos tópicos. Salvei os _embeddings_ gerados por esse modelo, e uso ele abaixo para buscar novamente os vizinhos mais próximos da carta `Bruxo Gato`.
+
+```{r nearest_neighbors_scoiatael_solo, code_folding = TRUE, layout = 'l-body-outset'}
+# carregando o embedding treinado apenas para Scoia'tael e Neutral
+embedding_scoiatael <- read_rds(file = 'data/embeddings_scoiatael.rds')
+# embedding_scoiatael <- read_rds(file = '_posts/2022-01-31-card-embeddings-parte-1/data/embeddings_scoiatael.rds')
+
+# pegando os vizinhos mais proximos usando o embedding especifico para scoia'tael
+embedding_scoiatael %>% 
+  # calculando o nearest neighbors
+  nearest_neighbors(carta = 'Bruxo Gato', vizinhos = 5) %>% 
+  # selecionando as colunas que vamos plotar
+  select(small, item1, item2, texto) %>% 
+  # adicionando o prefixo do link para a imagem
+  mutate(small = paste0('https://www.playgwent.com/', small)) %>%
+  # colocando os exemplos em um reactable
+  reactable(
+    compact = TRUE, borderless = TRUE, defaultColDef = colDef(align = 'left'), 
+    style = list(fontFamily = "Roboto", fontSize = "12px"),
+    columns = list(
+      small = colDef(name = '', cell = embed_img(height = 80, width = 60), maxWidth = 80),
+      item1 = colDef(name = 'Carta', maxWidth = 90),
+      item2 = colDef(name = 'Similaridade', maxWidth = 90, format = colFormat(digits = 3)),
+      texto = colDef(name = 'Descrição')
+    )
+  )
+```
+
+Como podemos ver, existe uma diferença gritante do resultado dos vizinhos mais próximos usando os _embeddings_ que são específicos para a facção `Scoia'tael` _vs_ aquele criado usando todas as cartas, de forma que o primeiro faz muito mais sentido do que o último. Acredito que este resultado reforce a ideia de que a grande heterogeneidade entre as cartas das diferentes facções fez com que o _embedding_ criado perdesse um pouco da capacidade de identificar essas pequenas nuances entre as cartas. Outra evidência em favor desta ideia é que a identidade da facção deu lugar aos tipos de habilidade das cartas como a melhor covariável para o modelo de tópicos quando focamos apenas nas cartas Neutras e `Scoia'tael`. Isto sugere que apesar das habilidades compartilhadas entre as cartas serem muitas vezes similares, a implementação delas entre as de fato é muito distinta - e, eventualmente, valeria até a pena avaliar até que grau o texto de descrição das cartas é informativo da facção a que pertencem.
 
 # Conclusões
 
+Neste post eu busquei entender a similaridade entre as cartas de Gwent de acordo com o texto de descrição que as acompanha. Vimos que estes textos fornecem informações riquíssimas sobre os tipos de personagem associados às cartas, as habilidades que elas possuem e a forma como as implementam, e que todas essas coisas não eram totalmente dependentes da facção associada à cada carta. De toda forma, buscamos avaliar estes padrões de maneira analítica utilizando uma modelagem de tópicos através da implementação do _Structural Topic Model_.
+
 # Possíveis Extensões
+
+Esse post acabou ficando bastante longo, mas ele fecha um arco básico de análise de dados que só fazia sentido usando estes dados. Ainda assim, vejo algumas outras coisas que poderiam ser feitas, mas muito mais para estudar outras técnicas que não foram usadas aqui ou confirmar alguns padrões encontrados aqui. Além das extensões que já listei no post do _scrapper_ da [biblioteca de decks]((https://nacmarino.github.io/codex/posts/2021-11-30-raspando-a-biblioteca-de-decks-de-gwent/) e naquele sobre os [padrões de co-ocorrência das cartas](https://nacmarino.github.io/codex/posts/2022-01-08-quais-as-associacoes-existentes-entre-as-cartas-dos-decks-de-gwent/), acredito que podemos adicionar:
++ A visualização da variação na prevalência dos tópicos entre as facções através da PCA sugere que devem existir diferenças entre as facções no que tange os textos de descrição das cartas. Seria então interessante trabalhar em cima de algum classificador que pudesse nos fornecer mais insights sobre a importância desta informação e dos outros metadados das cartas para esta previsão;  
++ Trabalhamos sobre o texto de descrição das cartas, mas cada habilidade na coluna `keywords` também possui o seu próprio texto de descrição. Este texto explica apenas o que é àquela habilidade, e não dá detalhes sobre a sua implementação. No entanto, acredito que seria interessante criar algum tipo de _embedding_ focando nessa informação do texto das `keywords`, de forma a também criarmos uma representação abstrata da similaridade das habilidades.
++ A ideia inicial era que solução desenvolvida aqui seria complementar àquela baseada nos padrões de co-ocorrência das cartas entre os decks de Gwent. Assim, seria interessante examinar a frequência com a qual os vizinhos mais próximos de cada carta são observadas também entre as regras de associação utilizadas para identificar os padrões de co-ocorrência. A minha perspectiva é que o resultado dos vizinhos mais próximos utilizando o _embedding_ deve ser útil principalmente quando as associações sugeridas por ele não forem tão frequentes quando olhamos as regras de associação. Acredito que isso seria mais para a validação das abordagens propostas do que qualquer outra coisa, mas é algo que seria importante ser feito; e,  
++ Mais uma vez, acredito que empacotar as análises que mostrei aqui num ShinyApp junto de tudo o que mais que foi gerado nos outros posts sobre Gwent seria muito legal.
 
 Dúvidas, sugestões ou críticas? É só me procurar pelo e-mail ou GitHub!
 
