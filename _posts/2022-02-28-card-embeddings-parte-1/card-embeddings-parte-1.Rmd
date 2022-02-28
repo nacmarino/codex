@@ -1,7 +1,7 @@
 ---
 title: "Como encontrar as cartas de Gwent mais similares entre si?"
 description: |
-  Já olhamos os decks de Gwent para identificar e explorar as regras de associação entre as cartas, o que alavanca as estratégias de utilização das mesmas conhecidas pela comunidade. Neste post vamos tomar outra abordagem e buscar os pares de cartas cujas características são mais similares entre si e que, portanto, poderia fornecer algum outro tipo de estratégia ainda não explorada e/ou facilitar a nossa vida quanto à escolha das cartas que colocaremos em um deck
+  Já olhamos os decks de Gwent para analisar os padrões de co-ocorrência entre as cartas, que utilizou as estratégias já conhecidas pela comunidade. Neste post vamos tomar outra abordagem, empregando uma análise voltada aos padrões de similaridade do texto de descrição das cartas para identificar pares que poderiam gerar estratégias potencialmente viáveis.
 author:
   - first_name: Nicholas 
     last_name: Marino
@@ -49,7 +49,7 @@ cores_por_faccao <- c('Monsters' = 'red', 'Nilfgaard' = 'grey30', 'Northern Real
 
 # Motivação
 
-Há algum tempo atrás [construí](https://nacmarino.github.io/codex/posts/2021-11-30-raspando-a-biblioteca-de-decks-de-gwent/) um _scrapper_ para raspar a biblioteca de decks de Gwent, de forma à usar esses dados para tomar melhores decisões na hora de montar meus próprios decks. Uma das primeiras análises que fiz com aqueles dados foi tentar entender os [padrões de co-ocorrência das cartas](https://nacmarino.github.io/codex/posts/2022-01-08-quais-as-associacoes-existentes-entre-as-cartas-dos-decks-de-gwent/) de Gwent entre os decks contribuídos pela comunidade, utilizando para isso uma análise orientada à regras de associação entre as cartas. Aquele primeiro exercício acabou sendo bastante positivo, pois consegui extrair alguns insights bastante relevantes que acabaram melhorando a minha estratégia e experiência de jogo.
+Há algum tempo atrás [construí](https://nacmarino.github.io/codex/posts/2021-11-30-raspando-a-biblioteca-de-decks-de-gwent/) um _scrapper_ para raspar a biblioteca de decks de Gwent, de forma à usar esses dados para tomar melhores decisões na hora de montar meus próprios decks. Uma das primeiras análises que fiz com aqueles dados foi tentar entender os [padrões de co-ocorrência das cartas](https://nacmarino.github.io/codex/posts/2022-01-08-quais-as-associacoes-existentes-entre-as-cartas-dos-decks-de-gwent/) entre os decks contribuídos pela comunidade, utilizando para isso uma análise orientada às regras de associação entre as cartas. Aquele primeiro exercício acabou sendo bastante positivo, pois consegui extrair alguns insights bastante relevantes que acabaram melhorando a minha estratégia e experiência de jogo.
 
 Um ponto importante daquela primeira análise é que ela olhou para os padrões de co-ocorrência de cartas _conhecidos_ e _explorados_ pela comunidade, deixando de fora àquelas combinações de cartas que teriam o _potencial_ de funcionar juntas, mas que nunca foram testadas. Estas combinações normalmente implementam mecânicas específicas de jogo, que podem ser identificadas através da descrição dos efeitos associados à cada carta. Assim, se pudéssemos agrupar as cartas de acordo com os padrões de texto existente em suas descrições, então poderíamos identificar as cartas que implementam mecânicas similares e, portanto, poderiam ser usadas juntas.
 
@@ -59,7 +59,7 @@ Iniciaremos falando um pouco sobre a aquisição dos dados e faremos uma breve a
 
 # Carregando os Dados
 
-Os dados que vamos utilizar neste post podem ser obtidos utilizando o _scrapper_ apresentado neste [post](https://nacmarino.github.io/codex/posts/2021-11-30-raspando-a-biblioteca-de-decks-de-gwent/). No entanto, precisaremos de alguns passos adicionais para usar esses dados aqui, uma vez que o _scrapper_ original retorna um `tibble` com a composição de cartas em cada um dos decks rasparados, bem como os metadados associados à cada uma das cartas. Assim, precisamos reduzir àquela base à uma que fale apenas das cartas, e podemos fazer isso usando um `distict` focando apenas no nome das cartas e em seus metadados. Você pode encontrar esta etapa do pós-processamento no código que acompanha este post.
+Os dados que vamos utilizar neste post podem ser obtidos utilizando o _scrapper_ apresentado neste [post](https://nacmarino.github.io/codex/posts/2021-11-30-raspando-a-biblioteca-de-decks-de-gwent/). No entanto, precisaremos de alguns passos adicionais para usar esses dados, uma vez que o _scrapper_ original retorna um `tibble` com a composição de cartas em cada um dos decks rasparados, bem como os metadados associados à cada uma das cartas. Assim, precisamos reduzir àquela base à uma que fale apenas das cartas, e podemos fazer isso usando um `distict` focando apenas no nome das cartas e em seus metadados. Você pode encontrar esta etapa do pós-processamento no código que acompanha este post.
 
 Assumindo que já temos a base de dados com os metadados de cada carta, vamos carregar alguns pacotes que usaremos neste post e, na sequência, carregar a base de dados _per se_. Precisaremos fazer dois pequenos ajustes, para resolver duas inconsistências que existem neles:  
 
@@ -78,7 +78,7 @@ library(reactablefmtr) # para ajudar com o reactable
 
 # carregando os dados
 cartas <- read_rds(file = 'data/cartas.rds')
-# cartas <- read_rds(file = '_posts/2022-01-31-card-embeddings-parte-1/data/cartas.rds')
+# cartas <- read_rds(file = '_posts/2022-02-28-card-embeddings-parte-1/data/cartas.rds')
 
 # ajustando a tabela por conta de duas cartas má registradas
 cartas <- cartas %>% 
@@ -1128,7 +1128,7 @@ Conhecendo as cartas da facção `Scoia'tael`, acabei achando estranha a combina
 ```{r nearest_neighbors_scoiatael_solo, code_folding = TRUE, layout = 'l-body-outset'}
 # carregando o embedding treinado apenas para Scoia'tael e Neutral
 embedding_scoiatael <- read_rds(file = 'data/embeddings_scoiatael.rds')
-# embedding_scoiatael <- read_rds(file = '_posts/2022-01-31-card-embeddings-parte-1/data/embeddings_scoiatael.rds')
+# embedding_scoiatael <- read_rds(file = '_posts/2022-02-28-card-embeddings-parte-1/data/embeddings_scoiatael.rds')
 
 # pegando os vizinhos mais proximos usando o embedding especifico para scoia'tael
 embedding_scoiatael %>% 
@@ -1156,6 +1156,10 @@ Como podemos ver, existe uma diferença gritante do resultado dos vizinhos mais 
 # Conclusões
 
 Neste post eu busquei entender a similaridade entre as cartas de Gwent de acordo com o texto de descrição que as acompanha. Vimos que estes textos fornecem informações riquíssimas sobre os tipos de personagem associados às cartas, as habilidades que elas possuem e a forma como as implementam, e que todas essas coisas não eram totalmente dependentes da facção associada à cada carta. De toda forma, buscamos avaliar estes padrões de maneira analítica utilizando uma modelagem de tópicos através da implementação do _Structural Topic Model_.
+
++ Haverá parte 2: mais complexa.
++ Adicionar link dos codigos.
++ Adicionar outros links úteis.
 
 # Possíveis Extensões
 
