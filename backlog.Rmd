@@ -25,6 +25,7 @@ theme: theme.css
 - Como saber se um jogo de tabuleiro tem o potencial de ser um sucesso no Brasil?  
 - Quais os jogos de tabuleiro mais parecidos com aquele que eu gosto?  
 - Qual a magnitude da diferença nas notas dadas aos mesmos jogos entre os portais especializados em jogos de tabuleiro?
-- [On going] Quão diferentes são as cartas de Gwent de acordo com a facção?  
-- Como criar embeddings para as cartas de Gwent?  
+- Quão diferentes são as cartas de Gwent de acordo com a facção?  
 - Podemos prever a que facção uma carta pertence com base em sua imagem?  
+- Análise dos resultados da pesquisa '2021 Kaggle Machine Learning & Data Science Survey';  
+- Análise dos dados do resultado das provas do ENEM.  

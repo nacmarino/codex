@@ -107,7 +107,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   <!--radix_placeholder_rmarkdown_metadata-->
 
   <script type="text/json" id="radix-rmarkdown-metadata">
-  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","site","listing"]}},"value":[{"type":"character","attributes":{},"value":["Postagens"]},{"type":"character","attributes":{},"value":["distill::distill_website"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["posts"]}},"value":[{"type":"character","attributes":{},"value":["2022-01-23-interagindo-com-a-api-do-boardgamegeek","2022-01-08-quais-as-associacoes-existentes-entre-as-cartas-dos-decks-de-gwent","2021-12-23-convertendo-coordenadas-atraves-da-calculadora-geografica-do-inpe","2021-12-11-quao-similares-sao-as-notas-dos-jogos-de-tabuleiro-entre-os-portais-especializados","2021-11-30-raspando-a-biblioteca-de-decks-de-gwent","2021-11-15-previsao-de-acidentes-com-os-dados-da-formula-1","2021-10-24-raspando-a-pagina-do-ranking-da-ludopedia","2021-10-08-entendendo-os-padroes-de-duracao-das-provas-da-formula-1","2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek","2021-08-27-prevendo-o-preco-de-apartamentos-em-niteroi"]}]}]}
+  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","site","listing"]}},"value":[{"type":"character","attributes":{},"value":["Postagens"]},{"type":"character","attributes":{},"value":["distill::distill_website"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["posts"]}},"value":[{"type":"character","attributes":{},"value":["2022-02-28-card-embeddings-parte-1","2022-01-23-interagindo-com-a-api-do-boardgamegeek","2022-01-08-quais-as-associacoes-existentes-entre-as-cartas-dos-decks-de-gwent","2021-12-23-convertendo-coordenadas-atraves-da-calculadora-geografica-do-inpe","2021-12-11-quao-similares-sao-as-notas-dos-jogos-de-tabuleiro-entre-os-portais-especializados","2021-11-30-raspando-a-biblioteca-de-decks-de-gwent","2021-11-15-previsao-de-acidentes-com-os-dados-da-formula-1","2021-10-24-raspando-a-pagina-do-ranking-da-ludopedia","2021-10-08-entendendo-os-padroes-de-duracao-das-provas-da-formula-1","2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek","2021-08-27-prevendo-o-preco-de-apartamentos-em-niteroi"]}]}]}
   </script>
   <!--/radix_placeholder_rmarkdown_metadata-->
   <!--radix_placeholder_navigation_in_header-->
@@ -2520,6 +2520,27 @@ function init_posts_list() {
 <div class="posts-container posts-with-sidebar posts-apply-limit l-screen-inset">
 <div class="posts-list">
 <h1 class="posts-list-caption" data-caption="Postagens">Postagens</h1>
+<a href="posts/2022-02-28-card-embeddings-parte-1/" class="post-preview">
+<script class="post-metadata" type="text/json">{"categories":["boardgames","topic models","stm"]}</script>
+<div class="metadata">
+<div class="publishedDate">Feb. 28, 2022</div>
+<div class="dt-authors">
+<div class="dt-author">Nicholas Marino</div>
+</div>
+</div>
+<div class="thumbnail">
+<img src="posts/2022-02-28-card-embeddings-parte-1/images/post_cover.png"/>
+</div>
+<div class="description">
+<h2>Como encontrar as cartas de Gwent mais similares entre si?</h2>
+<div class="dt-tags">
+<div class="dt-tag">boardgames</div>
+<div class="dt-tag">topic models</div>
+<div class="dt-tag">stm</div>
+</div>
+<p>Já olhamos os decks de Gwent para analisar os padrões de co-ocorrência entre as cartas, que utilizou as estratégias já conhecidas pela comunidade. Neste post vamos tomar outra abordagem, empregando uma análise voltada aos padrões de similaridade do texto de descrição das cartas para identificar pares que poderiam gerar estratégias potencialmente viáveis.</p>
+</div>
+</a>
 <a href="posts/2022-01-23-interagindo-com-a-api-do-boardgamegeek/" class="post-preview">
 <script class="post-metadata" type="text/json">{"categories":["web scraping","boardgames"]}</script>
 <div class="metadata">
@@ -2611,7 +2632,7 @@ function init_posts_list() {
 </div>
 </div>
 <div class="thumbnail">
-<img src="posts/2021-11-30-raspando-a-biblioteca-de-decks-de-gwent/gwent_files/figure-html5/fig_serie_temporal-1.png"/>
+<img data-src="posts/2021-11-30-raspando-a-biblioteca-de-decks-de-gwent/gwent_files/figure-html5/fig_serie_temporal-1.png"/>
 </div>
 <div class="description">
 <h2>Raspando a biblioteca de decks de Gwent</h2>
@@ -2731,7 +2752,7 @@ function init_posts_list() {
 <ul>
 <li>
 <a href="#category:articles">articles</a>
-<span class="category-count">(10)</span>
+<span class="category-count">(11)</span>
 </li>
 <li>
 <a href="#category:arules">arules</a>
@@ -2739,7 +2760,7 @@ function init_posts_list() {
 </li>
 <li>
 <a href="#category:boardgames">boardgames</a>
-<span class="category-count">(6)</span>
+<span class="category-count">(7)</span>
 </li>
 <li>
 <a href="#category:classicos">classicos</a>
@@ -2766,12 +2787,20 @@ function init_posts_list() {
 <span class="category-count">(1)</span>
 </li>
 <li>
+<a href="#category:stm">stm</a>
+<span class="category-count">(1)</span>
+</li>
+<li>
 <a href="#category:tidymodels">tidymodels</a>
 <span class="category-count">(2)</span>
 </li>
 <li>
 <a href="#category:tidytuesday">tidytuesday</a>
 <span class="category-count">(2)</span>
+</li>
+<li>
+<a href="#category:topic_models">topic models</a>
+<span class="category-count">(1)</span>
 </li>
 <li>
 <a href="#category:web_scraping">web scraping</a>

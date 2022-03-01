@@ -3,6 +3,7 @@ title: 'Postagens'
 site: distill::distill_website
 listing: 
   posts:
+    - 2022-02-28-card-embeddings-parte-1
     - 2022-01-23-interagindo-com-a-api-do-boardgamegeek
     - 2022-01-08-quais-as-associacoes-existentes-entre-as-cartas-dos-decks-de-gwent
     - 2021-12-23-convertendo-coordenadas-atraves-da-calculadora-geografica-do-inpe 
