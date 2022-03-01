@@ -3,6 +3,7 @@
 .Rdata
 .httr-oauth
 .DS_Store
+.Renviron
 fontes.bib
 _posts/2021-09-11-f1-acidentes/scripts/temp/*
 _posts/2021-11-30-raspando-a-biblioteca-de-decks-de-gwent/gwent_decks/*
