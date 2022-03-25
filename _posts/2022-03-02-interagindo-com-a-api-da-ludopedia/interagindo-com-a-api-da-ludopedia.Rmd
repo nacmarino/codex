@@ -6,7 +6,8 @@ author:
   - first_name: Nicholas 
     last_name: Marino
     url: https://github.com/nacmarino
-date: 03-06-2022
+date: 03-25-2022
+preview: images/cartografia.png
 categories:
   - web scraping
   - boardgames
@@ -44,11 +45,11 @@ theme_update(
 
 Ao longo dos últimos posts, apresentei alguns _scrappers_ e [análises](https://nacmarino.github.io/codex/posts/2021-12-11-quao-similares-sao-as-notas-dos-jogos-de-tabuleiro-entre-os-portais-especializados/) baseadas nos dados disponíveis em dois portais de jogos de tabuleiro: o [BoardGameGeek](https://nacmarino.github.io/codex/posts/2021-09-17-raspando-a-pgina-do-ranking-do-boardgamegeek/) e a [Ludopedia](https://nacmarino.github.io/codex/posts/2021-10-24-raspando-a-pagina-do-ranking-da-ludopedia/). Tudo o que foi desenvolvido focou muito nos rankings daqueles portais mas, recentemente, mostrei como podemos obter dados mais interessantes do que estes através da [API XML do BoardGameGeek](https://nacmarino.github.io/codex/posts/2022-01-23-interagindo-com-a-api-do-boardgamegeek/). A Ludopedia também oferece dados similares a esses, e que podem ser acessados através de uma REST API disponibilizada pelo portal. Assim, poderíamos usar essas APIs para obter o mesmo tipo de informação entre portais distintos, abrindo a possibilidade de desenvolvermos análises comparativas mais aprofundadas do que àquelas que já fizemos e explorar outras possibilidades.
 
-Este post mostrará o passo a passo de como interagir com a REST API da Ludopedia. Esta é uma API que necessita de autenticação OAUTH 2.0 e, portanto, começaremos o post mostrando como fazer esta autenticação. Na sequência, veremos como usar os _endpoints_ da API para extrair a lista de jogos e os metadados associados a eles. Com isso, espero que este post ilustre os tipos de dados que teremos à nossa disposição, além de servir de referência para a aquisição e tratamento dos dados da Ludopedia em posts futuros. Vamos ao trabalho!
+Este post mostrará o passo a passo de como interagir com a REST API da Ludopedia. Esta é uma API que necessita de autenticação OAUTH 2.0 e, portanto, começaremos mostrando como fazer esta autenticação. Na sequência, veremos como usar os _endpoints_ da API para extrair a lista de jogos e os metadados associados a eles. Com isso, espero que este post ilustre os tipos de dados que teremos à nossa disposição, além de servir de referência para a aquisição e tratamento dos dados da Ludopedia em posts futuros. Vamos ao trabalho!
 
 # Autenticação
 
-Como já comentamos, a Ludopedia oferece uma REST API que faz uso de autenticação OAUTH 2.0, fazendo com que tenhamos que ter um token de acesso para que possamos passar as requisições para API. O processo de autenticação e o uso dos _endpoints_ da API é bem documentada, e pode ser acessada através deste [link](https://ludopedia.com.br/api/documentacao.html). No geral, a obtenção do token de acesso passa por duas etapas: a primeira é a criação de um aplicativo no site da Ludopedia que ficará responsável por gerar o token de acesso, e a segunda é a requisição desse token de acesso. Como tive bastante dificuldade em fazer sentido do encadeamento das etapas deste processo, vou apresentá-los abaixo e mostrar como fazer essa autenticação através do R.
+Como já comentamos, a Ludopedia oferece uma REST API que faz uso de autenticação OAUTH 2.0, fazendo com que tenhamos que ter um token de acesso para que possamos passar as requisições para a API. O processo de autenticação e o uso dos _endpoints_ da API é bem documentada, e pode ser acessada através deste [link](https://ludopedia.com.br/api/documentacao.html). No geral, a obtenção do token de acesso passa por duas etapas: a primeira é a criação de um aplicativo no site da Ludopedia que ficará responsável por gerar o token de acesso, e a segunda é a requisição do mesmo. Como tive bastante dificuldade em fazer sentido do encadeamento das etapas deste processo, vou apresentá-los abaixo e mostrar como fazer essa autenticação através do R.
 
 ## Criando o Aplicativo
 
@@ -63,13 +64,13 @@ Assim que a página seguinte for carregada, você verá um formulário conforme 
 + __Nome do Aplicativo__, que será o nome que você dará para este aplicativo; e,
 + __URI de Retorno de Autorização (Redirect URI)__, que será a _url_ para a qual o usuário do aplicativo será redirecionado após ter o acesso aprovado. Das coisas que pesquisei por aí, resolvi usar `http://localhost:1410/`.  
 
-Depois de preencher aqueles dois campos, basta clicar no _checkbox_ para concordar com o termos de uso e, entao, clicar em __Gravar__.
+Depois de preencher aqueles dois campos, basta clicar no _checkbox_ para concordar com o termos de uso e, então, clicar em __Gravar__.
 
 ```{r cria_app_2, code_folding = TRUE}
 magick::image_read(path = 'images/cria_app_passo_2.png')
 ```
 
-Se tudo tiver dado certo, você deverá ser levado de volta à página inicial da criação do aplicativo, mas agora você perceberá que existem algumas informações adicionais. Duas destas informações foi você quem definiu - o nome do aplicativo (`APP`) e a URI de redirecionamento (`URIs`) -, enquanto as outras três vêm da criação do aplicativo mesmo. Destas, já temos de cara o token de acesso (`ACESS_TOKEN (Usuário)`) que pode ser guardado e usado diretamente para fazer as requisições à API (com um detalhe importante que já falaremos). A outra informação importante para se guardar é àquela do `APP_ID`, que será usada para fazer a autenticação de forma programática no R. 
+Se tudo tiver dado certo, você deverá ser levado de volta à página inicial da criação do aplicativo, mas agora perceberá que existem algumas informações adicionais. Duas delas foi você quem definiu - o nome do aplicativo (`APP`) e a URI de redirecionamento (`URIs`) -, enquanto as outras três vêm da criação do aplicativo mesmo. Destas, já temos de cara o token de acesso (`ACESS_TOKEN (Usuário)`) que pode ser guardado e usado diretamente para fazer as requisições à API (com um detalhe importante que já falaremos). A outra informação importante para se guardar é àquela do `APP_ID`, que será usada para fazer a autenticação de forma programática no R. 
 
 ```{r cria_app_3, code_folding = TRUE}
 magick::image_read(path = 'images/cria_app_passo_3.png')
@@ -79,13 +80,13 @@ Com isso, fechamos a criação do aplicativo que nos dá acesso à API. Se quise
 
 ## Pegando o Token
 
-Ainda seguindo a documentação da API, e simplificando o que está escrito por lá, a aquisição de um token de acesso pelo usuário é feita pelo seu direcionamento para a `url` de autorização da API - `https://ludopedia.com.br/oauth` -, junto dos parâmetros `APP_ID` e `REDIRECT URI` que você obteve ao criar o aplicativo. Nessa parte, a documentação segue em frente para explicar mais um monte de coisas sobre a forma como a requisição deve ser feita, e que acaba ficando muito confusa. Entretanto, duas instruções são importantes: (1) uma vez que a autorização é feita, a requisição de acesso do token deve ser encaminhada para a `url` `https://ludopedia.com.br/tokenrequest/` e, como resposta, (2) essa `url` retornará um arquivo JSON com o token de acesso. Vamos operacionalizar este processo usando as funções disponíveis no pacote `httr`, onde implementaremos as instruções da documentação da API onde:  
+Ainda seguindo a documentação da API, e simplificando o que está escrito por lá, a aquisição de um token de acesso pelo usuário é feita pelo seu direcionamento para a `url` de autorização da API - `https://ludopedia.com.br/oauth` -, junto dos parâmetros `APP_ID` e `REDIRECT URI` que você obteve ao criar o aplicativo. Nessa parte, a documentação segue em frente para explicar mais um monte de coisas sobre a forma como a requisição deve ser feita, e que acaba ficando muito confusa. Entretanto, duas instruções são importantes: (1) uma vez que a autorização é feita, a requisição de acesso do token deve ser encaminhada para a `url` `https://ludopedia.com.br/tokenrequest/` e, como resposta, (2) essa `url` retornará um arquivo JSON com o token de acesso. Vamos operacionalizar este processo usando as funções disponíveis no pacote `httr`, onde:  
 
 1. Faremos uso função `httr::oauth_endpoint` para definir os _endpoints_ de autorização e requisição do token de acesso. Para isso, definiremos os argumentos `authorize = https://ludopedia.com.br/oauth` e `access = 'https://ludopedia.com.br/tokenrequest/'`, deixando o argumento `request` como `NULL`;  
-2. Usaremos a função `httr::oauth_app` para submeter as credenciais de acesso para a autenticação, o que nos trará como resultado a chave que trocaremos posteriormente pelo token de acesso. Essa função levará como argumentos o nome do aplicativo (`appname = <nome do seu aplicativo>`) e a URI de Retorno de Autorização (`http://localhost:1410/`) que você criou, além do `APP_ID` que foi gerado depois que você criou o aplicativo no portal da Ludopedia (`key = <APP_ID do seu aplicativo>`); e,  
+2. Usaremos a função `httr::oauth_app` para submeter as credenciais de acesso para a autenticação, o que nos trará como resultado a chave que trocaremos posteriormente pelo token de acesso. Essa função levará como argumentos o nome do aplicativo (`appname = <nome do seu aplicativo>`) e a URI de Retorno de Autorização (`redirect_uri = <URI de retorno>`) que você criou, além do `APP_ID` que foi gerado depois que você criou o aplicativo no portal da Ludopedia (`key = <APP_ID do seu aplicativo>`); e,  
 3. Usaremos a função `httr::init_oauth2.0` para trocar a chave pelo token de acesso através dos _endpoints_ que definimos. Essa função leva dois argumentos: o objeto criado no item 1 acima irá para o argumento `endpoint`, e o objeto do item 2 irá para o argumento `app`.
 
-Se tudo estiver certo, a função `httr::init_oauth2.0` deve retornar um arquivo JSON (que você possivelmente visualizará como uma lista no R) onde um dos elementos é o `access_token`. Com isso, basta juntar este elemento com o _string_ `Bearer ` (que está dentro do elemento `token_type` no mesmo arquivo JSON), e teremos o token de acesso completo que deve ser usados nas requisições para a API. Falando nisso, vou usar a função que criamos abaixo para pegar o token de acesso que usaremos durante esse post.
+Se tudo estiver certo, a função `httr::init_oauth2.0` deve retornar um arquivo JSON (que você possivelmente visualizará como uma lista no R) onde um dos elementos é o `access_token`. Com isso, basta juntar este elemento com o _string_ `Bearer ` (que está dentro do elemento `token_type` no mesmo arquivo JSON), e teremos o token de acesso completo que deve ser usado nas requisições para a API. Falando nisso, vou usar a função que criamos abaixo para pegar o token de acesso que usaremos durante esse post.
 
 ```{r funcao_pegar_token}
 # carregando pacotes
@@ -133,14 +134,12 @@ meu_token <- pegar_access_token(
 
 # Interagindo com a API
 
-De posse do token de acesso, vamos explorar as funcionalidades da API da Ludopedia. A ideia aqui não é cobrir todos os _endpoints_ disponíveis, mas apenas de focar em um ou outro que serão importantes em posts futuros. Nesse contexto, trabalharemos com dois tipos principais de _enpoints_: aqueles que retorna a lista dos jogos cadastrados no portal da Ludopedia e o outro que retorna os seus metadados. Vamos começar os trabalhos criando um repositorio local para armazenarmos cada uma das informações que formos trabalhando.
+De posse do token de acesso, vamos explorar as funcionalidades da API da Ludopedia. A ideia aqui não é cobrir todos os _endpoints_ disponíveis, mas apenas focar em um ou outro que serão importantes em posts futuros. Nesse contexto, trabalharemos com dois tipos principais de _enpoints_: aquele que retorna a lista dos jogos cadastrados no portal da Ludopedia e o outro que retorna os seus metadados. Vamos começar criando repositórios para armazenar cada uma das informações que formos trabalhando.
 
 ```{r cria_repositorios}
 ## definindo os paths temporarios que serao usados
 path_para_jogos <- 'temporario_jogos'
 path_para_metadata <- 'temporario_metadados'
-# path_para_jogos <- '_posts/2022-03-02-interagindo-com-a-api-da-ludopedia/temporario_jogos'
-# path_para_metadata <- '_posts/2022-03-02-interagindo-com-a-api-da-ludopedia/temporario_metadados'
 
 ## criando pasta para guardar a tabela com a lista de jogos
 if(!dir_exists(path = path_para_jogos)){
@@ -155,7 +154,7 @@ if(!dir_exists(path = path_para_metadata)){
 
 ## Pegando a lista de jogos
 
-O primeiro _endpoint_ que exploraremos é aquele que retorna a lista de jogos cadastrados no portal da Ludopedia. Para facilitar o uso deste _endpoint_, escrevi a função `pega_lista_jogos` abaixo, que já traz o endereço do _endpoint_, junto do `header` com o token de acesso (_i.e._, `add_headers(AUTHORIZATION = access_token)`) e uma lista com os parâmetros da _query_ que precisa ser feita. Esta _query_ tem alguns parâmetros, mas focaremos em dois principais deles aqui: `rows`, que define a quantidade máxima de jogos que teremos como resposta por requisição (o limite é naturalmente 100 jogos por requisição, mas decidi deixar isso claro aqui na requisição), e `page`, que define a página da lista dos jogos cadastrados que buscaremos (mais sobre isso no outro parágrafo). Como de costume, salvamos o arquivo JSON que recebemos de resposta em disco, de forma a acessá-lo à qualquer outro momento sem ter que ficar repetindo a requisição.
+O primeiro _endpoint_ que exploraremos é aquele que retorna a lista de jogos cadastrados no portal da Ludopedia. Para facilitar o uso deste _endpoint_, escrevi a função `pega_lista_jogos` abaixo, que já traz o endereço do _endpoint_, junto do `header` com o token de acesso (_i.e._, `add_headers(AUTHORIZATION = access_token)`) e uma lista com os parâmetros da _query_ que precisa ser feita. Embora hajam alguns parâmetros disponíveis para esta _query_, focaremos em dois deles aqui: `rows`, que define a quantidade máxima de jogos que teremos como resposta por requisição (o limite é naturalmente 100 jogos por requisição, mas decidi deixar isso claro na função), e `page`, que define a página da lista dos jogos cadastrados que buscaremos (mais sobre isso no outro parágrafo). Como de costume, salvamos o arquivo JSON que recebemos de resposta em disco, de forma a acessá-lo à qualquer outro momento sem ter que ficar repetindo a requisição.
 
 ```{r funcao_pegar_lista_jogos}
 # função para pegar todos os jogos em uma dada página
@@ -211,9 +210,9 @@ total_de_jogos <- pegar_total_jogos(access_token = meu_token)
 total_de_jogos
 ```
 
-Como podemos notar, existem `r format(x = total_de_jogos, big.mark = '.', decimal.mark = ',')` cadastrados no portal da Ludopedia. Como temos acesso à 100 jogos por página da requisição, isto nos diz que precisaremos percorrer `r format(x = total_de_jogos, big.mark = '.', decimal.mark = ',')` / 100 = `r total_de_jogos / 100` = `r ceiling(x = total_de_jogos / 100)` páginas para obter a lista de __todos__ os jogos disponíveis (_i.e._, total de jogos dividido por 100, arredondando o resultado para cima). Desta forma, bastaria iterar os valores do argumento `pagina` da função `pegar_lista_jogos` do índice 1 até o número de páginas definido acima.
+Como podemos notar, existem `r format(x = total_de_jogos, big.mark = '.', decimal.mark = ',')` cadastrados no portal da Ludopedia. Como temos acesso à 100 jogos por página da requisição, isto nos diz que precisaremos percorrer `r format(x = total_de_jogos, big.mark = '.', decimal.mark = ',')` / 100 = `r total_de_jogos / 100` = `r ceiling(x = total_de_jogos / 100)` páginas para obter a lista de __todos__ os jogos disponíveis (_i.e._, total de jogos dividido por 100, arredondando o resultado para cima). Assim, bastaria iterar os valores do argumento `pagina` da função `pegar_lista_jogos` do índice 1 até o número de páginas definido acima dentro de um `purrr::map`, por exemplo.
 
-Usamos o _endpoint_ da lista de jogos cadastrados para obter os nomes dos jogos e o seu identificador numérico único, o que é ótimo se não tivermos noção do nome dos jogos nem nada do gênero. Por outro lado, se tivermos um jogo específico em mente e quisermos obter apenas o seu identificador numérico, podemos passar o seu nome como um argumento para a `query` ao _endpoint_ (`search = <nome do jogo>`). Eu empacotei essa aplicação do _endpoint_ em outra função, e usei como exemplo a busca pelo identificador do jogo `Ticket to Ride` (que usamos como exemplo lá no post sobre a API XML do BoardGameGeek). O resultado que obtivemos (já parseado) revela que esse este uso do _endpoint_ traz todos os jogos que, de alguma forma, tenham haver com aquele que buscamos - no nosso caso, também tivemos acesso à todas as expansões e implementações do jogo base.
+Usamos o _endpoint_ da lista de jogos cadastrados para obter os nomes dos jogos e o seu identificador numérico único, o que é ótimo se não tivermos noção do nome dos jogos nem nada do gênero. Por outro lado, se tivermos um jogo específico em mente e quisermos obter apenas o seu identificador numérico, podemos passar o seu nome como um argumento para a `query` do mesmo _endpoint_ (`search = <nome do jogo>`). Eu empacotei essa aplicação do _endpoint_ em outra função, e usei como exemplo a busca pelo identificador do jogo `Ticket to Ride` (que usamos como exemplo lá no post sobre a API XML do BoardGameGeek). O resultado que obtivemos (já parseado) revela que este uso do _endpoint_ traz todos os jogos que, de alguma forma, tenham haver com aquele que buscamos - no nosso caso, também tivemos acesso à todas as expansões e implementações do jogo base.
 
 ```{r funcao_pegar_id_jogos}
 # função para pegar a lista de jogos que contenham uma string especifica no nome
@@ -238,7 +237,7 @@ Acredito que estas são as funcionalidades básicas mais importantes deste _endp
 
 ## Pegando as informações de um jogo
 
-O outro _endpoint_ que exploraremos é aquele que traz os metadados dos jogos de tabuleiro, e que faz uso do identificador numérico do jogo diretamente na `url` da requisição. Desta forma, as informações da lista de jogos cadastrados no portal da Ludopedia passa a ser muito importante para utilizarmos este _endpoint_, uma vez que ela já traz esta informação para cada jogo. Tendo isto em mente, vamos preparar a função `pegar_infos_jogo` adicionando um argumento que receberá o identificador do jogo (`id_jogo`) que buscaremos - novamente, utilizando o `header` com o token de acesso e salvando o arquivo JSON de resposta em disco para usarmos depois. Como exemplo, vamos usar essa função para pegar os metadados do `Ticket do Ride`.
+O outro _endpoint_ que exploraremos é aquele que traz os metadados dos jogos de tabuleiro, e que faz uso do identificador numérico do jogo diretamente na `url` da requisição. Desta forma, as informações da lista de jogos cadastrados no portal da Ludopedia passa a ser muito importante para utilizarmos este _endpoint_. Tendo isto em mente, vamos preparar a função `pegar_infos_jogo` adicionando um argumento que receberá o identificador do jogo (`id_jogo`) que buscaremos - novamente, utilizando o `header` com o token de acesso e salvando o arquivo JSON de resposta em disco para usarmos depois. Como exemplo, vamos usar essa função para pegar os metadados do `Ticket do Ride`.
 
 ```{r funcao_pegar_infos_jogos}
 # função para pegar as informações de um jogo
@@ -265,9 +264,7 @@ jsonlite::read_json(path = dir_ls(path_para_metadata), simplifyDataFrame = TRUE)
   glimpse
 ```
 
-O parser dos metadados do jogo é um pouquinho chato por conta de um detalhe específico: ele misturar elementos que são descritos por um único valor (_e.g._, ano de publicação, ano de lançamento no Brasil, tipo de jogo,...) e outros elementos que são descritos por múltiplos valores (_e.g._, as mecânicas do jogo, os artistas, designers,...). Por conta disso, quando utilizamos o argumento `simplifyDataFrame = TRUE` ao ler o arquivo JSON, teremos uma lista onde alguns elementos serão vetores e outros que serão um `data.frame` - também vimos este tipo de estrutura nos dados que obtemos através da API XML do BoardGameGeek. Vamos buscar resolver este problema em uma única função mas, para ficar mais didático, vou quebrar aqui os dois passos que ela fará.
-
-O primeiro passo vai ser jogar fora todos os elementos da lista resultante que são um `data.frame` (_i.e._, usando a função `purrr::discard` e utilizando o teste lógico `is.data.frame`) e juntar todos os elementos restantes coluna à coluna (_i.e._, usando um `bind_cols`).
+Como podemos ver, existem duas principais estruturas de dados no arquivo. Em uma destas estruturas estão as informações armazenadas em vetores com um único elemento, como o ano de publicação do jogo, informações sobre quantidade de jogadores e título do jogo. A outra estrutura existente no arquivo são algumas informações armazenadas como `data.frame`, como as informações da mecânica de jogo, os temas e nome dos criadores do jogo. Estas informações estão nesta estrutura pois elas tendem a ser naturalmente multidimensionais, e possivelmente é mais fácil armazená-las em uma estrutura na qual você consiga discriminar o metadado linha a linha. Dada a natureza destas duas estruturas de dados, podemos parsear a primeira delas de forma bem simples, usando a função `purrr::discard` para descartar todos os elementos do arquivo JSON que sejam um `data.frame` (_i.e._, empregando o teste lógico `is.data.frame`), e juntando todos os elementos restantes coluna à coluna (_i.e._, usando um `bind_cols`).
 
 ```{r funcao_parser_infos_jogos_passo_1}
 jsonlite::read_json(path = dir_ls(path_para_metadata), simplifyDataFrame = TRUE) %>% 
@@ -275,39 +272,34 @@ jsonlite::read_json(path = dir_ls(path_para_metadata), simplifyDataFrame = TRUE)
   discard(is.data.frame) %>% 
   # juntando cada elemento da lista coluna a coluna
   bind_cols() %>% 
-  # olhando o resultado
-  glimpse
+  # visualizando a tabela
+  rmarkdown::paged_table()
 ```
 
-O segundo passo será pegar todos os elementos da lista que forem um `data.frame` (_i.e._, agora utilizando a função `purrr::keep` e o mesmo teste lógico acima) e extrair deles a informação que estamos buscando. Cada um destes `data.frame`s traz duas colunas sobre a entidade que eles representam: a primeira coluna contém o seu identificador numérico único, `id_<nome_da_entidade>`, e a segunda coluna com o nome da entidade, `nm_<nome_da_entidade>`. Para ficar claro, vamos pegar o primeiro `data.frame` da lista que parseamos, que fala sobre as mecânicas de jogo: podemos ver àquelas duas informações mapeadas às colunas `id_mecanica` e `nm_mecanica`).
-
-```{r funcao_parser_infos_jogos_passo_2_tabela_1}
-# lendo o arquivo JSON com os metadados do jogo
-jsonlite::read_json(path = dir_ls(path_para_metadata), simplifyDataFrame = TRUE) %>% 
-  # retendo apenas os elementos que sao dataframes
-  keep(is.data.frame) %>% 
-  # pegando a primeira tabela
-  pluck(1)
-```
-
-E se pegássemos agora o segundo `data.frame` dessa lista, o que teríamos? O exemplo abaixo mostra que estes seriam os dados da categoria dos jogos, com as respectivas informações mapeadas às colunas `id_categoria` e `nm_categoria`.
+A informação que buscaremos extrair da segunda estrutura de dados é àquela associada às colunas que têm o prefixo `nm_` que contém as _strings_ que definem àquela entidade. Note que em todos esses casos nós estamos interessados em extrair as informações que estão na segunda coluna de cada `data.frame` e que, portanto, não precisamos focar no nome da coluna em si para ter acesso à elas, apenas na sua posição. Além disso, pode existir mais de um elemento nesta coluna, e precisaremos concatenar estas informações em um _string_ só. Assim, usaremos a função `purrr::keep` para reter todos os elementos que são um `data.frame` e, então, extrairemos a segunda coluna de cada uma delas mapeando a função `purrr::pull`. Finalmente, mapearemos um `paste0` à cada elemento da lista para concatenar o seu conteúdo a um _string_ só, e usaremos um `bind_cols` para colocar tudo como um `tibble`.
 
 ```{r funcao_parser_infos_jogos_passo_2_tabela_2}
 # lendo o arquivo JSON com os metadados do jogo
 jsonlite::read_json(path = dir_ls(path_para_metadata), simplifyDataFrame = TRUE) %>% 
   # retendo apenas os elementos que sao dataframes
   keep(is.data.frame) %>% 
-  # pegando a primeira tabela
-  pluck(2)
+  # pegando a coluna que contem os o nome do metadado
+  map(.f = pull, var = 2) %>% 
+  # passando o vetor de strings para um unico string por elemento da lista
+  map(.f = paste0, collapse = ';') %>% 
+  # juntando os elementos da lista coluna a coluna
+  bind_cols() %>% 
+  # visualizando a tabela
+  rmarkdown::paged_table()
 ```
 
-Colocando tudo junto.
+Como estes dois passos são baseados no mesmo dado e devem compor o mesmo parser, vamos empacotá-los em uma única função, `parser_infos_jogos`.
 
 ```{r funcao_parser_infos_jogos}
 # função para parsear as informações de um jogo
 parser_infos_jogo <- function(target_path){
   # carregando o arquivo JSON com os metadados do jogo
-  metadados <- jsonlite::read_json(path = dir_ls(path_para_metadata), simplifyDataFrame = TRUE)
+  metadados <- jsonlite::read_json(path = target_path, simplifyDataFrame = TRUE)
   # colocando todos os metadados em um tibble
   bind_cols(
     # parseando as informacoes que estao organizadas como strings ou numeros
@@ -328,14 +320,57 @@ parser_infos_jogo <- function(target_path){
       bind_cols()
   )
 }
+
+## usando a função para parsear todas as informações
+parser_infos_jogo(target_path = dir_ls(path_para_metadata)) %>% 
+  # visualizando a tabela completa
+  rmarkdown::paged_table()
 ```
+
+Pronto! Com isso podemos ter acesso às informações que caracterizam cada um dos jogos de tabuleiro cadastrados no portal da Ludopedia.
 
 ## Outros usos da API
 
-Usuários e coleções.
+No momento em que escrevo este post, a API da Ludopedia ainda está em fase de desenvolvimento e, portanto, existem algumas funcionalidades que estão previstas mas ainda não foram implementadas. De toda forma, no estado atual dela também podemos ter acesso à uma informação muito interessante: à coleção de jogos de tabuleiro de cada usuário. Este dado é legal pois ele traz coisas como as notas que a pessoa usuária deu à cada jogo, os comentários que a pessoa usuária fez sobre ele, se a pessoa tem ou não aquele jogo e coisas do gênero. Assim, ainda que a API não esteja completa, ela tem muitos outros potenciais de uso para a análise de dados.
+
+Um exemplo de uso daqueles dados poderia ser na criação de algum tipo de sistema de recomendação, uma vez que podemos mapear as notas dadas à cada jogo de tabuleiro por cada um dos usuários. Não é o meu intuito detalhar aqui como usar a API para extrair este tipo de informação, mas podemos ter uma visão bem alto nível através da documentação da API: usamos um _endpoint_ para extrair a coleção de jogos de uma pessoa usuária qualquer através do seu identificador (_i.e._, `https://ludopedia.com.br/api/v1/colecao`); este identificador, por sua vez, pode ser extraído a partir de um outro _endpoint_, que traz a lista de usuários cadastrados no portal (_i.e._, `https://ludopedia.com.br/api/v1/usuarios`); por fim, temos acesso a um máximo de 100 jogos por vez da coleção de cada pessoa, e precisaremos usar o mesmo método para a paginação das _querys_ para extrair a coleção completa de cada usuário - e é possível determinar o tamanho da coleção de cada usuário diretamente através de um outro _endpoint_ (_i.e._, `https://ludopedia.com.br/api/v1/colecao/count`). É claro que precisaremos aplicar algum tratamento aos dados que a API nos retorna para chegar à estrutura necessária para um sistema de recomendação, mas acredito que dê para pegar a ideia geral aqui.
 
 # Dicionário de Dados
 
+Como a ideia é utilizar os dados dessa API no futuro, vou deixar aqui um dicionário para explicar as informações dos metadados que temos disponíveis - de forma similar ao que fiz para a API do BoardGameGeek. 
+
++ **id_jogo:** identificador numérico único do jogo;  
++ **nm_jogo:** nome do jogo em português;  
++ **thumb:** link para a imagem de capa do jogo;  
++ **tp_jogo:** indicador do tipo de jogo - jogo base (b) ou expansão (e);  
++ **link:** link para a página do jogo dentro do domínio da Ludopedia;  
++ **ano_publicacao:** ano de criação do jogo;  
++ **ano_nacional:** ano de lançamento do jogo no Brasil - é `NA` caso o jogo não tenha sido lançado por aqui;  
++ **qt_jogadores_min:** quantidade mínima de jogadores necessária para o jogo;  
++ **qt_jogadores_max:** quantidade máxima de jogadores sustentada pelo jogo;  
++ **vl_tempo_jogo:** duração de uma partida do jogo;  
++ **idade_minima:** idade mínima sugerida para o jogo;  
++ **qt_tem:** quantidade de usuários que têm o jogo;
++ **qt_teve:** quantidade de usuários que já tiveram o jogo;
++ **qt_favorito:** quantidade de usuários que têm este jogo como favorito;  
++ **qt_quer:** quantidade de usuários que estão em busca do jogo;  
++ **qt_jogou:** quantidade de usuários que jogou o jogo;  
++ **mecanicas:** nomes da mecânicas de jogo;  
++ **categorias:** nome das famílias associadas ao jogo;  
++ **temas:** nomes das temáticas associadas ao jogo;  
++ **designers:** nome das pessoas do autoras do jogo;  
++ **artistas:** nome das pessoas artistas responsáveis pela arte jogo.  
+
 # Conclusões
 
+Este post focou em demonstrar como interagir com a API da Ludopedia, indo do processo de autenticação, à requisição e o parser dos dados. Focamos exclusivamente nos _endpoints_ para a aquisição dos dados dos jogos de tabuleiro, mas o mesmo processo pode ser utilizado para a aquisição de outros tipos de dados, tais como a lista lista de usuários, suas coleções e informações das partidas. Como vimos através deste exercício, essa API fornece uma forma bastante amigável de acessarmos dados muito relevantes para muitos tipos de análise.
+
+Esta API é bastante diferente daquela oferecidade pelo BoardGameGeek, não só em termos de uso, mas também dos dados fornecidos. Neste contexto, pude notar que os metadados dos jogos de tabuleiro oferecidos pela API da Ludopedia representam um subconjunto daqueles disponíveis na página de cada jogo dentro do próprio portal, assim como daqueles que estão disponíveis através da API do BoardGameGeek. Comparando as informações àquelas no próprio portal, por exemplo, a API da Ludopedia não traz nada sobre as editoras, domínios e nem dependência do idioma. Nesta mesma linha, a API do BoardGameGeek fornece as informações das notas dos jogos junto dos metadados, ao contrário desta API que exploramos. Assim, me parece que ainda há espaço para que ela possa evoluir.
+
+Por fim, o fato da API não fornecer tantas informações como àquelas do BoardGameGeek não é um problema. O principal motivo para isso é que é possível integrar as duas fontes de informação, usando uma para enriquecer a outra - como veremos através das análises de dados que faremos em posts futuros.
+
 # Possíveis Extensões
+
+Acredito que grande parte das extensões que listei no post sobre a [API do BoardGameGeek](https://nacmarino.github.io/codex/posts/2022-01-23-interagindo-com-a-api-do-boardgamegeek/) valha para este também - além, é claro, do fato de que várias destas extensões são co-dependentes entre os dois posts. De toda forma, acredito que a principal extensão relacionada especificamente a este post seria a da implementação das funções para acessar os dados de outros _endpoints_, juntamente com os seus respectivos parsers.
+
+Dúvidas, sugestões ou críticas? É só me procurar pelo e-mail ou GitHub!
