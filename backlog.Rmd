@@ -7,7 +7,6 @@ theme: theme.css
 
 # Web Scraping
 - Como raspar os anúncios do ZapImóveis;  
-- Interagindo com a API REST da Ludopedia;  
 - Como raspar as opiniões dos funcionários do portal Glassdoor;  
 - Como raspar as opiniões dos funcionários do portal Indeed.  
 
@@ -28,4 +27,6 @@ theme: theme.css
 - Quão diferentes são as cartas de Gwent de acordo com a facção?  
 - Podemos prever a que facção uma carta pertence com base em sua imagem?  
 - Análise dos resultados da pesquisa '2021 Kaggle Machine Learning & Data Science Survey';  
+- Análise dos resultados da pesquisa 'State of Data 2021';  
+- Análise dos dados do financiamento à pesquisa em Ecologia no Brasil;  
 - Análise dos dados do resultado das provas do ENEM.  

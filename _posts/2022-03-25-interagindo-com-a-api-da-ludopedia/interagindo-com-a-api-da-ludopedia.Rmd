@@ -7,7 +7,7 @@ author:
     last_name: Marino
     url: https://github.com/nacmarino
 date: 03-25-2022
-preview: images/cartografia.png
+preview: images/logo_ludopedia.png
 categories:
   - web scraping
   - boardgames

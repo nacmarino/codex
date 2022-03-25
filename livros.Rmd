@@ -25,6 +25,7 @@ theme: theme.css
     + Machine Learning with R - Brett Lantz
     + Supervised Machine Learning for Text Analysis in R - Emil Hvitfeldt & Julia Silge
     + Tidy Modelling with R - Max Kuhn & Julia Silge
+    + Recommender Systems - Charu C. Aggarwal
 
 4. __Deep Learning__
     + Deep Learning with Python - François Chollet
