@@ -7,6 +7,8 @@ rm(list = ls(all.names = TRUE))
 
 library(tidyverse) # core
 library(janitor) # para ajudar a limpar os dados
+library(vegan) # para analise
+library(betapart) # para decomposicao da diversidade beta
 
 # carregando os dados ---------------------------------------------------------------
 
@@ -30,9 +32,9 @@ dicionario <- tibble(
     informacao = str_replace_all(string = informacao, pattern = 'P0, id', replacement = 'P0 , id')
   ) %>% 
   # separando o id da pergunta do string de seu texto
-  separate(col = 'informacao', into = c('pergunta', 'texto'), sep = ' , ') %>% 
+  separate(col = 'informacao', into = c('pergunta_id', 'texto'), sep = ' , ') %>% 
   # separando o id da pergunta em parte, letra da pergunta e letra da opcao escolhida
-  separate(col = 'pergunta', into = c('parte', 'pergunta', 'opcao'), sep = '_') %>% 
+  separate(col = 'pergunta_id', into = c('parte', 'pergunta', 'opcao'), sep = '_', remove = FALSE) %>% 
   # encodando a coluna que contém a pergunta principal - o regex abaixo remove todas as colunas que
   # representam o one hot encoding das opcoes dadas aos usuarios
   mutate(
@@ -56,3 +58,86 @@ df <- dados %>%
   # limpando os nomes
   clean_names()
 df
+
+# cientista de dados diferem entre os niveis? -------------------------------------------------------------------------------------------------------------
+
+## preparando os dados dos cientistas de dados por nivel
+df_ds <- dados %>%
+  # ajustando os nomes das colunas para um padrao
+  set_names(nm = pull(dicionario, pergunta_id)) %>% 
+  # limpando o nome das colunas
+  clean_names() %>% 
+  # removendo tudo o que for gestor e pegando tudo o que for resposta dada por
+  # cientistas de dados
+  filter(p2_d == 0, !is.na(p8_a) | !is.na(p8_b) | !is.na(p8_c) | !is.na(p8_d)) %>% 
+  # # selecionando apenas as colunas relacionadas às perguntas feitas por cientistas de dados
+  select(p0, p2_g, contains('p8_a_'), contains('p8_b_'), contains('p8_c_'), contains('p8_d_'))
+
+## quantificando a contribuição do turnover e aninhamento de habilidades para a similaridade entre cientista de dados
+beta.multi(select(df_ds, contains('p8')), index.family = 'jaccard')
+
+## particionando a similaridade entre os cientistas de dados
+beta_part_DS <- beta.pair(select(df_ds, contains('p8')), index.family = 'jaccard')
+
+## ajustando um PERMDISP aos dados
+beta_disper_DS <- betadisper(pluck(beta_part_DS, 3), group = df_ds$p2_g)
+## visualizando o resultado da PERMDISP
+plot(beta_disper_DS)
+## olhando o resultado da PERMANOVA
+adonis(pluck(beta_part_DS, 3) ~ p2_g, data = df_ds)
+
+# engenheiros de dados diferem entre os niveis? -----------------------------------------------------------------------------------------------------------
+
+## preparando os dados dos engenheiros de dados por nivel
+df_en <- dados %>%
+  # ajustando os nomes das colunas para um padrao
+  set_names(nm = pull(dicionario, pergunta_id)) %>% 
+  # limpando o nome das colunas
+  clean_names() %>% 
+  # removendo tudo o que for gestor e pegando tudo o que for resposta dada por
+  # cientistas de dados
+  filter(p2_d == 0, !is.na(p6_a) | !is.na(p6_b)) %>% 
+  # # selecionando apenas as colunas relacionadas às perguntas feitas por cientistas de dados
+  select(p0, p2_g, contains('p6_a_'), contains('p6_b_'))
+
+## quantificando a contribuição do turnover e aninhamento de habilidades para a similaridade entre cientista de dados
+beta.multi(select(df_en, contains('p6')), index.family = 'jaccard')
+
+## particionando a similaridade entre os cientistas de dados
+beta_part_EN <- beta.pair(select(df_en, contains('p6')), index.family = 'jaccard')
+
+## ajustando um PERMDISP aos dados
+beta_disper_EN <- betadisper(pluck(beta_part_EN, 3), group = df_en$p2_g)
+## visualizando o resultado da PERMDISP
+plot(beta_disper_EN)
+## olhando o resultado da PERMANOVA
+adonis(pluck(beta_part_EN, 3) ~ p2_g, data = df_en)
+
+# analistas de dados diferem entre os niveis? -------------------------------------------------------------------------------------------------------------
+
+## preparando os dados dos engenheiros de dados por nivel
+df_ad <- dados %>%
+  # ajustando os nomes das colunas para um padrao
+  set_names(nm = pull(dicionario, pergunta_id)) %>% 
+  # limpando o nome das colunas
+  clean_names() %>% 
+  # removendo tudo o que for gestor e pegando tudo o que for resposta dada por
+  # cientistas de dados
+  filter(p2_d == 0, !is.na(p7_a) | !is.na(p7_b) | !is.na(p7_d)) %>% 
+  # selecionando apenas as colunas relacionadas às perguntas feitas por cientistas de dados
+  select(p0, p2_g, contains('p7_a_'), contains('p7_b_'), contains('p7_d_')) %>% 
+  # 
+  drop_na()
+
+## quantificando a contribuição do turnover e aninhamento de habilidades para a similaridade entre cientista de dados
+beta.multi(select(df_ad, contains('p7')), index.family = 'jaccard')
+
+## particionando a similaridade entre os cientistas de dados
+beta_part_AD <- beta.pair(select(df_ad, contains('p7')), index.family = 'jaccard')
+
+## ajustando um PERMDISP aos dados
+beta_disper_AD <- betadisper(pluck(beta_part_AD, 3), group = df_ad$p2_g)
+## visualizando o resultado da PERMDISP
+plot(beta_disper_AD)
+## olhando o resultado da PERMANOVA
+adonis(pluck(beta_part_AD, 3) ~ p2_g, data = df_ad)
