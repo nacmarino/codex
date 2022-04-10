@@ -43,7 +43,7 @@ theme_update(
 
 # O __Science__ em Data
 
-Comecei a minha carreira na academia, onde tive a oportunidade de aprender algumas coisas interessantes e incorporá-las à minha forma de pensar. Dentre estas coisas, acredito que as principais foram o costume de duvidar e de questionar aquilo que me é mostrado. Como exemplo disto, podemos utilizar [este video](https://youtu.be/Yx6UgfQreYY), que descreve um experimento que a Ikea diz ter feito sobre o impacto do bullying utilizando plantas como estudo de caso - sim, plantas.
+Comecei a minha carreira na academia, onde tive a oportunidade de aprender algumas coisas interessantes e incorporá-las à minha forma de pensar. Dentre estas coisas, acredito que as principais foram o costume de duvidar e de questionar aquilo que me é mostrado. Como exemplo disto, podemos utilizar [este video](https://youtu.be/Yx6UgfQreYY), que descreve um suposto experimento sobre o impacto do bullying em plantas^[Sim, plantas. E, antes de mais nada, os resultados desse video são totalmente _fake_].
 
 Mas o que isso tudo tem haver com Ciência de Dados?
 
