@@ -41,7 +41,15 @@ theme_update(
 )
 ```
 
-# O que é um baseline?
+# O __Science__ em Data
+
+Comecei a minha carreira na academia, onde tive a oportunidade de aprender algumas coisas interessantes e incorporá-las à minha forma de pensar. Dentre estas coisas, acredito que as principais foram o costume de duvidar e de questionar aquilo que me é mostrado. Como exemplo disto, podemos utilizar [este video](https://youtu.be/Yx6UgfQreYY), que descreve um experimento que a Ikea diz ter feito sobre o impacto do bullying utilizando plantas como estudo de caso - sim, plantas.
+
+Mas o que isso tudo tem haver com Ciência de Dados?
+
+Existem vários aspectos relacionados ao desenho de um experimento para testar uma hipótese que eu gostaria de falar aqui.
+
+# O que é um baseline, então?
 
 Um dos principais fundamentos ao testarmos algum tipo de intervenção sobre uma variável resposta é a possibilidade de contrastarmos o efeito deste __tratamento__ contra um cenário __controle__. Em outras palavras, buscamos contrastar duas condições que são o mais similares possíveis em todos os aspectos, menos aquele de interesse. Esta é uma das bases do método científico, e um aspecto fundamental de qualquer tipo de experimento.
 
@@ -67,18 +75,24 @@ Em um problema de classificação normalmente queremos:
 
 Quando estamos trabalhando com o objetivo de prever de classes, uma prática comum é definir como o baseline da nossa solução que todas as instâncias pertencem à apenas uma das classes disponíveis (normalmente, a classe mais comum). No exemplo abaixo, temos que grande parte das instâncias pertencem à classe negativa:
 
-```{r echo=FALSE}
-library(tidyverse)
-library(yardstick)
+```{r baseline_exemplo_classificacao_imbalance}
+library(tidyverse) # core
+library(tidymodels) # machine learning
+library(modeltime) # series temporais
+
+## setando a seed para gerar as instâncias
 set.seed(seed = 33)
+## gerando as instâncias
 targets <- sample(x = c('Positivo', 'Negativo'), size = 500, prob = c(0.05, 0.95), replace = TRUE)
+## passando pela elas para um fator
 targets <- as.factor(targets)
+## gerando a tabela
 kableExtra::kable(table(targets), row.names = FALSE, col.names = c('Classe', 'Observações'), align = 'c', format = 'html')
 ```
 
 Assim, se estamos utilizando a acurácia como a métrica de performance da nossa solução, e utilizamos a estratégia descrita acima para definir nosso baseline, temos como nível do nosso baseline uma acurácia de 94.8%. Isto quer dizer que qualquer algoritmo que vamos tentar ajustar a este problema deve apresentar uma performance superior a este baseline, de forma a ser considerado útil à resolução ao problema de dados. Caso contrário, temos evidência de que o algoritmo utilizado não é melhor do que uma regra de negócio qualquer, e o modelo que obtivemos não é útil para resolver o problema de dados.
 
-```{r}
+```{r baseline_exemplo_classificacao_chute}
 # criando o nosso baseline naive
 classe_naive <- rep(x = 'Negativo', times = 500) 
 classe_naive <- factor(x = classe_naive, levels = c('Negativo', 'Positivo'))
