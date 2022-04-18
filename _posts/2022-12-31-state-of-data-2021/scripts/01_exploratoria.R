@@ -393,9 +393,12 @@ df_regras
 
 # CLUSTERIZAÇÃO ---------------------------------------------------------------------
 
-dados %>% 
+## pegando os dados que passaremos pela clusterizacao
+df_to_cluster <- dados %>% 
   # removendo tudo o que for dado de gestor e outras atuacoes
   filter(P2_d == 0, P4_a != 'Outra') %>% 
   # selecionando apenas as colunas com as informacoes de atuacao geral que usaremos
-  select(P0, P1_h:P2_c, P2_h, P2_j, P3_a, P4_a, contains('P4_b_'), contains('P4_d_'), contains('P4_f_'), contains('P4_g_'), contains('P4_h_')) %>% 
+  select(P0, P4_a, contains('P4_b_'), contains('P4_d_'), contains('P4_f_'), contains('P4_g_'), contains('P4_h_'), contains('P6_a_'), 
+         contains('P6_b_'), contains('P7_a_'), contains('P7_b_'), contains('P7_d_'), contains('P8_a_'), contains('P8_b_'), 
+         contains('P8_c_'), contains('P8_d_')) %>% 
   select(-P4_h_x, -P4_d_n)
