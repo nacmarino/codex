@@ -7,7 +7,7 @@
 
 rm(list = ls(all.names = TRUE))
 
-# carregando pacotes ----------------------------------------------------------------
+install# carregando pacotes ----------------------------------------------------------------
 
 library(tidyverse) # core
 library(janitor) # para ajudar a limpar os dados
@@ -15,6 +15,14 @@ library(vegan) # para analise
 library(betapart) # para decomposicao da diversidade beta
 library(factoextra) # para clusterizacao
 library(arules) # para regras de associacao
+library(corrr) # correlacoes tidy
+library(yardstick) # metricas de avaliacao
+library(heatmaply) # heatmaps com plotly
+library(ggraph) # para grafos
+library(tidymodels) # modelagem
+library(furrr) # processamento paralelo
+library(finetune) # ajudar na otimizacao de hiperparametros
+library(tidytext) # para ajudar com texto
 
 # carregando os dados ---------------------------------------------------------------
 
@@ -140,6 +148,10 @@ df_features <- dados %>%
     target = case_when(
       P4_a %in% c('Gestor', 'Outra') ~ 'Fora de escopo',
       TRUE ~ paste0(P4_a, ' - ', P2_g)
+    ),
+    instrucao = case_when(
+      P1_h %in% c('Estudante de Graduação', 'Não tenho graduação formal', 'Prefiro não informar') ~ 'Sem diploma',
+      TRUE ~ P1_h
     )
   )
 df_features
@@ -157,6 +169,10 @@ df_general <- dados %>%
   left_join(y = df_features, by = 'P0') %>% 
   # dropando qualquer na
   drop_na()
+
+## temperatura da matriz
+temp_GEN <- nestedtemp(comm = select(df_general, P4_b_a:P4_h_v))
+plot(temp_GEN, kind = 'incidence', names = c(FALSE, TRUE))
 
 ## quantificando a contribuição do turnover e aninhamento de habilidades para a similaridade entre cientista de dados
 beta.multi(select(df_general, P4_b_a:P4_h_v), index.family = 'jaccard')
@@ -180,9 +196,42 @@ beta_disper_GEN
 ## testando a dispersao por grupos
 permutest(beta_disper_GEN, pairwise = TRUE)
 
-## temperatura da matriz
-temp_GEN <- nestedtemp(comm = select(df_general, P4_b_a:P4_h_v))
-plot(temp_GEN, kind = 'incidence', names = c(FALSE, TRUE))
+## valor de kappa entre as respostas para as perguntas
+df_general_kappa <- df_general %>% 
+  mutate(
+    is_senior = as.double(P2_g == 'Sênior'), is_pleno = as.double(P2_g == 'Pleno'), is_junior = as.double(P2_g == 'Júnior')
+  ) %>% 
+  select(P4_b_a:P4_h_v, contains('is_')) %>% 
+  mutate(across(everything(), factor, levels = c(0, 1))) %>% 
+  colpair_map(.f = kap_vec)
+
+## visualizando o valor de kappa entre todas as respostas
+df_general_kappa %>% 
+  data.frame %>% 
+  `rownames<-`(value = .$term) %>% 
+  select(-term) %>% 
+  heatmaply()
+
+## quais sao as respostas mais correlacionadas?
+df_general_kappa %>% 
+  shave() %>% 
+  stretch() %>% 
+  drop_na() %>% filter(y == 'is_senior') %>% arrange(-r)
+  filter(abs(r) >= 0.25) %>% 
+  left_join(y = select(dicionario, pergunta_id, texto), by = c('x' = 'pergunta_id')) %>% 
+  left_join(y = select(dicionario, pergunta_id, texto), by = c('y' = 'pergunta_id')) %>% 
+  mutate(
+    texto.x = ifelse(test = is.na(texto.x), yes = x, no = texto.x),
+    texto.y = ifelse(test = is.na(texto.y), yes = y, no = texto.y),
+  ) %>% 
+  select(texto.x, texto.y, r) %>% 
+  igraph::graph_from_data_frame() %>% 
+  ggraph(layout = 'fr') +
+  geom_edge_link(aes(edge_colour = r), arrow = grid::arrow(type = "closed", length = unit(.15, "inches")), end_cap = circle(.07, 'inches')) +
+  geom_node_point() +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1) +
+  scale_edge_color_distiller(palette = 'RdYlBu', direction = 1) +
+  theme_void()
 
 # ATUAÇÃO ESPECÍFICA: CIENTISTA DE DADOS --------------------------------------------
 
@@ -195,6 +244,10 @@ df_ds <- dados %>%
   select(P0, P2_g, contains('P8_a_'), contains('P8_b_'), contains('P8_c_'), contains('P8_d_')) %>% 
   # juntando com features
   left_join(y = df_features, by = 'P0')
+
+## temperatura da matriz
+temp_DS <- nestedtemp(comm = select(df_ds, contains('P8')))
+plot(temp_DS, kind = 'incidence', names = c(FALSE, TRUE))
 
 ## quantificando a contribuição do turnover e aninhamento de habilidades para a similaridade entre cientista de dados
 beta.multi(select(df_ds, contains('P8')), index.family = 'jaccard')
@@ -212,9 +265,42 @@ permutest(beta_disper_DS, pairwise = TRUE)
 ## visualizando o resultado da PERMDISP
 plot(beta_disper_DS)
 
-## temperatura da matriz
-temp_DS <- nestedtemp(comm = select(df_ds, contains('P8')))
-plot(temp_DS, kind = 'incidence', names = c(FALSE, TRUE))
+## valor de kappa entre as respostas para as perguntas
+df_ds_kappa <- df_ds %>% 
+  mutate(
+    is_senior = as.double(P2_g == 'Sênior'), is_pleno = as.double(P2_g == 'Pleno'), is_junior = as.double(P2_g == 'Júnior')
+  ) %>% 
+  select(contains('P8'), contains('is_')) %>% 
+  mutate(across(everything(), factor, levels = c(0, 1))) %>% 
+  colpair_map(.f = kap_vec)
+
+## visualizando o valor de kappa entre todas as respostas
+df_ds_kappa %>% 
+  data.frame %>% 
+  `rownames<-`(value = .$term) %>% 
+  select(-term) %>% 
+  heatmaply()
+
+## quais sao as respostas mais correlacionadas?
+df_ds_kappa %>% 
+  shave() %>% 
+  stretch() %>% 
+  drop_na() %>% 
+  filter(abs(r) >= 0.25) %>% 
+  left_join(y = select(dicionario, pergunta_id, texto), by = c('x' = 'pergunta_id')) %>% 
+  left_join(y = select(dicionario, pergunta_id, texto), by = c('y' = 'pergunta_id')) %>% 
+  mutate(
+    texto.x = ifelse(test = is.na(texto.x), yes = x, no = texto.x),
+    texto.y = ifelse(test = is.na(texto.y), yes = y, no = texto.y),
+  ) %>% 
+  select(texto.x, texto.y, r) %>% 
+  igraph::graph_from_data_frame() %>% 
+  ggraph(layout = 'fr') +
+  geom_edge_link(aes(edge_colour = r), arrow = grid::arrow(type = "closed", length = unit(.15, "inches")), end_cap = circle(.07, 'inches')) +
+  geom_node_point() +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1) +
+  scale_edge_color_distiller(palette = 'RdYlBu', direction = 1) +
+  theme_void()
 
 # ATUAÇÃO ESPECÍFICA: ENGENHEIRO DE DADOS -------------------------------------------
 
@@ -227,6 +313,10 @@ df_en <- dados %>%
   select(P0, P2_g, contains('P6_a_'), contains('P6_b_')) %>% 
   # juntando com features
   left_join(y = df_features, by = 'P0')
+
+## temperatura da matriz
+temp_EN <- nestedtemp(comm = select(df_en, contains('P6')))
+plot(temp_EN, kind = 'incidence', names = c(FALSE, TRUE))
 
 ## quantificando a contribuição do turnover e aninhamento de habilidades para a similaridade entre cientista de dados
 beta.multi(select(df_en, contains('P6')), index.family = 'jaccard')
@@ -244,9 +334,42 @@ permutest(beta_disper_EN, pairwise = TRUE)
 ## visualizando o resultado da PERMDISP
 plot(beta_disper_EN)
 
-## temperatura da matriz
-temp_EN <- nestedtemp(comm = select(df_en, contains('P6')))
-plot(temp_EN, kind = 'incidence', names = c(FALSE, TRUE))
+## valor de kappa entre as respostas para as perguntas
+df_en_kappa <- df_en %>% 
+  mutate(
+    is_senior = as.double(P2_g == 'Sênior'), is_pleno = as.double(P2_g == 'Pleno'), is_junior = as.double(P2_g == 'Júnior')
+  ) %>% 
+  select(contains('P6'), contains('is_')) %>% 
+  mutate(across(everything(), factor, levels = c(0, 1))) %>% 
+  colpair_map(.f = kap_vec)
+
+## visualizando o valor de kappa entre todas as respostas
+df_en_kappa %>% 
+  data.frame %>% 
+  `rownames<-`(value = .$term) %>% 
+  select(-term) %>% 
+  heatmaply()
+
+## quais sao as respostas mais correlacionadas?
+df_en_kappa %>% 
+  shave() %>% 
+  stretch() %>% 
+  drop_na() %>% 
+  filter(abs(r) >= 0.25) %>% 
+  left_join(y = select(dicionario, pergunta_id, texto), by = c('x' = 'pergunta_id')) %>% 
+  left_join(y = select(dicionario, pergunta_id, texto), by = c('y' = 'pergunta_id')) %>% 
+  mutate(
+    texto.x = ifelse(test = is.na(texto.x), yes = x, no = texto.x),
+    texto.y = ifelse(test = is.na(texto.y), yes = y, no = texto.y),
+  ) %>% 
+  select(texto.x, texto.y, r) %>% 
+  igraph::graph_from_data_frame() %>% 
+  ggraph(layout = 'fr') +
+  geom_edge_link(aes(edge_colour = r), arrow = grid::arrow(type = "closed", length = unit(.15, "inches")), end_cap = circle(.07, 'inches')) +
+  geom_node_point() +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1) +
+  scale_edge_color_distiller(palette = 'Blues', direction = 1) +
+  theme_void()
 
 # ATUAÇÃO ESPECÍFICA: ANALISTA DE DADOS ---------------------------------------------
 
@@ -261,6 +384,10 @@ df_ad <- dados %>%
   drop_na() %>% 
   # juntando com features
   left_join(y = df_features, by = 'P0')
+
+## temperatura da matriz
+temp_AD <- nestedtemp(comm = select(df_ad, contains('P7')))
+plot(temp_AD, kind = 'incidence', names = c(FALSE, TRUE))
 
 ## quantificando a contribuição do turnover e aninhamento de habilidades para a similaridade entre cientista de dados
 beta.multi(select(df_ad, contains('P7')), index.family = 'jaccard')
@@ -278,9 +405,42 @@ permutest(beta_disper_AD, pairwise = TRUE)
 ## visualizando o resultado da PERMDISP
 plot(beta_disper_AD)
 
-## temperatura da matriz
-temp_AD <- nestedtemp(comm = select(df_ad, contains('P7')))
-plot(temp_AD, kind = 'incidence', names = c(FALSE, TRUE))
+## valor de kappa entre as respostas para as perguntas
+df_ad_kappa <- df_ad %>% 
+  mutate(
+    is_senior = as.double(P2_g == 'Sênior'), is_pleno = as.double(P2_g == 'Pleno'), is_junior = as.double(P2_g == 'Júnior')
+  ) %>% 
+  select(contains('P7'), contains('is_')) %>% 
+  mutate(across(everything(), factor, levels = c(0, 1))) %>% 
+  colpair_map(.f = kap_vec)
+
+## visualizando o valor de kappa entre todas as respostas
+df_ad_kappa %>% 
+  data.frame %>% 
+  `rownames<-`(value = .$term) %>% 
+  select(-term) %>% 
+  heatmaply()
+
+## quais sao as respostas mais correlacionadas?
+df_ad_kappa %>% 
+  shave() %>% 
+  stretch() %>% 
+  drop_na() %>% 
+  filter(abs(r) >= 0.25) %>% 
+  left_join(y = select(dicionario, pergunta_id, texto), by = c('x' = 'pergunta_id')) %>% 
+  left_join(y = select(dicionario, pergunta_id, texto), by = c('y' = 'pergunta_id')) %>% 
+  mutate(
+    texto.x = ifelse(test = is.na(texto.x), yes = x, no = texto.x),
+    texto.y = ifelse(test = is.na(texto.y), yes = y, no = texto.y),
+  ) %>% 
+  select(texto.x, texto.y, r) %>% 
+  igraph::graph_from_data_frame() %>% 
+  ggraph(layout = 'fr') +
+  geom_edge_link(aes(edge_colour = r), arrow = grid::arrow(type = "closed", length = unit(.15, "inches")), end_cap = circle(.07, 'inches')) +
+  geom_node_point() +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1) +
+  scale_edge_color_distiller(palette = 'RdYlBu', direction = 1) +
+  theme_void()
 
 # COMBINANDO ATUACOES: CIENCIA DE DADOS ---------------------------------------------
 
@@ -305,6 +465,10 @@ df_ds_combined <- dados %>%
   # dropando os NAs
   drop_na()
 
+## temperatura da matriz
+temp_DS_combined <- nestedtemp(comm = select(df_ds_combined, contains('P8'), contains('P4')))
+plot(temp_DS_combined, kind = 'incidence', names = c(FALSE, TRUE))
+
 ## quantificando a contribuição do turnover e aninhamento de habilidades para a similaridade entre cientista de dados
 beta.multi(select(df_ds_combined, contains('P8'), contains('P4')), index.family = 'jaccard')
 
@@ -321,9 +485,42 @@ permutest(beta_disper_DS_combined, pairwise = TRUE)
 ## visualizando o resultado da PERMDISP
 plot(beta_disper_DS_combined)
 
-## temperatura da matriz
-temp_DS_combined <- nestedtemp(comm = select(df_ds_combined, contains('P8'), contains('P4')))
-plot(temp_DS_combined, kind = 'incidence', names = c(FALSE, TRUE))
+## valor de kappa entre as respostas para as perguntas
+df_ds_combined_kappa <- df_ds_combined %>% 
+  mutate(
+    is_senior = as.double(P2_g == 'Sênior'), is_pleno = as.double(P2_g == 'Pleno'), is_junior = as.double(P2_g == 'Júnior')
+  ) %>% 
+  select(contains('P8'), contains('P4'), contains('is_')) %>% 
+  mutate(across(everything(), factor, levels = c(0, 1))) %>% 
+  colpair_map(.f = kap_vec)
+
+## visualizando o valor de kappa entre todas as respostas
+df_ds_combined_kappa %>% 
+  data.frame %>% 
+  `rownames<-`(value = .$term) %>% 
+  select(-term) %>% 
+  heatmaply()
+
+## quais sao as respostas mais correlacionadas?
+df_ds_combined_kappa %>% 
+  shave() %>% 
+  stretch() %>% 
+  drop_na() %>% filter(y == 'is_senior') %>% arrange(desc(r))
+  filter(abs(r) >= 0.25) %>% 
+  left_join(y = select(dicionario, pergunta_id, texto), by = c('x' = 'pergunta_id')) %>% 
+  left_join(y = select(dicionario, pergunta_id, texto), by = c('y' = 'pergunta_id')) %>% 
+  mutate(
+    texto.x = ifelse(test = is.na(texto.x), yes = x, no = texto.x),
+    texto.y = ifelse(test = is.na(texto.y), yes = y, no = texto.y),
+  ) %>% 
+  select(texto.x, texto.y, r) %>% 
+  igraph::graph_from_data_frame() %>% 
+  ggraph(layout = 'fr') +
+  geom_edge_link(aes(edge_colour = r), arrow = grid::arrow(type = "closed", length = unit(.15, "inches")), end_cap = circle(.07, 'inches')) +
+  geom_node_point() +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1) +
+  scale_edge_color_distiller(palette = 'RdYlBu', direction = 1) +
+  theme_void()
 
 # REGRAS DE ASSOCIACAO --------------------------------------------------------------
 
@@ -391,14 +588,217 @@ df_regras <- dados %>%
   filter(lift > 1)
 df_regras
 
-# CLUSTERIZAÇÃO ---------------------------------------------------------------------
+# SENIORIDADE DOS CIENTISTAS DE DADOS - TODAS AS RESPOSTAS --------------------------
+# o que faz a senioridade de um cientista de dados? ---------------------------------
 
-## pegando os dados que passaremos pela clusterizacao
-df_to_cluster <- dados %>% 
-  # removendo tudo o que for dado de gestor e outras atuacoes
-  filter(P2_d == 0, P4_a != 'Outra') %>% 
-  # selecionando apenas as colunas com as informacoes de atuacao geral que usaremos
-  select(P0, P4_a, contains('P4_b_'), contains('P4_d_'), contains('P4_f_'), contains('P4_g_'), contains('P4_h_'), contains('P6_a_'), 
-         contains('P6_b_'), contains('P7_a_'), contains('P7_b_'), contains('P7_d_'), contains('P8_a_'), contains('P8_b_'), 
-         contains('P8_c_'), contains('P8_d_')) %>% 
-  select(-P4_h_x, -P4_d_n)
+## contando instancias em cada classe
+count(df_ds_combined, P2_g)
+
+## preparando os dados que serao usados para a modelagem
+df_model <- select(df_ds_combined, -c(idade:salario), -contains('role_'), -area_dados, -tempo_experiencia, -target) %>% 
+  rowwise() %>% 
+  mutate(
+    respostas_geral = sum(c_across(contains('P4'))),
+    respostas_especificas = sum(c_across(contains('P8'))),
+    respostas_total = respostas_geral + respostas_especificas
+  ) %>% 
+  ungroup
+
+## fazendo o split dos dados
+set.seed(33)
+df_split <- initial_split(data = df_model, prop = 0.8, strata = P2_g)
+
+## criando base com resample
+set.seed(42)
+df_boots <- bootstraps(data = training(x = df_split), times = 10, strata = P2_g)
+
+## definindo os modelos
+# regressao logistica multinomial
+model_mult <- multinom_reg(penalty = tune(), mixture = tune()) %>% 
+  set_engine(engine = 'glmnet') %>% 
+  set_mode(mode = 'classification')
+
+## criando a receita
+preproc_basico <- recipe(P2_g ~ ., data = training(x = df_split)) %>% 
+  update_role(P0, new_role = 'id variable') %>% 
+  step_dummy(all_nominal_predictors()) %>% 
+  step_normalize(all_numeric_predictors()) %>% 
+  step_zv(all_predictors())
+
+# testando um modelo ----------------------------------------------------------------
+
+## criando workflow para a regressão multinomial
+wf <- workflow() %>% 
+  add_recipe(recipe = preproc_basico) %>% 
+  add_model(spec = model_mult)
+
+## grid search para o modelo simples
+wf_grid_search <- wf %>% 
+  tune_race_anova(resamples = df_boots, grid = 25, metrics = metric_set(mn_log_loss, bal_accuracy, roc_auc),
+                  control = control_race(burn_in = 5, verbose = TRUE))
+
+## pegando os melhores modelos no grid search
+wf_grid_search %>% 
+  show_best(metric = 'mn_log_loss')
+
+## finalizando o workflow com o melhor modelo
+wf <- wf %>% 
+  finalize_workflow(parameters = select_best(x = wf_grid_search, metric = 'mn_log_loss'))
+
+## pegando as metricas do modelo final na base de teste
+trained_model_mult <- wf %>% 
+  last_fit(split = df_split, metrics = metric_set(mn_log_loss, bal_accuracy, roc_auc))
+  
+## pegando a regressao multinomial treinada
+trained_model_mult %>% 
+  collect_metrics()
+
+## olhando a matriz de confusao
+trained_model_mult %>% 
+  extract_workflow() %>% 
+  augment(new_data = testing(df_split)) %>% 
+  conf_mat(truth = P2_g, estimate = .pred_class) %>% 
+  autoplot(type = 'heatmap') +
+  labs(title = 'Regressão Multinomial')
+
+# testando muitos modelos -----------------------------------------------------------
+
+## setando outros modelos que testaremos
+# arvore de decisao
+model_dt <- decision_tree(cost_complexity = tune(), tree_depth = tune(), min_n = tune()) %>% 
+  set_engine(engine = 'rpart') %>% 
+  set_mode(mode = 'classification')
+# knn
+model_knn <- nearest_neighbor(neighbors = tune(), dist_power = tune(), weight_func = tune()) %>% 
+  set_mode(mode = 'classification') %>% 
+  set_engine(engine = 'kknn') 
+
+## criando workflowset
+wfset <- workflow_set(preproc = list(preproc = preproc_basico), 
+                      models = list(dt = model_dt, mult = model_mult, knn = model_knn))
+
+## definindo o grid
+grid_ctrl <- control_race(parallel_over = 'everything', save_workflow = TRUE)
+
+## fazendo grid search entre todos os modelos
+set.seed(33)
+wfset_grid_search <- wfset %>% 
+  workflow_map(fn = 'tune_race_anova', resamples = df_boots, grid = 30, 
+               metrics = metric_set(mn_log_loss, bal_accuracy, roc_auc), 
+               verbose = TRUE, control = grid_ctrl, seed = 42)
+
+## metrica alvo
+metrica_alvo <- 'mn_log_loss'
+
+## pegando os melhores modelos
+wfset_grid_search %>% 
+  rank_results() %>% 
+  filter(.metric == metrica_alvo) %>% 
+  arrange(mean)
+
+## modelo selecionado
+modelo_selecionado <- 'preproc_mult'
+
+## pegando o melhor modelo
+melhores_parametros <- wfset_grid_search %>% 
+  extract_workflow_set_result(id = modelo_selecionado) %>% 
+  select_best(metric = metrica_alvo)
+
+## ajustando uma ultima vez na base de teste
+trained_model_final <- wfset_grid_search %>% 
+  extract_workflow(modelo_selecionado) %>% 
+  finalize_workflow(parameters = melhores_parametros) %>% 
+  last_fit(split = df_split, metrics = metric_set(mn_log_loss, bal_accuracy, roc_auc)) 
+
+## olhando as metricas do modelo
+trained_model_final %>% 
+  collect_metrics()
+
+## olhando a matriz de confusao
+trained_model_final %>% 
+  extract_workflow() %>% 
+  augment(new_data = testing(df_split)) %>% 
+  conf_mat(truth = P2_g, estimate = .pred_class) %>% 
+  autoplot(type = 'heatmap') +
+  labs(title = modelo_selecionado)
+
+# olhando a explicabilidade do modelo -----------------------------------------------
+
+## todas as variaveis
+trained_model_final %>% 
+  extract_workflow() %>% 
+  tidy %>% 
+  filter(term != '(Intercept)', estimate != 0) %>% 
+  left_join(y = dicionario, by = c('term' = 'pergunta_id')) %>% 
+  mutate(texto = ifelse(test = is.na(texto), yes = term, no = texto)) %>% 
+  group_by(class) %>% 
+  slice_max(order_by = abs(estimate), n = 10) %>% 
+  ungroup %>% 
+  mutate(termo = str_wrap(string = texto, width = 50),
+         termo = reorder_within(x = termo, within = class, by = estimate)) %>% 
+  ggplot(mapping = aes(x = estimate, y = termo, fill = class)) +
+  facet_wrap(~ class, scales = 'free') +
+  geom_col() +
+  scale_y_reordered()
+
+## atuacao especifica
+trained_model_final %>% 
+  extract_workflow() %>% 
+  tidy %>% 
+  filter(term != '(Intercept)', estimate != 0) %>% 
+  left_join(y = dicionario, by = c('term' = 'pergunta_id')) %>% 
+  mutate(texto = ifelse(test = is.na(texto), yes = term, no = texto)) %>% 
+  filter(parte == 'P8') %>% 
+  group_by(class) %>% 
+  slice_max(order_by = abs(estimate), n = 10) %>% 
+  ungroup %>% 
+  mutate(termo = str_wrap(string = texto, width = 50),
+         termo = reorder_within(x = termo, within = class, by = estimate)) %>% 
+  ggplot(mapping = aes(x = estimate, y = termo, fill = class)) +
+  facet_wrap(~ class, scales = 'free') +
+  geom_col() +
+  scale_y_reordered()
+
+## atuacao geral
+trained_model_final %>% 
+  extract_workflow() %>% 
+  tidy %>% 
+  filter(term != '(Intercept)', estimate != 0) %>% 
+  left_join(y = dicionario, by = c('term' = 'pergunta_id')) %>% 
+  mutate(texto = ifelse(test = is.na(texto), yes = term, no = texto)) %>% 
+  filter(parte == 'P4') %>% 
+  group_by(class) %>% 
+  slice_max(order_by = abs(estimate), n = 10) %>% 
+  ungroup %>% 
+  mutate(termo = str_wrap(string = texto, width = 50),
+         termo = reorder_within(x = termo, within = class, by = estimate)) %>% 
+  ggplot(mapping = aes(x = estimate, y = termo, fill = class)) +
+  facet_wrap(~ class, scales = 'free') +
+  geom_col() +
+  scale_y_reordered()
+
+## outras alavancas
+trained_model_final %>% 
+  extract_workflow() %>% 
+  tidy %>% 
+  filter(term != '(Intercept)', estimate != 0) %>% 
+  left_join(y = dicionario, by = c('term' = 'pergunta_id')) %>% 
+  mutate(texto = ifelse(test = is.na(texto), yes = term, no = texto)) %>% 
+  filter(is.na(parte)) %>% 
+  group_by(class) %>% 
+  slice_max(order_by = abs(estimate), n = 10) %>% 
+  ungroup %>% 
+  mutate(termo = str_wrap(string = texto, width = 50),
+         termo = reorder_within(x = termo, within = class, by = estimate)) %>% 
+  ggplot(mapping = aes(x = estimate, y = termo, fill = class)) +
+  facet_wrap(~ class, scales = 'free') +
+  geom_col() +
+  scale_y_reordered()
+
+# ANALISE DO ERRO -------------------------------------------------------------------
+
+## adicionando as previsoes aos dados
+df_erros <- trained_model_final %>% 
+  extract_workflow() %>% 
+  augment(new_data = df_model) 
+
