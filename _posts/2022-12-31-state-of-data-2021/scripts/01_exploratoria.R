@@ -22,7 +22,11 @@ library(ggraph) # para grafos
 library(tidymodels) # modelagem
 library(furrr) # processamento paralelo
 library(finetune) # ajudar na otimizacao de hiperparametros
+library(cluster) # gower e pam
+library(Rtsne) # tsne
 library(tidytext) # para ajudar com texto
+library(DALEX) # explicabilidade
+library(DALEXtra) # explicabilidade + tidymodels
 
 # carregando os dados ---------------------------------------------------------------
 
@@ -217,7 +221,7 @@ df_general_kappa %>%
   shave() %>% 
   stretch() %>% 
   drop_na() %>% filter(y == 'is_senior') %>% arrange(-r)
-  filter(abs(r) >= 0.25) %>% 
+filter(abs(r) >= 0.25) %>% 
   left_join(y = select(dicionario, pergunta_id, texto), by = c('x' = 'pergunta_id')) %>% 
   left_join(y = select(dicionario, pergunta_id, texto), by = c('y' = 'pergunta_id')) %>% 
   mutate(
@@ -506,7 +510,7 @@ df_ds_combined_kappa %>%
   shave() %>% 
   stretch() %>% 
   drop_na() %>% filter(y == 'is_senior') %>% arrange(desc(r))
-  filter(abs(r) >= 0.25) %>% 
+filter(abs(r) >= 0.25) %>% 
   left_join(y = select(dicionario, pergunta_id, texto), by = c('x' = 'pergunta_id')) %>% 
   left_join(y = select(dicionario, pergunta_id, texto), by = c('y' = 'pergunta_id')) %>% 
   mutate(
@@ -634,7 +638,7 @@ wf <- workflow() %>%
 
 ## grid search para o modelo simples
 wf_grid_search <- wf %>% 
-  tune_race_anova(resamples = df_boots, grid = 25, metrics = metric_set(mn_log_loss, bal_accuracy, roc_auc),
+  tune_race_anova(resamples = df_boots, grid = 30, metrics = metric_set(mn_log_loss, bal_accuracy, roc_auc),
                   control = control_race(burn_in = 5, verbose = TRUE))
 
 ## pegando os melhores modelos no grid search
@@ -648,7 +652,7 @@ wf <- wf %>%
 ## pegando as metricas do modelo final na base de teste
 trained_model_mult <- wf %>% 
   last_fit(split = df_split, metrics = metric_set(mn_log_loss, bal_accuracy, roc_auc))
-  
+
 ## pegando a regressao multinomial treinada
 trained_model_mult %>% 
   collect_metrics()
@@ -795,10 +799,131 @@ trained_model_final %>%
   geom_col() +
   scale_y_reordered()
 
-# ANALISE DO ERRO -------------------------------------------------------------------
+# ANALISE DO ERRO -------------------------------------------------------------------------------------------------
 
-## adicionando as previsoes aos dados
+## adicionando as previsoes aos dados e preparando base para novo modelo
 df_erros <- trained_model_final %>% 
   extract_workflow() %>% 
-  augment(new_data = df_model) 
+  augment(new_data = df_model) %>% 
+  filter(.pred_class != P2_g) %>% 
+  mutate(target = case_when(
+    P2_g == 'Sênior' & .pred_class %in% c('Pleno', 'Júnior') ~ 1L,
+    P2_g == 'Pleno' & .pred_class == 'Júnior' ~ 1L,
+    P2_g == 'Pleno' & .pred_class == 'Sênior' ~ 0L,
+    P2_g == 'Júnior' & .pred_class %in% c('Sênior', 'Pleno') ~ 0L,
+  ),
+  target = as.factor(target)
+  ) %>% 
+  select(-contains('.pred_'), -P2_g)
 
+## contando instancias que vamos prever
+count(df_erros, target)
+
+## criando split destes dados
+set.seed(33)
+df_split_erros <- initial_split(data = df_erros, prop = 0.8, strata = target)
+
+## criando bootstrap
+set.seed(33)
+df_boots_erro <- bootstraps(data = training(x = df_split_erros), times = 10, strata = target)
+
+## instanciando os modelos
+# regressão logistica
+modelo_lr <- logistic_reg(penalty = tune(), mixture = tune()) %>% 
+  set_mode(mode = 'classification') %>% 
+  set_engine(engine = 'glmnet')
+# mars
+modelo_mars <- mars(num_terms = tune(), prod_degree = tune()) %>% 
+  set_mode(mode = 'classification') %>% 
+  set_engine(engine = 'earth')
+
+## instanciando receita
+preproc_erro <- recipe(target ~ ., data = training(x = df_split_erros)) %>% 
+  update_role(P0, new_role = 'id variable') %>% 
+  step_novel(all_nominal_predictors()) %>% 
+  step_dummy(all_nominal_predictors()) %>% 
+  step_normalize(all_numeric_predictors()) %>% 
+  step_zv(all_predictors())
+
+## instanciando workflowset
+wfset_erro <- workflow_set(preproc = list(preproc = preproc_erro), 
+                           models = list(mars = modelo_mars, dt = model_dt, lr = modelo_lr))
+
+## fazendo grid search entre todos os modelos
+set.seed(33)
+wfset_grid_search_erro <- wfset_erro %>% 
+  workflow_map(fn = 'tune_race_anova', resamples = df_boots_erro, grid = 30, 
+               metrics = metric_set(mn_log_loss, bal_accuracy, roc_auc, accuracy), 
+               verbose = TRUE, control = grid_ctrl, seed = 42)
+
+## definindo metrica
+metrica_alvo = 'roc_auc'
+
+## pegando os melhores modelos
+wfset_grid_search_erro %>% 
+  rank_results() %>% 
+  filter(.metric == metrica_alvo) %>% 
+  arrange(-mean)
+
+## definindo algoritmo alvo
+algoritmo_alvo <- 'preproc_lr'
+
+## pegando o melhor modelo
+melhores_parametros <- wfset_grid_search_erro %>% 
+  extract_workflow_set_result(id = algoritmo_alvo) %>% 
+  select_best(metric = metrica_alvo)
+
+## ajustando uma ultima vez na base de teste
+trained_model_final_erros <- wfset_grid_search_erro %>% 
+  extract_workflow(algoritmo_alvo) %>% 
+  finalize_workflow(parameters = melhores_parametros) %>% 
+  last_fit(split = df_split_erros, metrics = metric_set(mn_log_loss, bal_accuracy, roc_auc, accuracy)) 
+
+## olhando as metricas do modelo
+trained_model_final_erros %>% 
+  collect_metrics()
+
+## olhando a matriz de confusao
+trained_model_final_erros %>% 
+  extract_workflow() %>% 
+  augment(new_data = testing(df_split_erros)) %>% 
+  conf_mat(truth = target, estimate = .pred_class) %>% 
+  autoplot(type = 'heatmap') +
+  labs(title = modelo_selecionado)
+
+## explicabilidade do modelo: 1 é cargo Senior de atuação Júnior, e o 0 é o contrario (cargo Junior, atuação Sênior)
+## estimates negativos são entao caracteristicos de quem tem cargo de Junior mas deveria ser Sênior
+trained_model_final_erros %>% 
+  extract_workflow() %>% 
+  tidy() %>% 
+  filter(estimate != 0) %>% 
+  left_join(y = dicionario, by = c('term' = 'pergunta_id')) %>% 
+  arrange(-abs(estimate)) %>% 
+  select(term, estimate, texto) 
+
+# AGRUPAMENTO -----------------------------------------------------------------------------------------------------
+
+## colocando as previsoes no dataframe original
+df_final <- trained_model_final %>% 
+  extract_workflow() %>% 
+  augment(new_data = df_model) %>% 
+  mutate(
+    role            = ifelse(test = role == 'has_role', yes = 1, no = 0),
+    tamanho_empresa = ,
+    instrucao       = 
+  )
+
+## 
+select(df_final, P8_a_a:respostas_total) %>% 
+  glimpse
+
+# EXPLICABILIDADE -------------------------------------------------------------------------------------------------
+
+## criando explainer do modelo
+modelo_explicado <- explain_tidymodels(
+  model = extract_workflow(x = trained_model_final), 
+  data = select(training(x = df_split), -P2_g), 
+  y = training(x = df_split)$P2_g
+)
+
+predict_parts(explainer = )
