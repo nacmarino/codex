@@ -25,6 +25,7 @@ library(finetune) # ajudar na otimizacao de hiperparametros
 library(cluster) # gower e pam
 library(Rtsne) # tsne
 library(tidytext) # para ajudar com texto
+library(dials) # hiperparametros
 library(DALEX) # explicabilidade
 library(DALEXtra) # explicabilidade + tidymodels
 
@@ -603,8 +604,7 @@ df_model <- select(df_ds_combined, -c(idade:salario), -contains('role_'), -area_
   rowwise() %>% 
   mutate(
     respostas_geral = sum(c_across(contains('P4'))),
-    respostas_especificas = sum(c_across(contains('P8'))),
-    respostas_total = respostas_geral + respostas_especificas
+    respostas_especificas = sum(c_across(contains('P8')))
   ) %>% 
   ungroup
 
@@ -637,9 +637,11 @@ wf <- workflow() %>%
   add_model(spec = model_mult)
 
 ## grid search para o modelo simples
+doParallel::registerDoParallel()
+set.seed(33)
 wf_grid_search <- wf %>% 
-  tune_race_anova(resamples = df_boots, grid = 30, metrics = metric_set(mn_log_loss, bal_accuracy, roc_auc),
-                  control = control_race(burn_in = 5, verbose = TRUE))
+  tune_race_anova(resamples = df_boots, grid = 60, metrics = metric_set(mn_log_loss, bal_accuracy, roc_auc),
+                  control = control_race(burn_in = 5))
 
 ## pegando os melhores modelos no grid search
 wf_grid_search %>% 
@@ -676,18 +678,55 @@ model_dt <- decision_tree(cost_complexity = tune(), tree_depth = tune(), min_n =
 model_knn <- nearest_neighbor(neighbors = tune(), dist_power = tune(), weight_func = tune()) %>% 
   set_mode(mode = 'classification') %>% 
   set_engine(engine = 'kknn') 
+## random forest
+model_rf <- rand_forest(mtry = tune(), min_n = tune(), trees = tune()) %>% 
+  set_mode(mode = 'classification') %>% 
+  set_engine(engine = 'ranger', 
+             regularization.factor = tune(), 
+             regularization.usedepth = tune(), 
+             max.depth = tune(), 
+             sample.fraction = tune()
+  )
+## xgboost
+model_xgb <- boost_tree(trees = tune(), min_n = tune(), tree_depth = tune(), learn_rate = tune(), 
+                        loss_reduction = tune(), sample_size = tune()) %>% 
+  set_mode('classification') %>% 
+  set_engine(engine = 'xgboost', 
+             early_stopping_rounds = tune(), 
+             lambda = tune(), 
+             alpha = tune())
+
+## setando parametros dos modelos
+# random forest
+params_rf <- model_rf %>% 
+  parameters() %>% 
+  update(
+    mtry            = mtry(range = c(1L, 15L)),
+    max.depth       = tree_depth(),
+    sample.fraction = sample_prop(range = c(0.6, 1))
+  )
+# xgboost
+params_xgb <- model_xgb %>% 
+  parameters() %>% 
+  update(
+    early_stopping_rounds  = stop_iter(),
+    
+  )
 
 ## criando workflowset
 wfset <- workflow_set(preproc = list(preproc = preproc_basico), 
-                      models = list(dt = model_dt, mult = model_mult, knn = model_knn))
+                      models = list(rf = model_rf, xgb = model_xgb, dt = model_dt, mult = model_mult, knn = model_knn)) %>% 
+  option_add(param_info = params_rf, id = "preproc_rf") %>% 
+  option_add(param_info = params_xgb, id = "preproc_xgb")
 
 ## definindo o grid
-grid_ctrl <- control_race(parallel_over = 'everything', save_workflow = TRUE)
+grid_ctrl <- control_race(parallel_over = 'everything', save_workflow = TRUE, burn_in = 5)
 
 ## fazendo grid search entre todos os modelos
+doParallel::registerDoParallel()
 set.seed(33)
 wfset_grid_search <- wfset %>% 
-  workflow_map(fn = 'tune_race_anova', resamples = df_boots, grid = 30, 
+  workflow_map(fn = 'tune_race_anova', resamples = df_boots, grid = 60, 
                metrics = metric_set(mn_log_loss, bal_accuracy, roc_auc), 
                verbose = TRUE, control = grid_ctrl, seed = 42)
 
@@ -801,31 +840,35 @@ trained_model_final %>%
 
 # ANALISE DO ERRO -------------------------------------------------------------------------------------------------
 
-## adicionando as previsoes aos dados e preparando base para novo modelo
+## colocando as previsões no dataframe original usado para a modelagem
 df_erros <- trained_model_final %>% 
   extract_workflow() %>% 
   augment(new_data = df_model) %>% 
-  filter(.pred_class != P2_g) %>% 
-  mutate(target = case_when(
-    P2_g == 'Sênior' & .pred_class %in% c('Pleno', 'Júnior') ~ 1L,
-    P2_g == 'Pleno' & .pred_class == 'Júnior' ~ 1L,
-    P2_g == 'Pleno' & .pred_class == 'Sênior' ~ 0L,
-    P2_g == 'Júnior' & .pred_class %in% c('Sênior', 'Pleno') ~ 0L,
-  ),
-  target = as.factor(target)
-  ) %>% 
-  select(-contains('.pred_'), -P2_g)
+  mutate(
+    tipo =
+      case_when(
+        P2_g == 'Sênior' & .pred_class %in% c('Pleno', 'Júnior') ~ 'underperforming',
+        P2_g == 'Pleno' & .pred_class == 'Júnior' ~ 'underperforming',
+        P2_g == 'Pleno' & .pred_class == 'Sênior' ~ 'overperforming',
+        P2_g == 'Júnior' & .pred_class %in% c('Pleno', 'Sênior') ~ 'overperforming',
+        TRUE ~ 'correct'
+      )
+  )
 
-## contando instancias que vamos prever
-count(df_erros, target)
+## contando quantas instancias de cada caso temos
+count(df_erros, tipo)
+
+## filtrando apenas os erros
+df_erros_model <- filter(df_erros, P2_g != .pred_class) %>% 
+  select(-contains('.pred_'), -P2_g)
 
 ## criando split destes dados
 set.seed(33)
-df_split_erros <- initial_split(data = df_erros, prop = 0.8, strata = target)
+df_split_erros <- initial_split(data = df_erros_model, prop = 0.8, strata = tipo)
 
 ## criando bootstrap
 set.seed(33)
-df_boots_erro <- bootstraps(data = training(x = df_split_erros), times = 10, strata = target)
+df_boots_erro <- bootstraps(data = training(x = df_split_erros), times = 10, strata = tipo)
 
 ## instanciando os modelos
 # regressão logistica
@@ -838,7 +881,7 @@ modelo_mars <- mars(num_terms = tune(), prod_degree = tune()) %>%
   set_engine(engine = 'earth')
 
 ## instanciando receita
-preproc_erro <- recipe(target ~ ., data = training(x = df_split_erros)) %>% 
+preproc_erro <- recipe(tipo ~ ., data = training(x = df_split_erros)) %>% 
   update_role(P0, new_role = 'id variable') %>% 
   step_novel(all_nominal_predictors()) %>% 
   step_dummy(all_nominal_predictors()) %>% 
@@ -847,23 +890,30 @@ preproc_erro <- recipe(target ~ ., data = training(x = df_split_erros)) %>%
 
 ## instanciando workflowset
 wfset_erro <- workflow_set(preproc = list(preproc = preproc_erro), 
-                           models = list(mars = modelo_mars, dt = model_dt, lr = modelo_lr))
+                           models = list(mars = modelo_mars, 
+                                         dt = model_dt, 
+                                         lr = modelo_lr,
+                                         rf = model_rf,
+                                         xgb = model_xgb)) %>% 
+  option_add(param_info = params_rf, id = "preproc_rf") %>% 
+  option_add(param_info = params_xgb, id = "preproc_xgb")
 
 ## fazendo grid search entre todos os modelos
+doParallel::registerDoParallel()
 set.seed(33)
 wfset_grid_search_erro <- wfset_erro %>% 
-  workflow_map(fn = 'tune_race_anova', resamples = df_boots_erro, grid = 30, 
+  workflow_map(fn = 'tune_race_anova', resamples = df_boots_erro, grid = 60, 
                metrics = metric_set(mn_log_loss, bal_accuracy, roc_auc, accuracy), 
                verbose = TRUE, control = grid_ctrl, seed = 42)
 
 ## definindo metrica
-metrica_alvo = 'roc_auc'
+metrica_alvo = 'mn_log_loss'
 
 ## pegando os melhores modelos
 wfset_grid_search_erro %>% 
   rank_results() %>% 
   filter(.metric == metrica_alvo) %>% 
-  arrange(-mean)
+  arrange(mean)
 
 ## definindo algoritmo alvo
 algoritmo_alvo <- 'preproc_lr'
@@ -887,7 +937,7 @@ trained_model_final_erros %>%
 trained_model_final_erros %>% 
   extract_workflow() %>% 
   augment(new_data = testing(df_split_erros)) %>% 
-  conf_mat(truth = target, estimate = .pred_class) %>% 
+  conf_mat(truth = tipo, estimate = .pred_class) %>% 
   autoplot(type = 'heatmap') +
   labs(title = modelo_selecionado)
 
@@ -901,29 +951,41 @@ trained_model_final_erros %>%
   arrange(-abs(estimate)) %>% 
   select(term, estimate, texto) 
 
-# AGRUPAMENTO -----------------------------------------------------------------------------------------------------
+# ANÁLISE DE SIMILARIDADE DO ERRO ---------------------------------------------------------------------------------
 
-## colocando as previsoes no dataframe original
-df_final <- trained_model_final %>% 
-  extract_workflow() %>% 
-  augment(new_data = df_model) %>% 
+## calculando dissimilaridade entre as respostas erradas
+df_erros_diss <- df_erros_model %>% 
+  relocate(role, tamanho_empresa, instrucao, .before = respostas_geral) %>% 
+  mutate(across(P8_a_a:role, as.factor)) %>%
   mutate(
-    role            = ifelse(test = role == 'has_role', yes = 1, no = 0),
-    tamanho_empresa = ,
-    instrucao       = 
-  )
+    tamanho_empresa       = factor(x = tamanho_empresa, levels = c('Microempresa', 'Pequeno porte', 'Médio porte', 'Grande porte')),
+    tamanho_empresa       = as.ordered(tamanho_empresa),
+    instrucao             = factor(x = instrucao , levels = c('Sem diploma', 'Graduação/Bacharelado', 'Pós-graduação', 'Mestrado', 'Doutorado ou Phd')),
+    instrucao             = as.ordered(instrucao),
+    respostas_geral       = (respostas_geral - mean(respostas_geral)) / sd(respostas_geral),
+    respostas_especificas = (respostas_especificas - mean(respostas_especificas)) / sd(respostas_especificas)
+  ) %>% 
+  select(-P0, -tipo) %>% 
+  daisy(metric = 'gower')
 
-## 
-select(df_final, P8_a_a:respostas_total) %>% 
-  glimpse
+## clusterizando com um PAM
+map_dbl(.x = 2:20,
+        .f = ~ pam(x = df_erros_diss, k = .x, diss = TRUE)$silinfo$avg.width) %>% 
+  plot(type = 'l')
 
-# EXPLICABILIDADE -------------------------------------------------------------------------------------------------
+## usando o Tsne para a visualização
+Rtsne(X = df_erros_diss, is_distance = TRUE, perplexity = 10) %>% 
+  pluck('Y') %>% 
+  data.frame %>% 
+  mutate(
+    tipo          = df_erros_model$tipo,
+    P2_g          = filter(df_erros, P2_g != .pred_class)$P2_g,
+    .pred_class   = filter(df_erros, P2_g != .pred_class)$.pred_class,
+    combinacao    = paste0('previu ', .pred_class, ' mas é ', P2_g)
+  ) %>% 
+  ggplot(mapping = aes(x = X1, y = X2, color = combinacao)) +
+  geom_point(size = 3) +
+  scale_color_viridis_d(begin = 0.1, end = 0.9)
 
-## criando explainer do modelo
-modelo_explicado <- explain_tidymodels(
-  model = extract_workflow(x = trained_model_final), 
-  data = select(training(x = df_split), -P2_g), 
-  y = training(x = df_split)$P2_g
-)
+# ANÁLISE OLHANDO O SHAP ------------------------------------------------------------------------------------------
 
-predict_parts(explainer = )
