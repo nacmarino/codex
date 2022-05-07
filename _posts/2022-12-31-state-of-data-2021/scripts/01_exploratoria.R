@@ -3,6 +3,10 @@
 
 ## o que diferencia uma pessoa de dados senior, pleno e junior?
 
+# nao esquecer ----------------------------------------------------------------------------------------------------
+
+## existem IDs duplicados
+
 # limpando o ambiente ---------------------------------------------------------------
 
 rm(list = ls(all.names = TRUE))
@@ -987,5 +991,28 @@ Rtsne(X = df_erros_diss, is_distance = TRUE, perplexity = 10) %>%
   geom_point(size = 3) +
   scale_color_viridis_d(begin = 0.1, end = 0.9)
 
-# ANÁLISE OLHANDO O SHAP ------------------------------------------------------------------------------------------
+# POR QUE ERROU? --------------------------------------------------------------------------------------------------
 
+trained_model_final %>% 
+  extract_workflow() %>% 
+  tidy() %>% 
+  left_join(y = bake(object = extract_recipe(x = trained_model_final), new_data = df_model) %>% 
+              bind_cols(predict(object = extract_workflow(x = trained_model_final), new_data = df_model)) %>% 
+              mutate(P0 = 1:n(), '(Intercept)' =  1) %>% 
+              filter(P2_g != .pred_class) %>% 
+              pivot_longer(cols = -c(P0, P2_g, .pred_class), names_to = 'term', values_to = 'value'),
+            by = 'term'
+  ) %>% 
+  mutate(
+    impacto = estimate * value, erro = P2_g != .pred_class
+  ) %>% 
+  filter(erro) %>% 
+  select(-penalty, -estimate, -value, -erro) %>% 
+  group_by(P0, class) %>% 
+  summarise(
+    P2_g = unique(P2_g), .pred_class = unique(.pred_class), previsao = sum(impacto), .groups = 'drop'
+  ) %>% 
+  pivot_wider(id_cols = c(P0, P2_g, .pred_class), names_from = 'class', values_from = 'previsao')
+  pivot_wider(id_cols = c(P0, P2_g, .pred_class, term), names_from = 'class', values_from = 'impacto') %>% 
+  arrange(P0, term) %>% 
+  group_by(P0)
