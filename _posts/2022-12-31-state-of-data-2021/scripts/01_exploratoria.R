@@ -15,6 +15,7 @@ install# carregando pacotes ----------------------------------------------------
 
 library(tidyverse) # core
 library(janitor) # para ajudar a limpar os dados
+library(readxl) # para ler excel
 library(vegan) # para analise
 library(betapart) # para decomposicao da diversidade beta
 library(factoextra) # para clusterizacao
@@ -37,6 +38,12 @@ library(DALEXtra) # explicabilidade + tidymodels
 
 ## carregando os dados as is
 dados <- read_csv(file = '_posts/2022-12-31-state-of-data-2021/data/raw/State of Data 2021 - Dataset - Pgina1.csv')
+
+## carregando os contra-factuais
+contrafactuais <- read_excel(path = '_posts/2022-12-31-state-of-data-2021/data/outputs/counterfactuals.xlsx')
+
+## carregando os coeficientes do sklearn
+coeficients_sklearn <- read_excel(path = '_posts/2022-12-31-state-of-data-2021/data/outputs/sklearn_coefficients.xlsx')
 
 # ajustando o nome das colunas atraves de um dicionario de dados --------------------
 
@@ -992,27 +999,67 @@ Rtsne(X = df_erros_diss, is_distance = TRUE, perplexity = 10) %>%
   scale_color_viridis_d(begin = 0.1, end = 0.9)
 
 # POR QUE ERROU? --------------------------------------------------------------------------------------------------
+# coeficientes do sklearn -----------------------------------------------------------------------------------------
 
-trained_model_final %>% 
-  extract_workflow() %>% 
-  tidy() %>% 
-  left_join(y = bake(object = extract_recipe(x = trained_model_final), new_data = df_model) %>% 
-              bind_cols(predict(object = extract_workflow(x = trained_model_final), new_data = df_model)) %>% 
-              mutate(P0 = 1:n(), '(Intercept)' =  1) %>% 
-              filter(P2_g != .pred_class) %>% 
-              pivot_longer(cols = -c(P0, P2_g, .pred_class), names_to = 'term', values_to = 'value'),
-            by = 'term'
-  ) %>% 
+## os coeficientes são muito similares entre o sklearn e o tidymodels
+coeficients_sklearn %>% 
+  # passando a base para o formato longo
+  pivot_longer(cols = -index, names_to = 'coeficientes', values_to = 'valores') %>% 
+  # removendo os coeficientes que foram zerados
+  filter(valores != 0) %>% 
+  # tratando a string do nome das coeficientes, para podermos juntar com o que veio do tidymodels
   mutate(
-    impacto = estimate * value, erro = P2_g != .pred_class
+    coeficientes = str_remove(string = coeficientes, pattern = 'remainder__'),
+    coeficientes = str_remove(string = coeficientes, pattern = 'onehotencoder__'),
+    coeficientes = str_replace_all(string = coeficientes, pattern = '\\s', replacement = '.'),
+    coeficientes = str_replace_all(string = coeficientes, pattern = '\\/', replacement = '.')
   ) %>% 
-  filter(erro) %>% 
-  select(-penalty, -estimate, -value, -erro) %>% 
-  group_by(P0, class) %>% 
-  summarise(
-    P2_g = unique(P2_g), .pred_class = unique(.pred_class), previsao = sum(impacto), .groups = 'drop'
-  ) %>% 
-  pivot_wider(id_cols = c(P0, P2_g, .pred_class), names_from = 'class', values_from = 'previsao')
-  pivot_wider(id_cols = c(P0, P2_g, .pred_class, term), names_from = 'class', values_from = 'impacto') %>% 
-  arrange(P0, term) %>% 
-  group_by(P0)
+  # juntando com os coeficientes ajustados pelo tidymodels, pegando so os coeficientes que tem em comum
+  inner_join(y = trained_model_final %>% 
+               extract_workflow() %>% 
+               tidy %>% 
+               filter(term != '(Intercept)', estimate != 0),
+             by = c('index' = 'class' , 'coeficientes' = 'term')) %>%
+  # aninhando o dataframe
+  nest(data = everything()) %>% 
+  # ajustando um teste t pareado aos dados
+  mutate(teste_t = map(.x = data, .f = ~ t.test(x = .x$estimate, y = .x$valores, paired = TRUE))) %>% 
+  # pegando os resultados do teste-t
+  pull(teste_t)
+
+# contra-factuais -------------------------------------------------------------------------------------------------
+
+## quantidade de contra-factuais criados
+contrafactuais %>% 
+  # contando quantos contractuais existem por combinação subject-contractual criado
+  count(Subject, CF, name = 'CFs') %>% 
+  # contando quantos elementos existem em cada contrafactual criado
+  count(Subject, CFs, name = 'observacoes') %>% 
+  # agrupando pela quantidade de counterfactuals criadas
+  group_by(CFs) %>% 
+  # contando quantos registros existem pela quantidade de contrafactuais criados
+  summarise(observacoes = sum(observacoes)) %>% 
+  # plotando a distribuição da quantidade de contrafactuais necessarios para fazer com que a previsão acerte a classe alvo
+  ggplot(mapping = aes(x = CFs, y = observacoes)) +
+  geom_col()
+
+## contrafactuais mais importantes por transição
+contrafactuais %>%
+  # contando quantas vezes cada o contra-factual de cada feature aparece por instancia
+  count(Subject, Feature, Counter, name = 'ocorrencias') %>% 
+  # pegando a proporção de vezes que o contra-factual de cada feature apareceu em cada instância
+  mutate(proporcao = ocorrencias / 100) %>% 
+  # juntando o target e o valor previsto originalmente para cada instancia
+  left_join(y = distinct(contrafactuais, Subject, Target, Prediction), by = 'Subject') %>% 
+  # agrupando pelo par target-previsao, feature e contra-factual
+  group_by(Target, Prediction, Feature, Counter) %>% 
+  # pegando a média da proporção de representativa do contra-factual
+  summarise(media = mean(proporcao), .groups = 'drop') %>% 
+  # agrupando pelo tipo de erro ocorrido (target-previsao)
+  group_by(Target, Prediction) %>% 
+  # pegando os dois contrafactuais mais frequentes em cada tipo de erro ocorrido
+  slice_max(order_by = media, n = 2, with_ties = FALSE) %>% 
+  # organizando o resultado em torno do contra-factual mais frequente por tipo de erro
+  arrange(Target, Prediction, -media) %>% 
+  # juntando o texto original de descrição da feature
+  left_join(y = dicionario, by = c('Feature' = 'pergunta_id'))
