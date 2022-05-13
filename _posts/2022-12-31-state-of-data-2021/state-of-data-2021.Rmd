@@ -1,23 +1,178 @@
 ---
-title: "State of Data 2021"
+title: "Qual a diferença entre júnior, pleno e sênior? Uma abordagem baseada em dados"
 description: |
   A short description of the post.
 author:
-  - name: Nicholas Marino
+  - first_name: Nicholas 
+    last_name: Marino
     url: https://github.com/nacmarino
 date: 12-31-2022
+categories:
+  - reticulate
+  - python
+  - data science
 output:
   distill::distill_article:
-    self_contained: false
+    self_contained: true
+    toc: true
+    code_folding: true
+    fig_retina: 1
+    highlight: rstudio
+draft: true
 ---
 
-
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+# setando as opções gerais dos code chunks
+knitr::opts_chunk$set(echo = FALSE, code_folding = TRUE, cache = TRUE, dpi = 200, fig.showtext = TRUE, fig.align = 'center')
+
+# carregando o showtext para pegar novas fontes
+library(showtext)
+
+# baixando as fontes que vamos usar
+font_add_google(name = 'IBM Plex Sans', family = 'ibm')
+
+# adicionando fonte automaticamente aos plots gerados
+showtext_auto()
+
+# presetando o ggplot2
+library(ggplot2)
+
+# setando o tema geral do ggplot2
+theme_set(new = theme_minimal(base_family = 'ibm'))
+
+# atualizando o tema
+theme_update(
+  panel.grid    = element_blank(),
+  plot.title    = element_text(face = 'bold', size = 14),
+  plot.subtitle = element_text(size = 10),
+  plot.caption  = element_text(size = 9),
+  axis.title.x  = element_text(face = 'bold', size = 12, margin = margin(t = 10)),
+  axis.title.y  = element_text(face = 'bold', size = 12, margin = margin(r = 10)),
+  axis.text     = element_text(color = 'black', size = 10),
+  axis.line     = element_line(color = 'black'),
+  strip.text    = element_text(face = 'bold', size = 12)
+)
 ```
 
-Distill is a publication format for scientific and technical writing, native to the web.
+# O que faz a senioridade de um profissional de dados?
 
-Learn more about using Distill at <https://rstudio.github.io/distill>.
+Paragráfo #1: contextualizar a discussão sobre a senioridade de um profissional de dados (pegar emprestado pontos da Staff+).
+
+Parágrafo #2: contextualizar o papel da atuação na discussão sobre a senioridade.
+
+Parágrafo #3: contextualizar a pesquisa State of Data 2021 como uma forma de abordar a questão.
+
+# Como a atuação varia em função da senioridade do profissional de dados?
+
+Parágrafo #4: falar da disponibilidade dos dados, baixá-los e carregá-los.
+
+```{r carrega_dados}
+# carregando os pacotes necessários para a exploração dos dados
+library(tidyverse) # core
+
+# carregando os dados da pesquisa State of Data
+df <- read_csv(file = 'data/raw/State of Data 2021 - Dataset - Pgina1.csv')
+# df <- read_csv(file = '_posts/2022-12-31-state-of-data-2021/data/raw/State of Data 2021 - Dataset - Pgina1.csv')
+
+# criando um dicionário para mapear o nome das colunas no estado atual para um nome
+# mais legível, bem como para conseguirmos mapear o texto dela às figuras depois
+dicionario <- tibble(
+  ## pegando o nome das colunas do dataframe
+  coluna = names(df) 
+) %>%
+  ## limpando o string com o nome das colunas - o padrão geral é "(Pergunta, texto)",
+  ## onde a Pergunta é codificada com base em três informações: Parte, Letra da Pergunta,
+  ## Letra da Opção escolhida. Isto é representado através do código: 
+  ## 'P<numero_parte>_<letra_da_pergunta>_<letra_opcao>'. A ideia aqui será quebrar cada
+  ## nome de coluna em parte, letra da pergunta, letra da opção e texto da pergunta, bem 
+  ## como mapear se aquela é uma pergunta principal (e.g., 'P<numero>' ou 'P<numero>_<letra>').
+  ## Para tal, vamos começar tratando o texto dos nomes das colunas que capturamos aqui e,
+  ## na sequência, vamos separarar a tupla com base num padrão de regex
+  mutate(
+    ### removendo as aspas simples no nome das colunas: e.g., ('P0', 'id') -> (P0, id)
+    informacao = str_replace_all(string = coluna, pattern = "'", replacement = ''),
+    ### removendo os parenteses do nome das colunas: e.g., (P0, id) -> P0, id
+    informacao = str_replace_all(string = informacao, pattern = '\\(|\\)', replacement = ''),
+    ### ajustando a primeira coluna do dataframe, (P0, id) pois é a única delas que foge do
+    ### padrão "(Parte , texto)", onde Parte e texto estão separados por espaço-vírgula-espaço
+    informacao = str_replace_all(string = informacao, pattern = 'P0, id', replacement = 'P0 , id')
+  ) %>% 
+  # colocando o identificador da pergunta daquele do texto de descrição da pergunta em colunas
+  # diferentes com base no padrão de regex 'espaço-vírgula-espaço' que os separa
+  separate(col = 'informacao', into = c('pergunta_id', 'texto'), sep = ' , ') %>% 
+  # separando o código identificador da pergunta em parte, letra da pergunta e letra da opcao
+  separate(col = 'pergunta_id', into = c('parte', 'pergunta', 'opcao'), sep = '_', remove = FALSE) %>% 
+  # corrigindo typos e coisas similares no dicionario com o nome das colunas vindo dos próprios
+  # dados ou da manipulação
+  mutate(
+    ### adicionando uma coluna booleana indicando se cada uma das perguntas é uma pergunta
+    ### principal ou uma resposta à uma pergunta principal - a última é definida pelo padrão
+    ### de regex abaixo como estamos negando o teste, o TRUE marca as perguntas principais
+    pergunta_principal = str_detect(string = coluna, pattern = 'P[2-9]_[a-z]_', negate = TRUE),
+    ### as opções da pergunta P3_d acabaram ficando bugadas na tabela original, de forma que
+    ### as opções vieram dentro do texto de descrição da pergunta. Assim, precisamos resgatar
+    ### a letra das opções de dentro do texto, e colocar ela de volta no identificador dessa
+    ### pergunta quando for o caso
+    opcao = case_when(pergunta_id == 'P3_d_' ~ str_extract(string = texto, pattern = '^[a-k](?=\\s)'),
+                      TRUE ~ opcao),
+    pergunta_id = case_when(pergunta_id == 'P3_d_' ~ paste0(pergunta_id, opcao),
+                            TRUE ~ pergunta_id),
+    ### limpando o texto de descrição da pergunta para remover o typo do leakage da opção
+    texto = case_when(pergunta_id == 'P3_d_' ~ str_remove(string = texto, pattern = '^[a-k]\\s'),
+                      TRUE ~ texto)
+  )
+```
+
+Paragráfo #5: falar da necessidade de limpar o nome das colunas e corrigir algumas informações.
+
+```{r corrige_dados_da_pesquisa}
+# renomeando as colunas e implementando pequenos tratamentos aos dados
+df <- df %>% 
+  # substituindo a tupla mais complexa que está atualmente no nome das colunas pelo código
+  # identificador de cada uma das perguntas a partir do dicionário de dados que criamos - 
+  # i.e., "(Pergunta, texto)" -> Pergunta
+  set_names(nm = pull(dicionario, pergunta_id)) %>% 
+  # corrigindo erros gerais na base de dados
+  mutate(
+    # corrigindo grafia de Arquiteto de dados, que aparece das duas formas na base de dados
+    P2_f = ifelse(test = P2_f == 'Arquiteto de dados', yes = 'Arquiteto de Dados', no = P2_f),
+    # removendo o ponto final da coluna P4_a
+    P4_a = str_remove(string = P4_a, pattern = '\\.')
+  ) %>% 
+  # removendo registros duplicados - existem 4 pessoas cujas respostas aparecem duas vezes
+  # na base de dados - 1 Cientista de dados, 1 Dev, 1 Engenheiro de ML e 1 Tech Lead
+  distinct(P0, .keep_all = TRUE)
+```
+
+Parágrafo #6: descrever a população que temos, e dizer que vou focar em cientistas de dados.
+
+```{r fig_observacoes_por_area, fig.height = 5, fig.width = 7}
+# criando figura para descrever a quantidade de respondentes por tipo de atuação
+count(df, P4_a) %>% 
+  # reordenando as atuações para que a figura fique com a barra em ordem decrescente
+  mutate(P4_a = str_wrap(string = P4_a, width = 10),
+         P4_a = fct_reorder(.f = P4_a, .x = n, .desc = TRUE)) %>% 
+  # criando a figura
+  ggplot(mapping = aes(x = P4_a, y = n, fill = P4_a)) +
+  geom_col(color = 'black', show.legend = FALSE) +
+  geom_text(mapping = aes(label = n), vjust = -1) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 950), 
+                     breaks = seq(from = 0, to = 1000, by = 100)) +
+  scale_fill_viridis_d() +
+  labs(
+    title = 'Qual a atuação principal dos respondentes do State of Data 2021?',
+    x     = 'Atuação principal',
+    y     = 'Quantidade de respondentes'
+  )
+```
+
+
+# Que fatores estão associados à senioridade do profissional de dados?
+
+
+# O que está associado à atuação dos profissionais no nível errado?
+
+
+# Conclusões
 
 

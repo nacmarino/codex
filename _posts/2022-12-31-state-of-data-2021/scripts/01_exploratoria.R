@@ -638,6 +638,8 @@ preproc_basico <- recipe(P2_g ~ ., data = training(x = df_split)) %>%
   update_role(P0, new_role = 'id variable') %>% 
   step_dummy(all_nominal_predictors()) %>% 
   step_normalize(all_numeric_predictors()) %>% 
+  # step_interact(terms = ~ starts_with('tamanho_empresa'):starts_with('role') + starts_with('instrucao'):starts_with('role') + 
+  #                 starts_with('instrucao'):starts_with('tamanho_empresa')) %>% 
   step_zv(all_predictors())
 
 # testando um modelo ----------------------------------------------------------------
@@ -652,7 +654,7 @@ doParallel::registerDoParallel()
 set.seed(33)
 wf_grid_search <- wf %>% 
   tune_race_anova(resamples = df_boots, grid = 60, metrics = metric_set(mn_log_loss, bal_accuracy, roc_auc),
-                  control = control_race(burn_in = 5))
+                  control = control_race(burn_in = 5, verbose = TRUE))
 
 ## pegando os melhores modelos no grid search
 wf_grid_search %>% 
@@ -1001,7 +1003,32 @@ Rtsne(X = df_erros_diss, is_distance = TRUE, perplexity = 10) %>%
 # POR QUE ERROU? --------------------------------------------------------------------------------------------------
 # coeficientes do sklearn -----------------------------------------------------------------------------------------
 
-## os coeficientes são muito similares entre o sklearn e o tidymodels
+## olhando os coeficientes por classe
+coeficients_sklearn %>% 
+  # passando a base para o formato longo
+  pivot_longer(cols = -index, names_to = 'coeficientes', values_to = 'valores') %>% 
+  # removendo os coeficientes que foram zerados
+  filter(valores != 0) %>% 
+  # tratando a string do nome das coeficientes, para podermos juntar com o que veio do tidymodels
+  mutate(
+    coeficientes = str_remove(string = coeficientes, pattern = 'remainder__'),
+    coeficientes = str_remove(string = coeficientes, pattern = 'onehotencoder__'),
+    coeficientes = str_replace_all(string = coeficientes, pattern = '\\s', replacement = '.'),
+    coeficientes = str_replace_all(string = coeficientes, pattern = '\\/', replacement = '.')
+  ) %>% 
+  left_join(y = dicionario, by = c('coeficientes' = 'pergunta_id')) %>% 
+  mutate(texto = ifelse(test = is.na(texto), yes = coeficientes, no = texto)) %>% 
+  group_by(index) %>% 
+  slice_max(order_by = abs(valores), n = 10) %>% 
+  ungroup %>% 
+  mutate(termo = str_wrap(string = texto, width = 50),
+         termo = reorder_within(x = termo, within = index, by = valores)) %>% 
+  ggplot(mapping = aes(x = valores, y = termo, fill = index)) +
+  facet_wrap(~ index, scales = 'free') +
+  geom_col() +
+  scale_y_reordered()
+
+  ## os coeficientes são muito similares entre o sklearn e o tidymodels
 coeficients_sklearn %>% 
   # passando a base para o formato longo
   pivot_longer(cols = -index, names_to = 'coeficientes', values_to = 'valores') %>% 
