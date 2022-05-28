@@ -29,7 +29,7 @@ knitr::opts_chunk$set(echo = FALSE, code_folding = TRUE, cache = TRUE, dpi = 200
 library(showtext)
 
 # baixando as fontes que vamos usar
-font_add_google(name = 'IBM Plex Sans', family = 'ibm')
+font_add_google(name = 'Roboto', family = 'roboto')
 
 # adicionando fonte automaticamente aos plots gerados
 showtext_auto()
@@ -38,7 +38,7 @@ showtext_auto()
 library(ggplot2)
 
 # setando o tema geral do ggplot2
-theme_set(new = theme_minimal(base_family = 'ibm'))
+theme_set(new = theme_minimal(base_family = 'roboto'))
 
 # atualizando o tema
 theme_update(
@@ -52,6 +52,9 @@ theme_update(
   axis.line     = element_line(color = 'black'),
   strip.text    = element_text(face = 'bold', size = 12)
 )
+
+# definindo o um vetor com o codigo hex da paleta de cores do data hackers
+cores_data_hackers <- c('#7037FF', '#7511A6', '#3B0053')
 ```
 
 # O que faz a senioridade de um profissional de dados?
@@ -69,10 +72,16 @@ Parágrafo #4: falar da disponibilidade dos dados, baixá-los e carregá-los.
 ```{r carrega_dados}
 # carregando os pacotes necessários para a exploração dos dados
 library(tidyverse) # core
+library(reactable) # tabelas interativas
+library(ggridges) # ridge plots
+library(scales) # escalas dos gráficos
+library(vegan) # análise multivariada
+library(patchwork) # compor figuras
+library(gghighlight) # para o highlight
 
 # carregando os dados da pesquisa State of Data
-df <- read_csv(file = 'data/raw/State of Data 2021 - Dataset - Pgina1.csv')
-# df <- read_csv(file = '_posts/2022-12-31-state-of-data-2021/data/raw/State of Data 2021 - Dataset - Pgina1.csv')
+# df <- read_csv(file = 'data/raw/State of Data 2021 - Dataset - Pgina1.csv')
+df <- read_csv(file = '_posts/2022-12-31-state-of-data-2021/data/raw/State of Data 2021 - Dataset - Pgina1.csv')
 
 # criando um dicionário para mapear o nome das colunas no estado atual para um nome
 # mais legível, bem como para conseguirmos mapear o texto dela às figuras depois
@@ -121,6 +130,57 @@ dicionario <- tibble(
     texto = case_when(pergunta_id == 'P3_d_' ~ str_remove(string = texto, pattern = '^[a-k]\\s'),
                       TRUE ~ texto)
   )
+
+## colocando o dicionário de identificador das perguntas e opções em uma tabela para referência rápida 
+dicionario %>% 
+  # adicionando o identificador único da parte-pergunta como uma coluna no dataframe, de forma a utilizarmos 
+  # essa informação mais à frente para mapear que parte-pergunta é múltipla escolha e a remapear o título
+  # original da questão às opções da múltipla escolha. Todas as perguntas de múltipla escolha que vamos
+  # considerar estão da Parte 2 em dia, e são marcadas pelo sufixo '_' após a letra da pergunta 
+  mutate(
+    pergunta_parte_id = case_when(
+      str_detect(string = pergunta_id, pattern = 'P[2-9]_[a-z]_') ~ str_extract(string = pergunta_id, pattern = 'P[2-9]_[a-z]'),
+      TRUE ~ pergunta_id
+    )
+  ) %>% 
+  # agrupando o dataframe pelo identificador da parte-pergunta
+  group_by(pergunta_parte_id) %>% 
+  # identificando as parte-perguntas que são múltipla escolhas através da quantidade de vezes que este 
+  # identificador aparece - quando existem diversas opções associadas à uma parte-pergunta, ela deve
+  # aparecer mais de uma vez; assim, se mapearmos as linhas associadas à partes-pergunta que aparecem
+  # mais de uma vez, teremos acesso ao indicador que estamos buscando
+  mutate(
+    contem_opcao = n() > 1
+  ) %>% 
+  # retendo todas as observações de  partes-pergunta que não são de múltipla escolha (i.e., '!contem_opcao')
+  # ou todas as observações de partes-pergunta que são de múltipla escolha, desde que não seja a primeira 
+  # linha da parte-pergunta (i.e., 'contem_opcao & row_number() > 1') - com este último passo estamos 
+  # removendo efetivamente a linha que contém o título da pergunta que dá acesso as opções, o que fará
+  # com que a tabela a seguir não traga como opção o título da pergunta, somente as opções mesmo
+  filter(!contem_opcao | contem_opcao & row_number() > 1) %>% 
+  # desagrupando o dataframe
+  ungroup %>% 
+  # selecionando apenas as colunas que contém as informações que precisaremos para criar a tabela
+  select(pergunta_parte_id, opcao, texto_pergunta_opcao = texto) %>%
+  # juntando o dicionário para mapear a pergunta_parte_id ao seu texto - isso servirá para pegarmos
+  # o titulo de cada pergunta apenas
+  left_join(y = select(dicionario, pergunta_id, texto), by = c('pergunta_parte_id' = 'pergunta_id')) %>% 
+  # colando o identificador da pergunta_parte com o texto dela - i.e., o texto da pergunta em si
+  mutate(texto = paste0('<b>', pergunta_parte_id, '</b><br>', texto)) %>% 
+  # dropando a coluna que contém o identificador pergunta_parte_id, pois já temos essa informação
+  # mapeada na coluna com o texto da pergunta
+  select(-pergunta_parte_id) %>% 
+  # criando a tabela de referencia com o reactable
+  reactable(
+    groupBy = 'texto', 
+    columns = list(
+      texto                = colDef(name = 'Pergunta', html = TRUE, width = 300, maxWidth = 300),
+      opcao                = colDef(name = 'Opções', aggregate = 'unique', width = 100, maxWidth = 100),
+      texto_pergunta_opcao = colDef(name = 'Respostas', width = 200, maxWidth = 200)
+    ), 
+    showPageSizeOptions = TRUE, defaultPageSize = 5, borderless = TRUE, striped = TRUE, 
+    highlight = TRUE, compact = TRUE
+  )
 ```
 
 Paragráfo #5: falar da necessidade de limpar o nome das colunas e corrigir algumas informações.
@@ -155,24 +215,498 @@ count(df, P4_a) %>%
   # criando a figura
   ggplot(mapping = aes(x = P4_a, y = n, fill = P4_a)) +
   geom_col(color = 'black', show.legend = FALSE) +
-  geom_text(mapping = aes(label = n), vjust = -1) +
+  geom_text(mapping = aes(label = paste0(round(x = (n / sum(n))  * 100, digits = 2), '%')), 
+            stat = 'identity', vjust = -1) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, 950), 
                      breaks = seq(from = 0, to = 1000, by = 100)) +
   scale_fill_viridis_d() +
   labs(
-    title = 'Qual a atuação principal dos respondentes do State of Data 2021?',
-    x     = 'Atuação principal',
+    title = 'Qual a atuação no dia a dia dos respondentes do State of Data 2021?',
+    x     = 'Atuação no dia a dia',
     y     = 'Quantidade de respondentes'
   )
 ```
 
+Parágrafo #7: Como está distribuida a senioridade dos cientistas de dados que responderam à pesquisa?
 
-# Que fatores estão associados à senioridade do profissional de dados?
+```{r fig_observacoes_por_senioridade, fig.height = 5, fig.width = 7}
+# criando um dataframe que contem a matriz de atuação de cada pessoa respondente que diz 
+# atuar como Cientista de Dados e o nivel de senioridade associada à cada uma delas
+df_atuacao <- df %>%
+  # pegando apenas as observações das pessoas que responderam ter uma atuação que reflete 
+  # a de uma pessoa cientista de dados
+  filter(P4_a == 'Ciência de Dados') %>% 
+  # pegando a coluna com o identificador do respondente e o seu nível de senioridade, bem
+  # como todas as colunas que contém as respostas sobre as atuações gerais e específicas 
+  # dos respondentes cuja atuação no dia a dia foi o de Ciência de Dados
+  select(P0, P2_g, matches('P4_[cdfgh]_'), matches('P8_[abcd]_')) %>% 
+  # dropando observações que possuem valores faltantes - isso ocorre devido ao mascaramento
+  # de dados
+  drop_na()
 
+# plotando a quantidade de respondentes por nivel de senioridade
+ggplot(data = df_atuacao, mapping = aes(x = P2_g, fill = P2_g)) +
+  geom_bar(color = 'black', show.legend = FALSE) +
+  geom_text(mapping = aes(label = paste0(round(x = (..count.. / sum(..count..))  * 100, digits = 2), '%')), 
+            stat = 'count', vjust = -1) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 180), breaks = seq(from = 0, to = 180, by = 40)) +
+  scale_fill_manual(values = cores_data_hackers) +
+  labs(
+    title    = 'Qual o nível de senioridade das pessoas Cientista de Dados?',
+    subtitle = '40% dos respondentes têm o nível de senioridade Pleno, enquanto os outros 60% são divididos\npraticamente de forma igual entre os níveis Júnior e Sênior',
+    x        = 'Nível de senioridade',
+    y        = 'Número de respondentes'
+  )
+```
 
-# O que está associado à atuação dos profissionais no nível errado?
+Parágrafo #8: Atuações por respondente.
+
+```{r fig_respondentes_atuacoes, fig.height = 5, fig.width = 7}
+# criando a figura para mostrar a distribuição da quantidade de atuações distintas dos 
+# respondentes por nivel de senioridade
+select(df_atuacao, -c(P0, P2_g)) %>% 
+  # como os respondentes estão na linhas e as perguntas nas colunas, o somatório das 
+  # linhas nos trará a  quantidade total de atuações distintas que cada um dos 
+  # respondentes assinalou
+  rowSums %>% 
+  # colocando o resultado da operação em um tibble, para facilitar a tarefa de plotagem
+  enframe(value = 'n_atuacoes') %>% 
+  # adicionando o indicador de senioridade - como os resultados estao na mesma ordem dos
+  # respondentes,  basta copiar a informação do dataframe original para cá
+  mutate(P2_g = df_atuacao$P2_g) %>% 
+  # criando a figura per se
+  ggplot(mapping = aes(x = n_atuacoes, y = P2_g, fill = P2_g)) +
+  geom_density_ridges2(quantile_lines = TRUE, quantiles = 2, vline_color = 'grey90', 
+                       scale = 0.9, show.legend = FALSE) +
+  scale_fill_manual(values = cores_data_hackers) +
+  scale_y_discrete(expand = c(0, 0)) +
+  scale_x_continuous(breaks = seq(from = 0, to = 100, by = 10)) +
+  labs(
+    title    = 'Quantas atuações os respondentes têm por nível de senioridade?',
+    subtitle = 'Parece existir uma diferença na quantidade de atuações assinaladas de acordo com a senioridade do respondente',
+    x        = 'Quantidade de atuações do respondente',
+    y        = 'Senioridade do respondente'
+  )
+```
+
+Parágrafo #9: frequência de atuações.
+
+```{r fig_frequencia_atuacoes, fig.height = 6, fig.width = 7}
+# criando a figura para mostrar a distribuição da frequência com a qual as atuações apareceram
+# entre os respondentes
+select(df_atuacao, -c(P0, P2_g)) %>% 
+  # como os respondentes estão na linhas e as perguntas nas colunas, o somatório das colunas 
+  # nos trará a  quantidade de respondentes que disseram ter aquele tipo de atuação
+  colSums %>%
+  # colocando o vetor resultante em ordem decrescente, de forma a conseguimos rankeá-lo mais
+  # racilmente depois
+  sort(decreasing = TRUE) %>% 
+  # passando o vetor para um tibble, onde teremos uma coluna com o identificador da pergunta 
+  # e a outra coluna com a quantidade de pessoas respondentes que disseram ter aquele tipo de
+  # atuação
+  enframe(name = 'pergunta_id', value = 'n_respondentes') %>% 
+  # removendo todas as atuações que não tiveram nenhum respondente
+  filter(n_respondentes > 0) %>% 
+  # mapeando o identificador único de cada pergunta ao seu respectivo texto, de forma a usar 
+  # essa  informação mais tarde na figura
+  left_join(y = dicionario, by = 'pergunta_id') %>%
+  # enriquecendo a base de com informações para plotarmos
+  mutate(
+    # calculando a proporção total dos respondentes que disseram ter cada uma das atuações
+    proporcao    = n_respondentes / nrow(df_atuacao),
+    sequencia    = 1:n(),
+    to_highlight = sequencia %in% c(1, 2, 3, 21, 27, 63, 124, 125),
+    texto = str_trunc(string = texto, width = 47),
+    texto = str_wrap(texto, width = 30)
+  ) %>% 
+  ggplot(mapping = aes(x = sequencia, y = proporcao)) +
+  geom_point(size = 3, shape = 21, color = 'black', fill = 'grey50') +
+  gghighlight(
+    to_highlight, 
+    label_key = texto, 
+    label_params = list(force_pull = -0.039, label.size = NA, fill = NA, seed = 666, vjust = 0.6,
+                        min.segment.length = 0.3),
+    unhighlighted_params = list(shape = 16, size = 1, color = 'black')
+  ) +
+  scale_x_continuous(breaks = c(1, seq(from = 20, to = 150, by = 20))) +
+  scale_y_continuous(labels = label_percent(),
+                     breaks = seq(from = 0, to = 1, by = 0.1), limits = c(0, 1)) +
+  labs(
+    title    = 'Quais as atuações mais frequentes entre os respondentes?',
+    subtitle = 'A maior parte das atuações é pouco frequente entre os respondentes da pesquisa',
+    x        = 'Rank de frequência',
+    y        = 'Porcentagem de pessoas respondentes'
+  )
+```
+
+Parágrafo #10: Como variou a distribuição de atuações por respondente?
+
+```{r fig_matriz_atuacao, fig.height = 6, fig.width = 7}
+# criando uma matriz para visualizar a variação na marcação
+df_atuacao %>% 
+  # passando as informações sobre a atuação do formato largo para o formato longo - i.e., cada
+  # uma das atuações para cada pessoa respondente passa a estar nas linhas ao invés de nas colunas
+  pivot_longer(cols = -c(P0, P2_g), names_to = 'atuacao', values_to = 'flag') %>% 
+  # agrupando o dataframe pelo nivel de atuacao da pessoa respondente
+  group_by(atuacao) %>% 
+  # somando a quantidade total de pessoas respondentes que disseram ter cada uma das atuações
+  # isso acabará replicando esse total para cada uma das atuações, mas o intuito é esse mesmo
+  # pois usaremos essa informação mais abaixo para ordenar as atuações daquela com maior número
+  # de respondentes para a com o menor número
+  mutate(
+    total_atuacao = sum(flag)
+  ) %>% 
+  # regrupando o dataframe pelo identificador de cada pessoa respondente
+  group_by(P0) %>% 
+  # somando a quantidade total de atuação que cada pessoa respondente disser ter. Isso também
+  # acabará replicando esse total entre todas as linhas de um dado respondente mas, novamente, 
+  #  usaremos essa informação mais abaixo para ordenar as pessoas respondentes daquelas com o
+  # maior número de atuações para a com o menor número
+  mutate(
+    total_respondente = sum(flag)
+  ) %>% 
+  # quebrando a estrutura de grupos do dataframe
+  ungroup %>% 
+  # preparando os dados para criar a matriz de respondentes por atuação
+  mutate(
+    # definindo a ordem dos respondentes de acordo com a quantidade total de atuações que cada
+    # uma dessas pessoas marcou
+    P0       = fct_reorder(.f = P0, .x = total_respondente),
+    # definindo a ordem das atuações de acordo com a quantidade total de pessoas respondentes
+    # que disseram ter aquele tipo de atuação
+    atuacao  = fct_reorder(.f = atuacao, .x = total_atuacao, .desc = TRUE),
+    # codificando uma coluna para carregar o mapa de cores do preenchimento da matriz de acordo
+    # com o nível de senioridade da pessoa respondente
+    fill_col = ifelse(test = flag == 1, yes = P2_g, no = 'Vazio')
+  ) %>% 
+  # criando a figura per se
+  ggplot(mapping = aes(x = atuacao, y = P0, fill = fill_col)) +
+  geom_tile(show.legend = FALSE) +
+  scale_fill_manual(values = c(cores_data_hackers, 'white')) +
+  labs(
+    title    = 'De que forma a atuação variou entre os respondentes?',
+    subtitle = 'As atuações não parecem estar tão bem alinhadas à senioridade do respondente',
+    caption  = 'As linhas da matriz estão ordenadas de cima para baixo, do respondente com maior número de atuações para aquele\nde menor. De forma similar, a ordenação da matriz da esquerda para a direita representa àquelas atuações que foram\nselecionadas por quase todos os respondentes para àquelas que foram pouquíssimo selecionadas. As cores representam\nos respondentes nos três níveis de atuação, seguindo a mesma paleta utilizada anteriormente.',
+    x        = 'Atuação',
+    y        = 'Pessoa respondente'
+  ) +
+  theme(
+    axis.text = element_blank(),
+    axis.line = element_blank()
+  )
+```
+
+Parágrafo #11: Quão diferentes são os cientistas de dados?
+
+```{r fig_betadisper, fig.width = 7, fig.height = 7}
+# calculando a dissimilaridade de atuação entre todos os respondentes da pesquisa, utilizando
+# a dissimilaridade de Jaccard
+matriz_distancia <- vegdist(x = select(df_atuacao, -c(P0, P2_g)), method = 'jaccard')
+
+# implementando uma análise de dispersão do modo de atuação de acordo com a senioridade da
+# pessoa respondente
+set.seed(33)
+analise_dispersao <- betadisper(d = matriz_distancia, group = df_atuacao$P2_g, type = 'centroid')
+
+# criando uma figura para visualizar a dispersão da forma de atuação dos respondentes de
+# acordo com o seu grau de senioridade
+## extraindo os escores da posição dos respondentes na ordenação da PCoA
+escores_respondentes <- scores(x = analise_dispersao, display = 'sites') %>% 
+  # parseando a matriz de escores para um dataframe, uma vez que a classe de objeto 
+  # resultante não interage bem com o tidyverse
+  data.frame %>% 
+  # colocando a senioridade do respondente como uma coluna no dataframe - usaremos essa
+  # informação para mapear as cores dos pontos à senioridade do respondente; além disso,
+  # como o input e o output da função estão alinhados, basta pegar a coluna de senioridade
+  # do input e copiar ela para dentro deste output
+  mutate(P2_g = df_atuacao$P2_g)
+
+# levantando os dados necessários para desenhar o convex hull ao redor de cada nivel de
+# senioridade no gráfico de dispersão
+poligonos_senioridade <- escores_respondentes %>% 
+  # agrupando o dataframe pelo nivel de senioridade, de forma a obtermos o convex hull para
+  # cada nivel de senioridade
+  group_by(P2_g) %>% 
+  # pegando as instância que podem ser usadas para desenhar o convex hull do nível de senioridade
+  slice(chull(PCoA1, PCoA2))
+
+# extraindo as coordenadas da posição dos centroides relacionados à cada um dos níveis
+# de senioridade
+posicao_centroides <- scores(x = analise_dispersao, display = 'centroids') %>% 
+  # parseando a matriz de escores para um dataframe, uma vez que a classe de objeto 
+  # resultante não interage bem com o tidyverse
+  data.frame %>% 
+  # adicionando o string com a senioridade ao dataframe - essa informação está como
+  # rowname do dataframe
+  rownames_to_column(var = 'P2_g')
+
+# criando a figura per se
+ggplot(data = escores_respondentes, mapping = aes(x = PCoA1, y = PCoA2, shape = P2_g, fill = P2_g)) +
+  geom_hline(yintercept = 0, color = 'grey80') +
+  geom_vline(xintercept = 0, color = 'grey80') +
+  geom_polygon(data = poligonos_senioridade, alpha = 0.05, color = NA) +
+  geom_point(size = 2, alpha = 0.3, color = 'white') +
+  # adicionando o centroide da distribuição da dispersão dos respondentes na figura, que
+  # ficará marcando com uma estrela
+  geom_point(
+    data = posicao_centroides,
+    mapping = aes(x = PCoA1, y = PCoA2, fill = P2_g, shape = P2_g), size = 5, color = 'black'
+  ) +
+  # adicionando o texto associando o centróide de cada grupo de respondentes à sua senioridade
+  geom_text(
+    data = posicao_centroides,
+    mapping = aes(x = PCoA1, y = PCoA2, label = P2_g, color = P2_g), size = 4, hjust = 1.4, fontface = 'bold'
+  ) +
+  scale_shape_manual(values = c(21, 22, 24)) +
+  scale_color_manual(values = cores_data_hackers) +
+  scale_fill_manual(values = cores_data_hackers) +
+  labs(
+    title    = 'Quão diferente é a atuação dos Cientistas de Dados?',
+    subtitle = 'A atuação dos respondentes é bastante heterogênea dentro e entre os níveis de senioridade',
+    caption  = '',
+    x        = 'PCoA #1',
+    y        = 'PCoA #2'
+  ) +
+  theme(
+    legend.position = 'none',
+    axis.line = element_blank()
+  )
+```
+
+# Que fatores estão associados à senioridade do Cientista de Dados?
+
+Explicar racionalização da base e feature engineering.
+
+```{r feature_engineering}
+# criando a base analítica a partir da base de dados original da pesquisa, seguindo 
+# a lógica de feature engineering explicada no texto
+df_base_analitica <- df %>% 
+  # pegando apenas as observações das pessoas que responderam ter uma atuação que 
+  # reflete a de uma pessoa cientista de dados
+  filter(P4_a == 'Ciência de Dados') %>% 
+  # codificando features a partir dos dados disponíveis na base de dados original
+  mutate(
+    # adicionando um indicador para mapear se a pessoa respondente possui o título 
+    # de cientista de dados no cargo ou não
+    has_role = case_when(
+      str_detect(string = P2_f, pattern = 'Cientista de Dados') ~ 1L,
+      TRUE ~ 0L
+    ),
+    # agrupando o setor de atuação dos respondentes em torno de três categorias 
+    # mais simples - Indústria, Comércio e Serviços (i.e., só Serviços) e Indeterminada
+    tipo_industria = case_when(
+      str_detect(string = P2_b, pattern = 'Agronegócios|Construção|Energia|Indústria|Alimentício|Automotivo') ~ 'Indústria',
+      is.na(P2_b) | P2_b == 'Outro' ~ 'Indeterminado',
+      TRUE ~ 'Serviços'
+    ),
+    # mapeando o tamanho da empresa da pessoa respondente às categorias definidas pelo
+    # IBGE de acordo com o número de colaboradores - simplificando e utilizando a categoria
+    # 'Comércio e Serviços', dado que a maior parte dos respondentes de Ciência de Dados
+    # está nessa área
+    tamanho_empresa = case_when(
+      is.na(P2_c) ~ 'Desconhecido',
+      P2_c %in% c('de 1 a 5', 'de 6 a 10') ~ 'Microempresa',
+      P2_c %in% c('de 11 a 50') ~ 'Pequeno porte',
+      P2_c %in% c('de 51 a 100') ~ 'Médio porte',
+      TRUE ~ 'Grande porte'
+    ),
+    # juntando tudo o que é grau de formação onde a pessoa ainda não tem um diploma de 
+    # ensino superior (ou preferiu) não informar em uma categoria só
+    instrucao = case_when(
+      P1_h %in% c('Estudante de Graduação', 'Não tenho graduação formal', 'Prefiro não informar') ~ 'Sem diploma',
+      TRUE ~ P1_h
+    )
+  ) %>% 
+  # pegando apenas as colunas que têm as informações que utilizaremos para a modelagem
+  select(P0, P2_g, has_role, tamanho_empresa, instrucao, tipo_industria, 
+         matches('P4_[cdfgh]_'), matches('P8_[abcd]_')) %>% 
+  # passando todas as colunas que estão como double para integer
+  mutate(across(where(is.double), as.integer)) %>% 
+  # dropando qualquer linha com NA
+  drop_na() %>% 
+  # agrupando o tibble linha a linha
+  rowwise() %>%
+  # calculando a quantidade de respostas gerais e especificas de cada pessoa respondente
+  mutate(
+    respostas_geral = sum(c_across(contains('P4'))),
+    respostas_especificas = sum(c_across(contains('P8')))
+  ) %>%
+  # quebrando o agrupamento das linhas
+  ungroup
+```
+
+Criando o modelo no tidymodels.
+
+```{r modelo_tidymodels}
+# carregando pacotes
+library(tidymodels) # para a modelagem
+
+# fazendo um shuffle na base antes de separar os dados de treino e de teste, para tentar quebrar 
+# qualquer tipo de estrutura que possa haver na base de dados
+set.seed(42)
+df_base_analitica <- slice_sample(.data = df_base_analitica, prop = 1, replace = FALSE)
+
+# fazendo o split da base analitica
+set.seed(33)
+split_dos_dados <- initial_split(data = df_base_analitica, prop = 0.8, strata = P2_g) 
+
+# criando folds para validacao cruzada
+set.seed(42)
+skfolds <- vfold_cv(data = training(split_dos_dados), v = 5, strata = P2_g)
+
+# criando a receita de preprocessamento dos dados
+## criando uma receita através da qual vamos modelar a senioridade da pessoa respondente com base em
+## todas as informações disponíveis na base analítica - usando o split de treino para criar a receita
+## de pre-processamento (e que só será treinada de fato quando rodarmos cada um dos modelos)
+pre_processamento <- recipe(P2_g ~ ., data = training(split_dos_dados)) %>% 
+  # parseando a coluna P0 como o identificador único de cada pessoa respondente
+  update_role(P0, new_role = 'id') %>% 
+  # fazendo o one hot encoding das variáveis categóricas com mais de um nível 
+  step_dummy(tamanho_empresa, instrucao, tipo_industria, one_hot = TRUE) %>% 
+  # adicionando uma interação entre o tamanho da empresa e o tipo de industria, de forma a testar a 
+  # hipotese que o nivel de senioridade exigido difere de acordo com o tipo de ramo no qual a empresa
+  # da pessoa respondente atua
+  step_interact(
+    terms = ~ starts_with('tamanho_empresa'):starts_with('tipo_industria') +
+      starts_with('tamanho_empresa'):has_role +
+      starts_with('tipo_industria'):has_role
+  ) %>%
+  # removendo todas as variáveis preditoras que têm a variância muito baixa - i.e., são todas variáveis
+  # categóricas com um viés grande demais para uma das respostas (e.g. ou quase tudo 1 ou quase tudo 0)
+  step_nzv(all_predictors(), freq_cut = 98/2) #%>% 
+  # normalizando todas as variáveis preditoras que, embora sejam categóricas, faz com que possamos 
+  # comparar o impacto de cada uma delas considerando a frequência com a qual ocorrem
+  step_normalize(all_predictors())
+
+# criando uma instância do modelo de regressão multinomial usando a engine do glmnet e deixando os dois
+# hiperparametros principais para a otimização bayesiana - equivalente ao C e ao l1_ratio do sklearn
+regressao_multinomial <- multinom_reg(penalty = tune(), mixture = tune()) %>% 
+  set_engine(engine = 'glmnet', standardize = FALSE) %>% 
+  set_mode(mode = 'classification')
+
+# criando workflow para a regressão multinomial - seria a mesma coisa que criar uma instância do pipeline
+# do sklearn, empacotando o pre-processamento e o algoritmo em um objeto só
+pipeline <- workflow() %>% 
+  add_recipe(recipe = pre_processamento) %>% 
+  add_model(spec = regressao_multinomial)
+
+# implementando uma otimização bayesiana de hiperparâmetros para a regressão multinomial - usando o log
+# loss como métrica principal e monitorando o AUC. Este processo será paralelizado para ganharmos um 
+# pouco mais de velocidade
+doParallel::registerDoParallel()
+set.seed(42)
+grid_search <- pipeline %>% 
+  tune_bayes(
+    resamples = skfolds, iter = 50, metrics = metric_set(mn_log_loss, roc_auc), initial = 15,
+    control = control_bayes(no_improve = 10, seed = 42, verbose = TRUE, parallel_over = 'resamples')
+  )
+
+# extraindo a melhor combinação de hiperparâmetros do estimador a partir do grid search e finalizando o 
+# pipeline com esta combinação 
+melhor_estimador <- pipeline %>% 
+  finalize_workflow(parameters = select_best(x = grid_search, metric = 'mn_log_loss'))
+
+# treinando o melhor estimador na base de treino e escorando ele na base de teste, mantendo registro do
+# valor do log loss e do auc no processo
+modelo_treinado <- melhor_estimador %>% 
+  last_fit(split = split_dos_dados, metrics = metric_set(mn_log_loss, roc_auc))
+
+# pegando a regressao multinomial treinada
+modelo_treinado %>% 
+  collect_metrics()
+```
+
+Matriz de confusão.
+
+```{r fig_matriz_confusao}
+# extraindo a matriz de confusão do modelo treinado e plotando a figura
+modelo_treinado %>% 
+  # extraindo o pipeline com o modelo ja treinado
+  extract_workflow() %>% 
+  # adicionando as previsões à base de teste
+  augment(new_data = testing(split_dos_dados)) %>% 
+  # extraindo a matriz de confusao a partir da base de teste
+  conf_mat(truth = P2_g, estimate = .pred_class) %>% 
+  # extraindo a tabela que compõem a matriz de confusão a partir do objeto resultante
+  # de forma a utilizar essa informação para personalizar a plotagem da nossa matriz de confusão
+  pluck('table') %>%
+  # parseando o tipo de dado resultante para um dataframe
+  data.frame %>% 
+  # adicionando informacoes para ajudar na criação da figura
+  mutate(
+    # adicionando indicadores para determinar se a previsão estava certo, se a previsão é de
+    # que a pessoa atua em um nível abaixo do qual ela está ou se ela está atuando em um nível
+    # acima do qual ela está
+    tipo_previsao = case_when(
+      Truth != Prediction ~ 'errou',
+      TRUE ~ 'acertou'
+    ),
+    # reordenando os niveis da coluna com as class labels da previsao de forma a ter um output
+    # mais comparavel à matriz de confusao do sklearn
+    Prediction = fct_rev(f = Prediction)
+  ) %>% 
+  # criando a figura per
+  ggplot(mapping = aes(x = Truth, y = Prediction, fill = tipo_previsao, label = Freq)) +
+  geom_tile(mapping = aes(alpha = Freq), color = 'black', show.legend = FALSE) +
+  geom_text(fontface = 'bold') +
+  scale_fill_manual(values = c('deepskyblue1', 'tomato1')) +
+  labs(
+    title    = 'Como o modelo performou na base de teste?',
+    subtitle = 'O modelo é capaz de acertar a senioridade de cerca de 70% das pessoas respondentes',
+    x        = 'Observado',
+    y        = 'Predito'
+  ) +
+  theme(
+    axis.line = element_blank()
+  )
+```
+
+Coeficientes.
+
+```{r fig_coeficientes_modelo, layout = 'l-page'}
+# carregando pacotes
+library(tidytext) # ordernar dentro de grupos
+
+# criando uma figura para analisar a variação na contribuição de cada feature para a previsão
+# de cada nível de senioridade
+modelo_treinado %>% 
+  # extraindo o pipeline com o modelo ja treinado
+  extract_workflow() %>% 
+  # extraindo os coeficientes do modelo treinado já dentro de um tibble
+  tidy %>% 
+  # dropando o intercepto e qualquer feature cuja estimativa do slope tenha sido 0
+  filter(term != '(Intercept)', estimate != 0) %>% 
+  # juntando o dicionario de id das perguntas para o texto das perguntas, de forma a
+  # nos ajudar a dicionar um texto mais informativo as features com maior impacto
+  # sobre cada nível de senioridade
+  left_join(y = dicionario, by = c('term' = 'pergunta_id')) %>% 
+  # corrigindo o campo de descrição da pergunta quando ela estiver faltando
+  mutate(texto = ifelse(test = is.na(texto), yes = term, no = texto)) %>% 
+  # agrupando o tibble pelo nivel de senioridade para fazermos a operação seguinte
+  group_by(class) %>% 
+  # extraindo as 10 features com maior impacto sobre a previsão de cada nivel de senioridade
+  slice_max(order_by = abs(estimate), n = 10) %>% 
+  # dropando o agrupando pelo nível de senioridade
+  ungroup %>% 
+  # editando os textos de cada pergunta para torná-los mais apresentável na figura, além de
+  # ajustar a ordem das features dentro de cada nível de senioridade de forma a tornar mais
+  # clara a variação na contribuição de cada feature por nível
+  mutate(
+    termo = str_wrap(string = texto, width = 50),
+    termo = reorder_within(x = termo, within = class, by = estimate)
+  ) %>% 
+  # criando a figura per se
+  ggplot(mapping = aes(x = estimate, y = termo, fill = class)) +
+  facet_wrap(~ class, scales = 'free') +
+  geom_col() +
+  scale_y_reordered() +
+  scale_fill_manual(values = cores_data_hackers)
+```
+
+# Senioridade: você está fazendo isso errado.
 
 
 # Conclusões
+
 
 
