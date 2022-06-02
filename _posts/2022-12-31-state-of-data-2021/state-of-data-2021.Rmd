@@ -29,7 +29,7 @@ knitr::opts_chunk$set(echo = FALSE, code_folding = TRUE, cache = TRUE, dpi = 200
 library(showtext)
 
 # baixando as fontes que vamos usar
-font_add_google(name = 'Roboto', family = 'roboto')
+font_add_google(name = 'IBM Plex Sans', family = 'ibm')
 
 # adicionando fonte automaticamente aos plots gerados
 showtext_auto()
@@ -38,7 +38,7 @@ showtext_auto()
 library(ggplot2)
 
 # setando o tema geral do ggplot2
-theme_set(new = theme_minimal(base_family = 'roboto'))
+theme_set(new = theme_minimal(base_family = 'ibm'))
 
 # atualizando o tema
 theme_update(
@@ -59,13 +59,13 @@ cores_data_hackers <- c('#7037FF', '#7511A6', '#3B0053')
 
 # O que faz a senioridade de um profissional de dados?
 
-Paragráfo #1: contextualizar a discussão sobre a senioridade de um profissional de dados (pegar emprestado pontos da Staff+).
+Existe um debate bastante ativo na comunidade de dados sobre o perfil de profissionais em nível de carreira Júnior, Pleno e Sênior. Alguns motivos para isso já foram explorados exaustivamente em posts de [blog](www.google.com), canais do [YouTube](https://www.youtube.com/watch?v=GdfJWFru5rs) e [podcasts](https://medium.com/data-hackers/o-senior-de-hoje-%C3%A9-o-staff-de-amanh%C3%A3-staff-podcast-02-db4c02839284), mas dois parecem se destacar muitas vezes onde se fala sobre o tema. O primeiro deles é o fato do mercado de dados estar bastante aquecido, de forma que o nível de senioridade em um cargo passou a ser uma moeda de troca para reter ou atrair as pessoas profissionais de dados. Já o segundo destes motivos é bem mais simples: ainda falta alguma clareza sobre o que realmente os diferencia: forma de atuar, entregar, conhecimento e/ou impacto (e em que combinação destas coisas)? Assim, ainda há a necessidade de entender um pouco melhor sobre a atuação dos profissionais em cada um daqueles níveis de carreira e o que os diferencia.
 
-Parágrafo #2: contextualizar o papel da atuação na discussão sobre a senioridade.
+Uma forma de tentar contribuir para uma resolução do debate sobre a diferença entre as pessoas profissionais de dados de acordo com o nível de carreira está no desenvolvimento de [check-lists de atuação](littleblah.com/post/2019-09-01-senior-engineer-checklist/) e [matrizes de competência](https://sijinjoseph.com/programmer-competency-matrix/). Estas ferramentas são bastante atrativas pois elas nos permitem identificar rapidamente e claramente o que devemos fazer para progredir na carreira, facilitando o desenvolvimento de planos de ação mais objetivos. Um exemplo ilustrativo disso está na associação entre o aumento na profundidade e/ou horizontalidade do conhecimento técnico sobre a progressão de carreira para os níveis mais Sênior, o que pode ser facilmente obtido fazendo alguns cursos online e estudando. Por outro lado, diferenças na realidade das pessoas profissionais de dados e das empresas em que trabalham podem fazer com que algumas daquelas ferramentas simplesmente não se encaixem tão bem. Um caso no qual isto pode ocorrer é aquele de profissionais que atuam em ramos distintos na área de dados (_e.g._, consultorias e pesquisa acadêmica), no qual os tipos de _soft_ e _hard_ skills exigidos ao longo da carreira vão diferir bastante. Neste contexto, um avanço significativo naquele debate sobre o que faz a senioridade de um profissional de dados poderia ser ganho de um mapeamento de todas àquelas diferentes atuações das pessoas, dos tipos de problemas que resolvem, das tecnologias que usam e da realidade das empresas em que trabalham.
 
-Parágrafo #3: contextualizar a pesquisa State of Data 2021 como uma forma de abordar a questão.
 
-# Como a atuação varia em função da senioridade do profissional de dados?
+
+# O que os dados falam sobre a senioridade dos Cientistas de Dados?
 
 Parágrafo #4: falar da disponibilidade dos dados, baixá-los e carregá-los.
 
@@ -78,10 +78,13 @@ library(scales) # escalas dos gráficos
 library(vegan) # análise multivariada
 library(patchwork) # compor figuras
 library(gghighlight) # para o highlight
+library(glue) # concatenar strings
+library(tidymodels) # machine learning
+library(tidytext) # arrumar os textos
 
 # carregando os dados da pesquisa State of Data
-# df <- read_csv(file = 'data/raw/State of Data 2021 - Dataset - Pgina1.csv')
-df <- read_csv(file = '_posts/2022-12-31-state-of-data-2021/data/raw/State of Data 2021 - Dataset - Pgina1.csv')
+df <- read_csv(file = 'data/raw/State of Data 2021 - Dataset - Pgina1.csv')
+# df <- read_csv(file = '_posts/2022-12-31-state-of-data-2021/data/raw/State of Data 2021 - Dataset - Pgina1.csv')
 
 # criando um dicionário para mapear o nome das colunas no estado atual para um nome
 # mais legível, bem como para conseguirmos mapear o texto dela às figuras depois
@@ -126,9 +129,11 @@ dicionario <- tibble(
                       TRUE ~ opcao),
     pergunta_id = case_when(pergunta_id == 'P3_d_' ~ paste0(pergunta_id, opcao),
                             TRUE ~ pergunta_id),
-    ### limpando o texto de descrição da pergunta para remover o typo do leakage da opção
+    ### limpando o texto de descrição da pergunta para remover o typo do leakage da opção e 
+    ### whitespace que possa haver no texto
     texto = case_when(pergunta_id == 'P3_d_' ~ str_remove(string = texto, pattern = '^[a-k]\\s'),
-                      TRUE ~ texto)
+                      TRUE ~ texto),
+    texto = str_squish(string = texto)
   )
 
 ## colocando o dicionário de identificador das perguntas e opções em uma tabela para referência rápida 
@@ -179,7 +184,7 @@ dicionario %>%
       texto_pergunta_opcao = colDef(name = 'Respostas', width = 200, maxWidth = 200)
     ), 
     showPageSizeOptions = TRUE, defaultPageSize = 5, borderless = TRUE, striped = TRUE, 
-    highlight = TRUE, compact = TRUE
+    highlight = TRUE, compact = TRUE, style = list(fontSize = '14px')
   )
 ```
 
@@ -219,7 +224,7 @@ count(df, P4_a) %>%
             stat = 'identity', vjust = -1) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, 950), 
                      breaks = seq(from = 0, to = 1000, by = 100)) +
-  scale_fill_viridis_d() +
+  scale_fill_manual(values = c('grey15', 'grey30', 'grey45', 'grey65', 'grey80', 'grey95')) +
   labs(
     title = 'Qual a atuação no dia a dia dos respondentes do State of Data 2021?',
     x     = 'Atuação no dia a dia',
@@ -262,6 +267,16 @@ ggplot(data = df_atuacao, mapping = aes(x = P2_g, fill = P2_g)) +
 Parágrafo #8: Atuações por respondente.
 
 ```{r fig_respondentes_atuacoes, fig.height = 5, fig.width = 7}
+# fazendo um shuffle na base antes de separar os dados de treino e de teste, para tentar quebrar 
+# qualquer tipo de estrutura que possa haver na base de dados
+set.seed(42)
+df_atuacao <- slice_sample(.data = df_atuacao, prop = 1, replace = FALSE)
+
+# fazendo o split da base analitica
+set.seed(33)
+df_atuacao <- initial_split(data = df_atuacao, prop = 0.8, strata = P2_g) %>% 
+  training()
+
 # criando a figura para mostrar a distribuição da quantidade de atuações distintas dos 
 # respondentes por nivel de senioridade
 select(df_atuacao, -c(P0, P2_g)) %>% 
@@ -538,17 +553,18 @@ df_base_analitica <- df %>%
 Criando o modelo no tidymodels.
 
 ```{r modelo_tidymodels}
-# carregando pacotes
-library(tidymodels) # para a modelagem
-
-# fazendo um shuffle na base antes de separar os dados de treino e de teste, para tentar quebrar 
-# qualquer tipo de estrutura que possa haver na base de dados
-set.seed(42)
-df_base_analitica <- slice_sample(.data = df_base_analitica, prop = 1, replace = FALSE)
-
-# fazendo o split da base analitica
-set.seed(33)
-split_dos_dados <- initial_split(data = df_base_analitica, prop = 0.8, strata = P2_g) 
+# fazendo o split da base analitica usando a mesma divisão da base em treino e teste do que aquela
+# utilizada na análise exploratória de dados - para isso, usaremos o make_splits, que levará como
+# argumentos os índices das instâncias que estavam na base de treino utilizada na EDA para criar 
+# o split de dados baseados nas mesmas instâncias, garantindo que não há leakage da EDA para a 
+# modelagem
+split_dos_dados <- make_splits(
+  x = list(
+    analysis = which(df_base_analitica$P0 %in% df_atuacao$P0), 
+    assessment = which(!df_base_analitica$P0 %in% df_atuacao$P0)
+  ),
+  data = df_base_analitica
+)
 
 # criando folds para validacao cruzada
 set.seed(42)
@@ -573,10 +589,10 @@ pre_processamento <- recipe(P2_g ~ ., data = training(split_dos_dados)) %>%
   ) %>%
   # removendo todas as variáveis preditoras que têm a variância muito baixa - i.e., são todas variáveis
   # categóricas com um viés grande demais para uma das respostas (e.g. ou quase tudo 1 ou quase tudo 0)
-  step_nzv(all_predictors(), freq_cut = 98/2) #%>% 
+  step_nzv(all_predictors(), freq_cut = 98/2) %>% 
   # normalizando todas as variáveis preditoras que, embora sejam categóricas, faz com que possamos 
   # comparar o impacto de cada uma delas considerando a frequência com a qual ocorrem
-  step_normalize(all_predictors())
+  step_normalize(respostas_geral, respostas_especificas)
 
 # criando uma instância do modelo de regressão multinomial usando a engine do glmnet e deixando os dois
 # hiperparametros principais para a otimização bayesiana - equivalente ao C e ao l1_ratio do sklearn
@@ -606,19 +622,24 @@ grid_search <- pipeline %>%
 melhor_estimador <- pipeline %>% 
   finalize_workflow(parameters = select_best(x = grid_search, metric = 'mn_log_loss'))
 
-# treinando o melhor estimador na base de treino e escorando ele na base de teste, mantendo registro do
-# valor do log loss e do auc no processo
+# treinando o melhor estimador na base de treino e escorando ele na base de teste
 modelo_treinado <- melhor_estimador %>% 
-  last_fit(split = split_dos_dados, metrics = metric_set(mn_log_loss, roc_auc))
+  last_fit(split = split_dos_dados, metrics = metric_set(mn_log_loss, roc_auc, recall, precision))
 
-# pegando a regressao multinomial treinada
-modelo_treinado %>% 
-  collect_metrics()
+# extraindo o valor das métricas de avaliação do modelo definidas acima
+metricas_no_teste <- modelo_treinado %>% 
+  collect_metrics() %>% 
+  # pegando apenas a coluna com o nome da metrica e o seu valor
+  select(.metric, .estimate) %>% 
+  # colocando cada uma das metricas como uma coluna em um tibble
+  pivot_wider(names_from = .metric, values_from = .estimate)
+# printando as metricas do modelo na base de teste em uma tabela
+rmarkdown::paged_table(x = metricas_no_teste)
 ```
 
 Matriz de confusão.
 
-```{r fig_matriz_confusao}
+```{r fig_matriz_confusao, fig.height = 4, fig.width = 7}
 # extraindo a matriz de confusão do modelo treinado e plotando a figura
 modelo_treinado %>% 
   # extraindo o pipeline com o modelo ja treinado
@@ -642,7 +663,7 @@ modelo_treinado %>%
       TRUE ~ 'acertou'
     ),
     # reordenando os niveis da coluna com as class labels da previsao de forma a ter um output
-    # mais comparavel à matriz de confusao do sklearn
+    # mais similar à matriz de confusao do sklearn
     Prediction = fct_rev(f = Prediction)
   ) %>% 
   # criando a figura per
@@ -652,9 +673,9 @@ modelo_treinado %>%
   scale_fill_manual(values = c('deepskyblue1', 'tomato1')) +
   labs(
     title    = 'Como o modelo performou na base de teste?',
-    subtitle = 'O modelo é capaz de acertar a senioridade de cerca de 70% das pessoas respondentes',
-    x        = 'Observado',
-    y        = 'Predito'
+    x        = 'Senioridade observada',
+    y        = 'Senioridade predita',
+    caption  = 'A diagonal principal (em azul) apresenta as classificações corretas feitas pelo modelo na base de teste, enquanto\nque os demais valores (em vermelho) representam os erros do modelo. A transparência das cores remete à\nquantidade de pessoas respondentes mapeadas à cada combinação de categorias preditas e observadas.'
   ) +
   theme(
     axis.line = element_blank()
@@ -663,13 +684,10 @@ modelo_treinado %>%
 
 Coeficientes.
 
-```{r fig_coeficientes_modelo, layout = 'l-page'}
-# carregando pacotes
-library(tidytext) # ordernar dentro de grupos
-
+```{r fig_coeficientes_modelo, layout = 'l-screen', preview =  TRUE, fig.width = 25, fig.height = 8}
 # criando uma figura para analisar a variação na contribuição de cada feature para a previsão
 # de cada nível de senioridade
-modelo_treinado %>% 
+df_coeficientes <- modelo_treinado %>% 
   # extraindo o pipeline com o modelo ja treinado
   extract_workflow() %>% 
   # extraindo os coeficientes do modelo treinado já dentro de um tibble
@@ -680,11 +698,11 @@ modelo_treinado %>%
   # nos ajudar a dicionar um texto mais informativo as features com maior impacto
   # sobre cada nível de senioridade
   left_join(y = dicionario, by = c('term' = 'pergunta_id')) %>% 
-  # corrigindo o campo de descrição da pergunta quando ela estiver faltando
-  mutate(texto = ifelse(test = is.na(texto), yes = term, no = texto)) %>% 
   # agrupando o tibble pelo nivel de senioridade para fazermos a operação seguinte
   group_by(class) %>% 
-  # extraindo as 10 features com maior impacto sobre a previsão de cada nivel de senioridade
+  # extraindo as 10 features com maior impacto sobre a previsão de cada nivel de senioridade,
+  # removendo features sem contribuição desta lista
+  filter(estimate != 0) %>% 
   slice_max(order_by = abs(estimate), n = 10) %>% 
   # dropando o agrupando pelo nível de senioridade
   ungroup %>% 
@@ -692,21 +710,357 @@ modelo_treinado %>%
   # ajustar a ordem das features dentro de cada nível de senioridade de forma a tornar mais
   # clara a variação na contribuição de cada feature por nível
   mutate(
-    termo = str_wrap(string = texto, width = 50),
-    termo = reorder_within(x = termo, within = class, by = estimate)
-  ) %>% 
-  # criando a figura per se
-  ggplot(mapping = aes(x = estimate, y = termo, fill = class)) +
+    # padronizando os textos de descrição criando uma nova coluna - colocando o nome da feature
+    # de acordo com aquele existente no dicionário quando ele existir ou o nome do termo quando
+    # a feature não existir naquele dicionario - e.g., as variáveis com os níveis de instrução,
+    # tipo e tamanho de empresa
+    termo = ifelse(test = is.na(texto), yes = term, no = texto),
+    # removendo todas as ocorrências de pontos nas strings dos termos, que neste caso estão sendo
+    # usados para representar o espaço entre palavras
+    termo = str_replace_all(string = termo, pattern = '\\.', replacement = ' '),
+    # tratando qualquer string relacionada às features de tamanho da empresa e tipo de indústria,
+    # de forma que o nível da categoria esteja mais claramente relacionada à feature em si (e.g.,
+    # 'Empresa de Grande Porte', ao invés da visualização trazer apenas 'Grande Porte')
+    termo = str_replace(string = termo, pattern = 'tamanho_empresa_', replacement = 'Empresa de '),
+    termo = str_replace(string = termo, pattern = 'tipo_industria_', replacement = 'Indústria de '),
+    # substituindo todos os prefixos relacionados à feature de instrução pelo verbo 'Ter', de forma
+    # a tornar mais intuitivo o que o essa feature quer dizer
+    termo = str_replace(string = termo, pattern = 'instrucao_', replacement = 'Ter '),
+    # adicionando o separador corretor para as ocorrências de pós-graduação e entre as opções de ter
+    # bacharelado ou graduação
+    termo = str_replace(string = termo, pattern = '(?<=Graduação)\\s', replacement = '/'),
+    termo = str_replace(string = termo, pattern = '(?<=Pós)\\s', replacement = '-'),
+    # tornando mais claro o significado das features relacionadas à quantidade de atuações gerais
+    # e específicas assinaladas por cada pessoa respondente
+    termo = str_replace_all(string = termo, 
+                            pattern = 'respostas_geral', replacement = 'Quantidade de atuações gerais'),
+    termo = str_replace_all(string = termo, 
+                            pattern = 'respostas_especificas', replacement = 'Quantidade de atuações específicas'),
+    # tratando exceção ao nível da feature de instrução onde o caso é não ter diploma de ensino superior
+    termo = str_replace_all(string = termo, 
+                            pattern = 'Ter Sem diploma', replacement = 'Não ter diploma de ensino superior'),
+    # tornando mais clara o significado do string relacionado às interações entre ter o cargo de
+    # cientista de dados e as outras features
+    termo = str_replace_all(string = termo, 
+                            pattern = '(.+)_x_has_role', replacement = 'Ter o cargo de DS em \\1'),
+    termo = str_replace(string = termo, pattern = 'has_role', replacement = 'Ter o cargo de DS'),
+    # removendo qualquer whitespace do início e/ou do fim de cada string
+    termo = str_squish(string = termo),
+    # adicionando quebras de linhas à cada strig para tornar mais fácil a visualização dos resultados
+    texto_final = str_wrap(string = termo, width = 55),
+    # ordenando os termos dentro de cada nível de senioridade de acordo com o valor dos betas,
+    # assim poderemos ter uma visão das features com impacto mais positivo para o mais negativo
+    # dentro de cada um dos níveis de senioridade
+    texto_final = reorder_within(x = texto_final, within = class, by = estimate)
+  )
+
+# criando a figura per se
+ggplot(data = df_coeficientes, mapping = aes(x = estimate, y = texto_final, fill = class)) +
   facet_wrap(~ class, scales = 'free') +
-  geom_col() +
+  geom_vline(xintercept = 0) +
+  geom_col(color = 'black', show.legend = FALSE) +
   scale_y_reordered() +
-  scale_fill_manual(values = cores_data_hackers)
+  scale_fill_manual(values = cores_data_hackers) +
+  labs(
+    title    = 'Quais os fatores mais contribuem para a previsão do nível de senioridade?',
+    subtitle = 'Estas são os 10 fatores que têm maior impacto sobre a previsão do nível de senioridade entre os respondentes da pesquisa State of Data 2021',
+    x        = 'Contribuição da feature (coeficientes da regressão)'
+  ) +
+  theme(axis.title.y = element_blank())
 ```
 
-# Senioridade: você está fazendo isso errado.
+# O que pode estar errado para o seu nível de atuação?
 
+```{r analise_de_vizinhanca, layout = 'l-body-outset'}
+# extraindo o identificador de cada pessoa respondente na base de treino no qual o modelo
+# conseguiu prever corretamente o seu nivel de senioridade
+ids_acertos_treino <- modelo_treinado %>% 
+  # extraindo o pipeline com o modelo ja treinado
+  extract_workflow() %>% 
+  # adicionando as previsões do modelo à base de treino
+  augment(new_data = training(split_dos_dados)) %>% 
+  # filtrando apenas as pessoas respondentes onde o modelo acertou o nível de senioridade
+  filter(P2_g == .pred_class) %>% 
+  # extraindo o identificador único da pessoa respondente
+  pull(P0)
+
+# extraindo o identificador de cada pessoa respondente na base de teste no qual o modelo
+# errous a previsçao do nivel de senioridade
+ids_erros_teste <- modelo_treinado %>% 
+  # extraindo o pipeline com o modelo ja treinado
+  extract_workflow() %>% 
+  # adicionando as previsões do modelo à base de teste
+  augment(new_data = testing(split_dos_dados)) %>% 
+  # filtrando apenas as pessoas respondentes onde o modelo errou o nível de senioridade
+  filter(P2_g != .pred_class) %>% 
+  # extraindo o identificador único da pessoa respondente
+  pull(P0)
+
+# extraindo os dados que utilizaremos para implementar o algoritmo de vizinhos mais proximos
+# esta base deve conter a informação das features já pré-processadas para as pessoas respondentes
+# em que o modelo acertou a previsão do nível de senioridade na base de treino e para àquelas
+# em que o modelo errou a previsão
+df_comparacao <- modelo_treinado %>% 
+  # extraindo as etapas de pre-processamento já treinados a partir do pipeline do modelo
+  extract_recipe() %>% 
+  # aplicando o pre-processamento à toda a base analítica
+  bake(new_data = df_base_analitica) %>% 
+  # corrigindo os valores da coluna de identificador único de cada pessoa, que vira NA para
+  # as instâncias na base de teste - como as duas bases estão alinhadas, basta sobre-escrever
+  # a coluna (isto ocorre pois o id é convertido é um fator, e como os identificadores na 
+  # base de teste não estão contempladas como níveis conhecidos do fator, eles são convertidos
+  # em NA)
+  mutate(P0 = df_base_analitica$P0) %>% 
+  # pegando apenas as pessoas respondentes que estejam na base de treino e tenham tido seu nível
+  # de senioridade previsto corretamente pelo modelo ou àquelas pessoas que estavam na base de
+  # teste e tiveram seu nível de senioridade previsto de forma errada pelo modelo
+  filter(P0 %in% c(ids_acertos_treino, ids_erros_teste)) %>% 
+  # parseando o tibble para um data.frame, de forma a podermos dar nomes à cada uma de suas linhas
+  data.frame %>% 
+  # colocando o identificador único de cada pessoa como o nome das linhas do data.frame - 
+  # isso facilitará a indexação na função de vizinhos mais próximos que aplicaremos
+  `row.names<-`(value = .$P0)
+
+
+# criando funcao para calcular os vizinhos mais próximos de uma pessoa respondente da 
+# base de teste que tenha sido classificada de forma errada com base nas pessoas da 
+# base de treino que tenham sido classificadas corretamente
+pessoa_mais_proxima <- function(pessoa) {
+  # pegando a informação da classe à qual a pessoa respondente no input está associada
+  classe_observada <- as.character(df_comparacao[pessoa, 'P2_g'])
+  
+  # pegando todas as instâncias da base de treino que foram classificadas corretamente
+  # e que também estão associadas à classe da pessoa respondente que serviu de input
+  # para a função - dropando o identificador e a classe das outras pessoas respondentes 
+  # uma vez que essa informação é irrelevante para calcular a similaridade entre elas
+  instancias_na_classe <- df_comparacao %>%
+    filter(P0 %in% ids_acertos_treino, P2_g == classe_observada) %>%
+    select(-P0, -P2_g)
+  
+  # replicando a instância relacionada à pessoa respondente no input dessa função tantas
+  # vezes quantas forem as pessoas classificadas corretamente na base de treino. Esta 
+  # estrutura de dados resultará em um data.frame com a linha da instância da pessoa do
+  # input da função replicada tantas vezes quanto houverem linhas em instancias_na_classe
+  instancia_errada <- df_comparacao[rep(x = pessoa, times = nrow(instancias_na_classe)),] %>%
+    select(-P0, -P2_g)
+  
+  # calculando a similaridade do coseno entre todas as pessoas classificadas na classe
+  # correta na base de treino e a pessoa classificada na classe errada na base de teste
+  # o resultado desta operação é um vetor nomeado, onde os nomes são os identificadores
+  # das outras pessoas naquela classe da pessoa input e que foram classificadas corretamente
+  # na base de treino, e os valores são a similaridade do coseno entre cada uma delas e
+  # as features da pessoa utilizada no input
+  similaridade_coseno <- rowSums(instancias_na_classe * instancia_errada) / 
+    (sqrt(rowSums(instancias_na_classe ^ 2)) * sqrt(sum(instancia_errada[pessoa, ] ^ 2)))
+  
+  # passando o vetor nomeado para um tibble, onde uma coluna é o identificador de cada
+  # pessoa respondente classificada corretamente naquela classe na base de treino e a
+  # outra coluna é a similaridade entre ela e a pessoa respondente utilizada no input
+  enframe(x = similaridade_coseno, name = 'P0_acerto', value = 'similaridade') %>% 
+    # retendo aquela pessoa que teve maior similaridade com a pessoa utilizada no input
+    slice_max(n = 1, order_by = similaridade) %>% 
+    # adicionando uma coluna para codificar o identificador da pessoa respondente
+    # utilizada como input da função - i.e., àquela classificada na classe errada
+    mutate(P0_errado = pessoa) %>% 
+    # reorganizando as colunas do tibble antes de retornar os resultados
+    relocate(P0_errado, .before = P0_acerto)
+}
+
+# aplicando a função aos dados, de forma a identificar quem é a pessoa classificada 
+# corretamente na base de treino que é mais similar àquela classificada de forma errada
+# na base de teste
+df_vizinhos <- map_dfr(.x = ids_erros_teste, .f = pessoa_mais_proxima) 
+
+# criando uma figura para analisar a similaridade entre os vizinhos mais próximos
+#ggplot(data = df_vizinhos, mapping = aes(x = similaridade)) +
+#  geom_histogram(color = 'black', fill = 'grey50', bins = 9) +
+#  scale_y_continuous(breaks = seq(from = 0, to = 15, by = 2), expand = c(0, 0),
+#                     limits = c(0, 12)) +
+#  scale_x_continuous(breaks = seq(from = 0.3, to = 0.9, by = 0.1)) +
+#  labs(
+#    title    = 'Quão diferentes são as pessoas respondentes classificadas erradas dos seus pares?',
+#    subtitle =  
+#    x        = 'Similaridade do coseno',
+#    y        = 'Observações'
+#  )
+
+# criando uma versão mais longa da base analítica onde mapearemos as respostas de cada pessoa
+# respondente às perguntas feitas linha a linha, e utilizaremos estas informações para poder
+# identificar mais facilmente as perguntas cujas respostas diferem entre a pessoa que o modelo
+# errou a previsão na base de teste e a pessoa mais similar à ela mas que o modelo acertou a
+# previsão na base de treino
+df_base_analitica_longa <- df_base_analitica %>% 
+  # passando todas as colunas de inteiro para caracter, de forma a conseguirmos pivotear a 
+  # base para o formato longo - se não fizermos isso, o `pivot_longer` explode uma mensagem
+  # de erro pois estaríamos misturando os data types
+  mutate(across(where(is.integer), as.character)) %>%
+  # passando a base para o formato longo, onde colocaremos as perguntas e as respostas de cada
+  # pessoa respondente nas linhas ao invés de nas colunas - isso aumentará muito a quantidade 
+  # de linhas na base, mas precisaremos disso para fazer uns joins mais abaixo
+  pivot_longer(cols = -c(P0, P2_g), names_to = 'feature', values_to = 'valor') %>% 
+  # ajustando o conteúdo de algumas colunas
+  mutate(
+    # ajustando o significado das features criadas uma vez que elas não constam no dicionario
+    feature_tidy = case_when(
+      feature == 'has_role' ~ 'Tem o cargo de DS',
+      feature == 'tamanho_empresa' ~ 'Tamanho da empresa',
+      feature == 'instrucao' ~ 'Nível de instrução',
+      feature == 'tipo_industria' ~ 'Tipo de indústria',
+      TRUE ~ feature
+    ),
+    # passando os valores 0 e 1 das dummies para o seu significado real quando for o caso, ou
+    # usando o valor da resposta quando relevante
+    valor_tidy = case_when(
+      valor == '1' ~ 'Sim',
+      valor == '0' ~ 'Não',
+      TRUE ~ valor
+    ),
+    # criando uma coluna de resposta, que conterá o nome da feature e o valor da resposta para
+    # cada linha - isso nos ajudará depois a mapear que resposta diferiu entre as duas pessoas
+    # mais facilmente
+    resposta = paste0(feature_tidy, ': ', valor_tidy)
+  ) %>% 
+  select(-valor)
+
+# levantando os nomes das features que estão entre os top 10 dos maiores coeficientes do elasticnet
+# utilizado para modelar a senioridade. Aproveitaremos para remover as features relacionadas à 
+# quantidade de respostas marcadas para as atuações gerais e específicas (uma vez que elas obviamente
+# vão variar entre as duas pessoas e esta não é uma alavanca acionável muito inteligente), além
+# de remover a parte do string que específica a o nível da categoria para as variáveis categóricas
+# que contém múltiplos níveis. Esse objeto guardará este resultado como um vetor, onde o texto com
+# o nome das features estará escrito de forma similar aquele da coluna `feature` na base analítica
+# que criamos no formato longo acima
+top_features <- df_coeficientes %>%
+  filter(!term %in% c('respostas_geral', 'respostas_especificas')) %>% 
+  pull(term) %>% 
+  unique %>% 
+  str_replace(pattern = '(?<=instrucao|tamanho_empresa|tipo_industria).+', replacement = '') %>%
+  unique
+
+# consolidando todos os contra-factuais para cada uma das pessoas respondentes em um data.frame só
+df_contra_exemplos <- df_vizinhos %>% 
+  # adicionando as features relacionadas às respostas dadas pela pessoa que o modelo errou a previsão
+  # na base de teste aos resultados da análise de vizinhança
+  left_join(y = df_base_analitica_longa, by = c('P0_errado' = 'P0')) %>% 
+  # adicionando as features relacionadas às respostas dadas pela pessoa que o modelo acertou a previsão
+  # na base de treino aos resultados da análise de vizinhança
+  left_join(y = select(df_base_analitica_longa, -P2_g), 
+            by = c('P0_acerto' = 'P0', 'feature'), suffix = c('_errado', '_acerto')) %>% 
+  # retendo apenas os registros de cada par de pessoas no qual existe uma diferença entre as 
+  # respostas dadas para uma mesma pergunta
+  filter(resposta_acerto != resposta_errado) %>% 
+  # adicionando a informação do nível de senioridade predito pelo modelo para as pessoas às quais
+  # a previsão este errada
+  left_join(y = modelo_treinado %>% 
+              extract_workflow() %>% 
+              augment(new_data = testing(x = split_dos_dados)) %>% 
+              select(P0, .pred_class),
+            by = c('P0_errado' = 'P0')
+  ) %>% 
+  # juntando o significado de cada pergunta à base de dados
+  left_join(y = select(dicionario, pergunta_id, texto), by = c('feature' = 'pergunta_id')) %>% 
+  # adicionando novas informações à base de dados para ajudar na visualização
+  mutate(
+    # adicionando um indicador para sinalizar se a feature em questão está entre àquelas 10 
+    # features mais importantes identificadas pelo elasticnet entre todos os níveis de senioridade
+    top_feature = feature %in% top_features,
+    # codificando o tipo geral do erro de previsão: ou o modelo previu que pessoa performa acima 
+    # do nível no qual ela tem (i.e., 'Júnior que atua como Sênior') ou abaixo dela (i.e., 'Sênior
+    # que atua como Júnior')
+    direcao_erro = case_when(
+      P2_g == 'Júnior' & .pred_class %in% c('Sênior', 'Pleno') ~ 'Para que o Júnior não fosse considerado Sênior',
+      P2_g == 'Pleno' & .pred_class == c('Sênior') ~ 'Para que o Júnior não fosse considerado Sênior',
+      P2_g == 'Sênior' & .pred_class %in% c('Júnior', 'Pleno') ~ 'Para que o Sênior não fosse considerado Júnior',
+      P2_g == 'Pleno' & .pred_class == c('Júnior') ~ 'Para que o Sênior não fosse considerado Júnior',
+    ),
+    # tratado o texto de descrição da feature - removendo whitespace do início e do fim do string,
+    # adicionando o nome tratado da feature quando ele estiver ausente (i.e., para as features que
+    # derivamos) e truncando o string de forma que apenas os 50 caracteres de cada um apareça
+    texto = str_squish(string = texto),
+    texto = ifelse(test = is.na(texto), yes = feature_tidy_acerto, no = texto),
+    resumo = str_trunc(string = texto, width = 50)
+  ) %>% 
+  # removendo as features relacionadas à quantidade de atuações gerais e específicas, uma
+  # vez que essa não é uma alavanca acionável de forma inteligente
+  filter(!texto %in% c('respostas_geral', 'respostas_especificas'))
+
+# colocando os resultados da análise de vizinhança para cada pessoa na qual o modelo errou a
+# previsão na base de teste em uma tabela interativa para a análise
+df_contra_exemplos %>%
+  select(P0_errado, P2_g, .pred_class, resumo, valor_tidy_errado, valor_tidy_acerto, top_feature) %>%
+  mutate(top_feature = ifelse(test = top_feature, yes = 'Sim', no = 'Não')) %>%
+  reactable(
+    groupBy = 'P0_errado', 
+    columns = list(
+      P0_errado         = colDef(name = 'Pessoa'),
+      P2_g              = colDef(name = 'Senioridade da pessoa', aggregate = 'unique'),
+      .pred_class       = colDef(name = 'Senioridade prevista', aggregate = 'unique'),
+      resumo            = colDef(name = 'Pergunta'),
+      valor_tidy_errado = colDef(name = 'Resposta foi...'),
+      valor_tidy_acerto = colDef(name = 'Resposta deveria mudar para...'),
+      top_feature       = colDef(name = 'Feature entre top 10?', defaultSortOrder = 'desc')
+    ),
+    showPageSizeOptions = TRUE, defaultPageSize = 3, borderless = TRUE, striped = TRUE, 
+    highlight = TRUE, compact = TRUE, defaultSorted = 'top_feature', 
+    style = list(fontSize = '12px')
+  )
+```
+
+Blablabla.
+
+```{r fig_contra_exemplos, layout = 'l-page', fig.width = 15, fig.height = 8}
+# visualizando as mudanças de resposta mais frequentes que deveriam ser feitas para que uma pessoa
+# respondente tivesse sido classificada corretamente no seu nível de senioridade
+df_contra_exemplos %>% 
+  # focando apenas nas respostas que estiverem relacionadas às 10 features mais importantes para a 
+  # previsão de acordo com o elasticnet
+  filter(top_feature) %>% 
+  # contando quantas vezes cada resposta aparece associada à cada pergunta de acordo com o tipo de
+  # erro cometido pelo modelo
+  count(direcao_erro, resumo, valor_tidy_acerto, name = 'ocorrencias', sort = TRUE) %>% 
+  # juntando a quantidade total de pessoas que o modelo errou a classificação de acordo com o tipo
+  # de erro cometido, de forma à calcularmos a proporção de vezes que cada uma das mudanças de
+  # resposta às perguntas é observada entre as pessoas na base de teste
+  left_join(
+    y = distinct(df_contra_exemplos, P0_acerto, P0_errado, direcao_erro) %>% 
+      count(direcao_erro, name = 'pessoas'), 
+    by = 'direcao_erro'
+  ) %>%
+  mutate(
+    proporcao = ocorrencias / pessoas,
+    valor_tidy_acerto = case_when(
+      valor_tidy_acerto == 'Grande porte' ~ 'Empr. grande porte',
+      valor_tidy_acerto == 'Médio porte' ~ 'Empr. médio porte',
+      TRUE ~ valor_tidy_acerto
+    ),
+    valor_tidy_acerto = fct_relevel(.f = valor_tidy_acerto, 'Doutorado ou Phd', 'Mestrado',
+                                    'Pós-graduação', 'Graduação/Bacharelado', 'Sem diploma'),
+    resumo = str_wrap(string = resumo, width = 30)
+  ) %>% 
+  # criando a figura per se
+  ggplot(mapping = aes(x = proporcao,
+                       y = reorder_within(x = resumo, by = proporcao, within = direcao_erro, fun = sum), 
+                       fill = valor_tidy_acerto)) +
+  facet_wrap(~ direcao_erro, scales = 'free') +
+  geom_bar(stat = 'identity', position = 'stack', color = 'black') +
+  scale_y_reordered() +
+  scale_x_continuous(breaks = seq(from = 0, to = 0.8, by = 0.2), limits = c(0, 0.8),
+                     expand = c(0, 0), labels = label_percent()) +
+  scale_fill_manual(
+    values = c('grey20', 'grey40', 'grey60', 'grey80', 'grey95',
+               'darkgoldenrod1', 'lightgoldenrod1', 'tomato2', 'dodgerblue2')
+  ) +
+  labs(
+    title    = 'O que precisaria mudar para corrigir os erros cometidos pelo modelo?',
+    subtitle = 'O nível de instrução é o principal fator associado aos erros de classificação feitos pelo modelo - mas a falta ou a existência de alguns conhecimentos de tecnologias e problemas de\nciência de dados também podem colaborar em alguns casos',
+    fill     = 'Resposta deveria\nmudar para...',
+    x        = 'Proporção das pessoas respondentes na base de teste'
+  ) +
+  theme(
+    axis.title.y = element_blank(),
+    legend.title = element_text(face = 'bold')
+  )
+```
 
 # Conclusões
-
-
 
