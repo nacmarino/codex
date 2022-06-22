@@ -1,16 +1,17 @@
 ---
-title: "Qual a diferença entre júnior, pleno e sênior? Uma abordagem baseada em dados"
+title: "Qual a diferença entre júnior, pleno e sênior?"
 description: |
-  A short description of the post.
+  Essa pergunta vive circulando nas rodas de conversa das pessoas dentro da área de dados e, apesar de exitir muito material sobre o assunto, ainda não conseguimos olhar para nenhum tipo de dado sobre a atuação das pessoas para responder à essa pergunta. Neste post vou usar os dados da pesquisa _State of Data 2021_ para tentar nos ajudar à responder essa pergunta, aproveitando para trazer alguns insights sobre o que o mercado de trabalho brasileiro está praticando.
 author:
   - first_name: Nicholas 
     last_name: Marino
     url: https://github.com/nacmarino
 date: 12-31-2022
 categories:
-  - reticulate
-  - python
+  - análises
+  - data hackers
   - data science
+  - kaggle
 output:
   distill::distill_article:
     self_contained: true
@@ -20,6 +21,11 @@ output:
     highlight: rstudio
 draft: true
 ---
+
+<style>
+body {
+text-align: justify}
+</style>
 
 ```{r setup, include=FALSE}
 # setando as opções gerais dos code chunks
@@ -57,17 +63,17 @@ theme_update(
 cores_data_hackers <- c('#7037FF', '#7511A6', '#3B0053')
 ```
 
-# O que faz a senioridade de um profissional de dados?
+# Por que essa pergunta é tão frequente?
 
-Existe um debate bastante ativo na comunidade de dados sobre o perfil de profissionais em nível de carreira Júnior, Pleno e Sênior. Alguns motivos para isso já foram explorados exaustivamente em posts de [blog](www.google.com), canais do [YouTube](https://www.youtube.com/watch?v=GdfJWFru5rs) e [podcasts](https://medium.com/data-hackers/o-senior-de-hoje-%C3%A9-o-staff-de-amanh%C3%A3-staff-podcast-02-db4c02839284), mas dois parecem se destacar muitas vezes onde se fala sobre o tema. O primeiro deles é o fato do mercado de dados estar bastante aquecido, de forma que o nível de senioridade em um cargo passou a ser uma moeda de troca para reter ou atrair as pessoas profissionais de dados. Já o segundo destes motivos é bem mais simples: ainda falta alguma clareza sobre o que realmente os diferencia: forma de atuar, entregar, conhecimento e/ou impacto (e em que combinação destas coisas)? Assim, ainda há a necessidade de entender um pouco melhor sobre a atuação dos profissionais em cada um daqueles níveis de carreira e o que os diferencia.
+É bem comum para quem está na área de dados participar de conversas sobre a diferença de atuações entre profissionais de nível Júnior, Pleno e Sênior. Existem diversos posts de [blog](https://medium.com/data-hackers/qual-a-diferenca-de-atribucoes-de-um-cientista-de-dados-junior-pleno-e-senior-1e753534ba6f#:~:text=Quanto%20ao%20s%C3%AAnior%2C%20al%C3%A9m%20das,sugerir%20fontes%20de%20conhecimento%2C%20etc.), canais do [YouTube](https://www.youtube.com/watch?v=GdfJWFru5rs) e [podcasts](https://medium.com/data-hackers/o-senior-de-hoje-%C3%A9-o-staff-de-amanh%C3%A3-staff-podcast-02-db4c02839284) que falam sobre isso de forma bem detalhada e extensiva, e que no geral convergem para um consenso: a principal diferença entre aqueles profissionais está na forma de atuar, de realizar entregas, seu nível de conhecimento e/ou o impacto sobre o negócio.
 
-Uma forma de tentar contribuir para uma resolução do debate sobre a diferença entre as pessoas profissionais de dados de acordo com o nível de carreira está no desenvolvimento de [check-lists de atuação](littleblah.com/post/2019-09-01-senior-engineer-checklist/) e [matrizes de competência](https://sijinjoseph.com/programmer-competency-matrix/). Estas ferramentas são bastante atrativas pois elas nos permitem identificar rapidamente e claramente o que devemos fazer para progredir na carreira, facilitando o desenvolvimento de planos de ação mais objetivos. Um exemplo ilustrativo disso está na associação entre o aumento na profundidade e/ou horizontalidade do conhecimento técnico sobre a progressão de carreira para os níveis mais Sênior, o que pode ser facilmente obtido fazendo alguns cursos online e estudando. Por outro lado, diferenças na realidade das pessoas profissionais de dados e das empresas em que trabalham podem fazer com que algumas daquelas ferramentas simplesmente não se encaixem tão bem. Um caso no qual isto pode ocorrer é aquele de profissionais que atuam em ramos distintos na área de dados (_e.g._, consultorias e pesquisa acadêmica), no qual os tipos de _soft_ e _hard_ skills exigidos ao longo da carreira vão diferir bastante. Neste contexto, um avanço significativo naquele debate sobre o que faz a senioridade de um profissional de dados poderia ser ganho de um mapeamento de todas àquelas diferentes atuações das pessoas, dos tipos de problemas que resolvem, das tecnologias que usam e da realidade das empresas em que trabalham.
+Parece que este consenso é tão claro que existem até [check-lists de atuação](littleblah.com/post/2019-09-01-senior-engineer-checklist/) e [matrizes de competência](https://sijinjoseph.com/programmer-competency-matrix/) que tangibilizam o que é esperado das pessoas entre aqueles níveis. Entretanto, alguns dos itens existentes nestas ferramentas podem não generalizar tão bem quanto se espera quando consideramos uma área tão heterogênea como a de dados (_e.g._, diferenças no tipo de indústria, maturidade da empresa, os diferentes papéis existentes dentro de uma função e etc). Uma consequência disso é que apesar de termos uma boa noção do que faz a senioridade de uma pessoa na área de dados, é difícil saber o que o mercado está de fato está praticando.
 
+Entender o quão bem alinhado está o que a comunidade espera de um profissional em determinado nível de carreira com o que de fato acontece no mercado é bastante importante. Um dos principais motivos para isso é que em um cenário no qual o mercado está tão aquecido, o nível de senioridade de um cargo passou a ser uma moeda de troca para reter ou atrair as pessoas profissionais de dados. Isto, por sua vez, pode gerar um desequilíbrio de expectativas, discursos e práticas que podem acabar prejudicando o desenvolvimento das próprias pessoas. Assim, parece ser um momento importante para buscar definir o perfil médio do profissional de dados por nível de senioridade no mercado brasileiro. 
 
+# _State of Data 2021_: um retrato do mercado de trabalho de dados no Brasil
 
-# O que os dados falam sobre a senioridade dos Cientistas de Dados?
-
-Parágrafo #4: falar da disponibilidade dos dados, baixá-los e carregá-los.
+O Data Hackers e a Bain & Company promoveram uma pesquisa de outubro à dezembro 2021 que teve como intuito mapear o mercado de trabalho de dados no Brasil. Cerca de 2.645 pessoas que estão se preparando ou que já atuam na área de dados como analistas, cientistas ou engenheiros de dados, bem como gestores, responderam à um questionário online aberto com diversas perguntas relacionadas à demografia, qualificação, remuneração, senioridade, atuação e outros aspectos do trabalho na área. A tabela abaixo traz a lista de quase todas as perguntas feitas aos respondentes, bem como algumas das possíveis respostas à cada uma delas - ilustrando o detalhamento da pesquisa, além da diversidade de tópicos abordados.
 
 ```{r carrega_dados}
 # carregando os pacotes necessários para a exploração dos dados
@@ -81,6 +87,8 @@ library(gghighlight) # para o highlight
 library(glue) # concatenar strings
 library(tidymodels) # machine learning
 library(tidytext) # arrumar os textos
+library(ggalluvial) # alluvial plot
+library(ggrepel) # repelir texto dos plots
 
 # carregando os dados da pesquisa State of Data
 df <- read_csv(file = 'data/raw/State of Data 2021 - Dataset - Pgina1.csv')
@@ -183,12 +191,14 @@ dicionario %>%
       opcao                = colDef(name = 'Opções', aggregate = 'unique', width = 100, maxWidth = 100),
       texto_pergunta_opcao = colDef(name = 'Respostas', width = 200, maxWidth = 200)
     ), 
-    showPageSizeOptions = TRUE, defaultPageSize = 5, borderless = TRUE, striped = TRUE, 
+    showPageSizeOptions = TRUE, defaultPageSize = 10, borderless = TRUE, striped = TRUE, 
     highlight = TRUE, compact = TRUE, style = list(fontSize = '14px')
   )
 ```
 
-Paragráfo #5: falar da necessidade de limpar o nome das colunas e corrigir algumas informações.
+Esta pesquisa traz um retrato muito contemporâneo do mercado de trabalho do Brasil e abre as portas para usarmos os dados em favor da própria comunidade. Nesse sentido, há cerca de dois anos, um [_post_](https://medium.com/data-hackers/qual-a-diferenca-de-atribucoes-de-um-cientista-de-dados-junior-pleno-e-senior-1e753534ba6f#:~:text=Quanto%20ao%20s%C3%AAnior%2C%20al%C3%A9m%20das,sugerir%20fontes%20de%20conhecimento%2C%20etc.) no Medium do Data Hackers compilou as respostas de três pessoas para a pergunta '_Qual a diferença entre um Cientista de Dados júnior, pleno e sênior?_'. Todas as respostas passaram pelos mesmos temas, e reforçam que a senioridade está associada não só a atuação das pessoas em si, como também ao impacto que elas têm no negócio em que atuam com essa atuação. Contudo, os dados da pesquisa _State of Data 2021_ nos permite revisitar essa mesma pergunta mas buscando uma resposta baseada no que é praticado no mercado atualmente.
+
+Meu intuito aqui será tentar definir o perfil médio da pessoa Cientista de Dados por nível de senioridade no mercado de trabalho brasileiro. Para isso, vou começar buscando entender um pouquinho melhor os dados que temos à mão e quão heterogênea pode ser a amostra de pessoas cientistas de dados que responderam à pesquisa. Na sequência, vou utilizar um modelo preditivo para identificar os fatores que mais contribuem para diferenciar os profissionais por nível de senioridade. Para isso, focarei nas informações sobre as atuações gerais e específicas que foram mapeadas, tais como os conhecimentos, tecnologias utilizadas e os tipos de problemas de dados enfrentados, bem como alguma coisa relacionada ao contexto de trabalho no qual as pessoas estão inseridas. Finalmente, farei uma análise do erro desse modelo para entender o que mais contribui para os desvios de nível de senioridade previstos por ele (_e.g._ qual o perfil do profissional Júnior que atua como Sênior ou vice-versa?). Vamos começar!
 
 ```{r corrige_dados_da_pesquisa}
 # renomeando as colunas e implementando pequenos tratamentos aos dados
@@ -209,7 +219,22 @@ df <- df %>%
   distinct(P0, .keep_all = TRUE)
 ```
 
-Parágrafo #6: descrever a população que temos, e dizer que vou focar em cientistas de dados.
+<div class="warning" style='margin-left:2em; margin-right:2em; padding:0.1em; background-color:#F3F3B7; color:#000000; font-size:80%'>
+<span>
+<p style='margin-top:1em; text-align:center'>
+<b>Importante</b></p>
+<p style='margin-left:1em; margin-right:1em;'>
+Existem pequenos tratamentos que precisamos fazer aos dados da pesquisa disponibilizados no Kaggle para corrigir algumas possíveis inconsistências que podem impactar a análise dos dados. Além disso, é importante estar atento à alguns detalhes importantes sobre a forma que as informações foram fornecidas.<br>
+1 - De acordo com as informações na coluna `P0`, Existem quatro pessoas respondentes que parecem ter tido o seu registro duplicado na base de dados (<i>e.g.</i>, `7lkav4o0fukny1644lc7lkav4o0c5wsb`). Como as respostas para todas as perguntas são similares entre os registros para estes casos, resolvi manter uma única cópia das instâncias associadas à estes IDs;<br>
+2 - Existem alguns <i>typos</i> nos campos preenchidos para algumas respostas. Um exemplo disto é o cargo de `Arquiteto de Dados`, que aparece grafado de duas formas distintas;<br>
+3 - As perguntas com múltiplas opções já possuem suas respostas no formato de <i>one-hot-encoding</i>. No entanto, encontrei um ou outro caso no qual o procedimento parece não ter sido funcionado 100% bem (<i>e.g.</i>, `9oxi24d4ok01hkdst59oxi24d4xriqtr`). Como foram poucas as observações nas quais isto ocorreu, não achei necessário um esforço maior para recriar os <i>encodings</i> a partir das colunas originais;<br>
+4 - É possível que algumas respostas contenham `NA` como resultado do processo de anonimização de dados. Neste contexto, optei por não aplicar nenhum tratamento aos dados para substituir tais valores e, quanto necessário, resolvi por simplesmente remover àquela instância com valores faltantes da análise.<br>
+</p></span>
+</div>
+
+# O perfil dos Cientistas de Dados júnior, pleno e sênior é muito heterogêneo no mercado brasileiro
+
+Profissionais com diferentes papéis e funções na área de dados responderam à pesquisa _State of Data 2021_: estatísticos, cientistas de dados, engenheiros de dados, professores, desenvolvedores de software, analistas de negócios e etc (conforme mapeado pelo pergunta `P2_f`). Contudo, esses papéis podem não dizer muito sobre o que a pessoa realmente faz no dia a dia e, assim, a pesquisa também mapeou o tipo de atuação que melhor retrata o cotidiano de cada pessoa. Um exemplo de atuação seria a de `Ciência de Dados`, onde a pessoa teria um dia a dia onde ela '_desenha e executa experimentos com o objetivo de responder perguntas do negócio, e desenvolve modelos preditivos e algoritmos de Machine Learning com o objetivo de otimizar e automatizar a tomada de decisão_'. É em cima desta amostra de respondentes que vamos conduzir nossas análises que, por sinal, foi a terceira atuação mais frequente na pesquisa conforme podemos observar na figura abaixo - cerca de 410 respondentes, dos 2.641 existentes após a remoção de IDs duplicados.
 
 ```{r fig_observacoes_por_area, fig.height = 5, fig.width = 7}
 # criando figura para descrever a quantidade de respondentes por tipo de atuação
@@ -226,15 +251,61 @@ count(df, P4_a) %>%
                      breaks = seq(from = 0, to = 1000, by = 100)) +
   scale_fill_manual(values = c('grey15', 'grey30', 'grey45', 'grey65', 'grey80', 'grey95')) +
   labs(
-    title = 'Qual a atuação no dia a dia dos respondentes do State of Data 2021?',
-    x     = 'Atuação no dia a dia',
-    y     = 'Quantidade de respondentes'
+    title    = 'Que tipo de atuação melhor caracteriza o seu dia a dia?',
+    subtitle = 'A Ciência de Dados é a terceira atuação mais frequente entre as pessoas respondentes da pesquisa',
+    x        = 'Atuação no dia a dia',
+    y        = 'Quantidade de respondentes'
   )
 ```
 
-Parágrafo #7: Como está distribuida a senioridade dos cientistas de dados que responderam à pesquisa?
+Associada a atuação de cada pessoa temos também disponível através da pergunta `P2_g` o seu nível de senioridade. Com base nessa informação, podemos observar que cerca de 40.73% das pessoas Cientistas de Dados que responderam à pesquisa têm o nível de senioridade Pleno. O restante das pessoas respondentes parece representar igualmente entre os níveis Júnior e Sênior, indicando que temos algum desbalanceamento na representatividade dos níveis de senioridade na amostra analisada. Isto é algo importante de ser considerado nas análises que formos fazer a seguir.
 
 ```{r fig_observacoes_por_senioridade, fig.height = 5, fig.width = 7}
+df %>%
+  # pegando apenas as observações das pessoas que responderam ter uma atuação que reflete 
+  # a de uma pessoa cientista de dados
+  filter(P4_a == 'Ciência de Dados') %>% 
+  # plotando a quantidade de respondentes por nivel de senioridade
+  ggplot(mapping = aes(x = P2_g, fill = P2_g)) +
+  geom_bar(color = 'black', show.legend = FALSE) +
+  geom_text(mapping = aes(label = paste0(round(x = (..count.. / sum(..count..))  * 100, digits = 2), '%')), 
+            stat = 'count', vjust = -1) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 180), breaks = seq(from = 0, to = 180, by = 30)) +
+  scale_fill_manual(values = cores_data_hackers) +
+  labs(
+    title    = 'Qual o nível de senioridade das pessoas Cientista de Dados?',
+    subtitle = '40% dos respondentes têm o nível de senioridade Pleno, enquanto os outros 60% são divididos\npraticamente de forma igual entre os níveis Júnior e Sênior',
+    x        = 'Nível de senioridade',
+    y        = 'Número de respondentes'
+  )
+```
+
+Como dito anteriormente, é consenso que diferenças na forma de atuar, no nível de conhecimento e no impacto sobre o negócio devem estar relacionadas ao nível de senioridade da pessoa Cientista de Dados. Todavia, é difícil mapear estas coisas em uma pesquisa tão grande e complexa quanto a _State of Data_: afinal, como poderíamos comparar de forma robusta, por exemplo, o quanto cada profissional está impactando a sua empresa? Apesar de não conseguirmos ir tão a fundo nesse nível de detalhe, temos à nossa disposição uma série de indicadores que devem estar pelo menos indiretamente relacionados aqueles itens, mapeados na sequência de perguntas sobre atuações gerais da pessoa profissional de dados (_i.e._, perguntas de prefixo `P4`) e específicas das pessoas cientistas de dados (_i.e._, perguntas de prefixo `P8`). 
+
+Estas perguntas tentam explorar de forma bem detalhada cada uma das linguagens, fontes de dados, formas de atuação, tarefas e etc que cada uma das pessoas têm, mas é preciso considerar dois aspectos importantes quando formos utilizá-las. O primeiro aspecto é que estas perguntas falam muito mais sobre `o que` a pessoa faz ou usa, enquanto muito da discussão sobre o tema fala do `como` ela faz ou usa. Assim, é importante não perder de vista esta limitação das informações disponíveis. O outro aspecto importante é que algumas perguntas podem ser bastante redundantes, e não faria sentido considerar todas elas simultaneamente. Um exemplo disso está nas perguntas `P4_b` e `P4_c`: a primeira mapeia os tipos de fontes de dados que a pessoa _já usou_ no trabalho, a segunda mapeia àquelas fontes que a pessoa _utiliza a maior parte do tempo_. Como o foco de nossas análises deve estar nos indicadores que falam sobre o momento atual de cada pessoa e como isso se relaciona ao seu nível de senioridade, decidi por utilizar apenas um subconjunto das atuações gerais e específicas disponíveis. Para isso, foquei nas respostas para cada uma das perguntas abaixo^[Na análise exploratória que fiz inicialmente com os dados da pesquisa cheguei a usar todas as perguntas prefixadas com `P4` e `P8`, individualmente e tudo junto, mas os resultados foram os mesmos do que aqueles apresentados aqui. Então resolvi ir um pouco mais simples e definir como critério de inclusão da pergunta o caso dela estar falando ou não do momento atual da pessoa.]:  
+
+| Pergunta |                                         Descrição                                         |
+|:--------:|:-----------------------------------------------------------------------------------------:|
+|   P4_c   |       Entre as fontes de dados listadas, quais você utiliza na maior parte do tempo?      |
+|   P4_d   |               Quais das linguagens listadas abaixo você utiliza no trabalho?              |
+|   P4_f   |    Quais dos bancos de dados/fontes de dados listados abaixo você utiliza no trabalho?    |
+|   P4_g   |            Quais das opções de Cloud listadas abaixo você utiliza no trabalho?            |
+|   P4_h   |          Quais as ferramentas de Business Intelligence você utiliza no trabalho?          |
+|   P8_a   | Quais das opções abaixo fazem parte da sua rotina no trabalho atual com ciência de dados? |
+|   P8_b   |       Quais as técnicas e métodos listados abaixo você costuma utilizar no trabalho?      |
+|   P8_c   |       Quais dessas tecnologias fazem parte do seu dia a dia como cientista de dados?      |
+|   P8_d   |        Em qual das opções abaixo você gasta a maior parte do seu tempo no trabalho?       |
+
+Com base nestas 9 perguntas, temos cerca de 129 atuações distintas que vamos utilizar para caracterizar a atuação das pessoas cientistas de dados que responderam a pesquisa. Assim, podemos seguir com a análise exploratória de dados, começando pela divisão dos dados que temos disponível em uma base de treino e outra de teste, trabalhando sobre a primeira de forma que nenhum insight que possamos tirar desta análise inicial possa contaminar o desenvolvimento do modelo preditivo que vamos ajustar á seguir. Uma vez que essa separação esteja feito, vamos olhar a base de treino para explorar os tipos de atuação mais frequentes entre as pessoas cientistas de dados que responderam à pesquisa. Alguns padrões interessantes podem ser observados na figura abaixo:  
+
+* Sem nenhuma surpresa, quase todas estas pessoas utilizam Python e/ou SQL em seu trabalho, enquanto um pouco mais de 30% delas disseram usar R;  
+* Outro ponto interessante é que a utilização de técnicas de modelagem mais tradicionais (_i.e._, regressões) foram mais frequentes do que outros tipos de abordagem (_e.g._, redes neurais e modelos baseados em árvore), enquanto ambas foram muito mais frequentes do que a utilização de ferramentas de AutoML;  
+* Na mesma linha do item anterior, parece que a maior parte das pessoas atuam muito mais com o ajuste de modelos aos dados do que na coleta e limpeza dos mesmos;  
+* A tarefa de desenvolvimento dos modelos preditivos parece ser muito mais frequente do que a de colocá-los de fato em produção;  
+* Algumas atuações simplesmente não se aplicam ou são exceções para a amostra de cientistas de dados analisadas aqui. Um exemplo disso é a utilização de ferramentas de BI como `Mode` e a utilização de Áudios como fonte de dados; e,
+* Poucas skills são muito frequentes, e parecem compor um _core_ básico do que é necessário saber e/ou fazer para ter atuar como cientista de dados. Por outro lado, muitas skills parecem preencher nichos de atuação específicos, sendo compartilhadas por poucas pessoas.
+
+```{r fig_frequencia_atuacoes, fig.height = 6, fig.width = 7}
 # criando um dataframe que contem a matriz de atuação de cada pessoa respondente que diz 
 # atuar como Cientista de Dados e o nivel de senioridade associada à cada uma delas
 df_atuacao <- df %>%
@@ -249,24 +320,6 @@ df_atuacao <- df %>%
   # de dados
   drop_na()
 
-# plotando a quantidade de respondentes por nivel de senioridade
-ggplot(data = df_atuacao, mapping = aes(x = P2_g, fill = P2_g)) +
-  geom_bar(color = 'black', show.legend = FALSE) +
-  geom_text(mapping = aes(label = paste0(round(x = (..count.. / sum(..count..))  * 100, digits = 2), '%')), 
-            stat = 'count', vjust = -1) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, 180), breaks = seq(from = 0, to = 180, by = 40)) +
-  scale_fill_manual(values = cores_data_hackers) +
-  labs(
-    title    = 'Qual o nível de senioridade das pessoas Cientista de Dados?',
-    subtitle = '40% dos respondentes têm o nível de senioridade Pleno, enquanto os outros 60% são divididos\npraticamente de forma igual entre os níveis Júnior e Sênior',
-    x        = 'Nível de senioridade',
-    y        = 'Número de respondentes'
-  )
-```
-
-Parágrafo #8: Atuações por respondente.
-
-```{r fig_respondentes_atuacoes, fig.height = 5, fig.width = 7}
 # fazendo um shuffle na base antes de separar os dados de treino e de teste, para tentar quebrar 
 # qualquer tipo de estrutura que possa haver na base de dados
 set.seed(42)
@@ -277,36 +330,6 @@ set.seed(33)
 df_atuacao <- initial_split(data = df_atuacao, prop = 0.8, strata = P2_g) %>% 
   training()
 
-# criando a figura para mostrar a distribuição da quantidade de atuações distintas dos 
-# respondentes por nivel de senioridade
-select(df_atuacao, -c(P0, P2_g)) %>% 
-  # como os respondentes estão na linhas e as perguntas nas colunas, o somatório das 
-  # linhas nos trará a  quantidade total de atuações distintas que cada um dos 
-  # respondentes assinalou
-  rowSums %>% 
-  # colocando o resultado da operação em um tibble, para facilitar a tarefa de plotagem
-  enframe(value = 'n_atuacoes') %>% 
-  # adicionando o indicador de senioridade - como os resultados estao na mesma ordem dos
-  # respondentes,  basta copiar a informação do dataframe original para cá
-  mutate(P2_g = df_atuacao$P2_g) %>% 
-  # criando a figura per se
-  ggplot(mapping = aes(x = n_atuacoes, y = P2_g, fill = P2_g)) +
-  geom_density_ridges2(quantile_lines = TRUE, quantiles = 2, vline_color = 'grey90', 
-                       scale = 0.9, show.legend = FALSE) +
-  scale_fill_manual(values = cores_data_hackers) +
-  scale_y_discrete(expand = c(0, 0)) +
-  scale_x_continuous(breaks = seq(from = 0, to = 100, by = 10)) +
-  labs(
-    title    = 'Quantas atuações os respondentes têm por nível de senioridade?',
-    subtitle = 'Parece existir uma diferença na quantidade de atuações assinaladas de acordo com a senioridade do respondente',
-    x        = 'Quantidade de atuações do respondente',
-    y        = 'Senioridade do respondente'
-  )
-```
-
-Parágrafo #9: frequência de atuações.
-
-```{r fig_frequencia_atuacoes, fig.height = 6, fig.width = 7}
 # criando a figura para mostrar a distribuição da frequência com a qual as atuações apareceram
 # entre os respondentes
 select(df_atuacao, -c(P0, P2_g)) %>% 
@@ -330,8 +353,8 @@ select(df_atuacao, -c(P0, P2_g)) %>%
     # calculando a proporção total dos respondentes que disseram ter cada uma das atuações
     proporcao    = n_respondentes / nrow(df_atuacao),
     sequencia    = 1:n(),
-    to_highlight = sequencia %in% c(1, 2, 3, 21, 27, 63, 124, 125),
-    texto = str_trunc(string = texto, width = 47),
+    to_highlight = sequencia %in% c(1, 3, 5, 6, 8, 16, 27, 59, 66, 122, 123),
+    texto = str_trunc(string = texto, width = 54),
     texto = str_wrap(texto, width = 30)
   ) %>% 
   ggplot(mapping = aes(x = sequencia, y = proporcao)) +
@@ -339,7 +362,7 @@ select(df_atuacao, -c(P0, P2_g)) %>%
   gghighlight(
     to_highlight, 
     label_key = texto, 
-    label_params = list(force_pull = -0.039, label.size = NA, fill = NA, seed = 666, vjust = 0.6,
+    label_params = list(force_pull = -0.005, label.size = NA, fill = NA, seed = 666, vjust = 0.6,
                         min.segment.length = 0.3),
     unhighlighted_params = list(shape = 16, size = 1, color = 'black')
   ) +
@@ -354,7 +377,41 @@ select(df_atuacao, -c(P0, P2_g)) %>%
   )
 ```
 
-Parágrafo #10: Como variou a distribuição de atuações por respondente?
+A visão acima nos conta sobre a identidade das atuações mais frequentes, mas não fala nada sobre a forma como elas estão relacionadas ao nível de senioridade das pessoas. Assim, um primeiro entendimento que podemos buscar é se existe e como se dá a variação na quantidade total de atuações (_i.e._, atuações gerais + específicas) que cada pessoa respondente disse ter de acordo com o seu nível de senioridade. O resultado dessa análise mostra que existe uma grande variabilidade dentro de cada nível de senioridade na quantidade de atuações, e parece que as pessoas de nível Júnior têm menos atuações do que àquelas em nível Pleno e Sênior. Este padrão não é de todo inesperado, mas é curioso ver que as diferenças entre os níveis de senioridade não foram assim tão claras (_e.g._, note que existem pessoas de nível Sênior que marcaram pouquíssimas atuações).
+
+```{r fig_respondentes_atuacoes, fig.height = 5, fig.width = 7}
+# criando a figura para mostrar a distribuição da quantidade de atuações distintas dos 
+# respondentes por nivel de senioridade
+select(df_atuacao, -c(P0, P2_g)) %>% 
+  # como os respondentes estão na linhas e as perguntas nas colunas, o somatório das 
+  # linhas nos trará a  quantidade total de atuações distintas que cada um dos 
+  # respondentes assinalou
+  rowSums %>% 
+  # colocando o resultado da operação em um tibble, para facilitar a tarefa de plotagem
+  enframe(value = 'n_atuacoes') %>% 
+  # adicionando o indicador de senioridade - como os resultados estao na mesma ordem dos
+  # respondentes,  basta copiar a informação do dataframe original para cá
+  mutate(P2_g = df_atuacao$P2_g) %>% 
+  # criando a figura per se
+  ggplot(mapping = aes(x = n_atuacoes, y = P2_g, fill = P2_g)) +
+  geom_density_ridges2(quantile_lines = TRUE, quantiles = 2, vline_color = 'grey90', 
+                       scale = 0.9, show.legend = FALSE) +
+  scale_fill_manual(values = cores_data_hackers) +
+  scale_y_discrete(expand = c(0, 0)) +
+  scale_x_continuous(breaks = seq(from = 0, to = 100, by = 10)) +
+  labs(
+    title    = 'Quantas atuações os respondentes têm por nível de senioridade?',
+    subtitle = 'Parece existir uma diferença na quantidade de atuações de acordo com a senioridade da pessoa,\nmuito embora exista uma grande variabilidade dentro de um mesmo nível de senioridade',
+    x        = 'Quantidade de atuações do respondente',
+    y        = 'Senioridade do respondente'
+  )
+```
+
+As informações apresentadas nas duas figuras acima podem ser combinadas em uma matriz de calor para tentarmos entender como cada uma das atuações variam ente as pessoas de acordo com seu nível de senioridade e dependendo de quantas atuações elas disseram ter. Neste caso, as colunas desta matriz representam cada uma das 129 atuações que estamos analisando, ordenadas da esquerda para a direta da atuação mais comum para a mais incomum - _i.e._, Python está mais à esquerda, áudios mais à direta. Já as linhas desta matriz representam cada uma das pessoas respondentes, ordenadas de cima para baixo daquelas que têm a maior quantidade de atuações para àquelas com a menor quantidade. Finalmente, o preenchimento das linhas indica que àquela combinação de pessoa-atuação existe, e a cor do preenchimento está mapeada ao nível de senioridade da pessoa (utilizando o mesmo esquema de cores que temos usado até aqui). Podemos tirar três insights importantes dessa matriz:
+
+1. O primeiro insight está relacionado ao grau de aninhamento das atuações entre as pessoas - isto é, o quanto as atuações das pessoas que marcaram a menor quantidade delas é um subconjunto daquelas que marcaram a maior quantidade. Se este aninhamento existisse, poderíamos esperar que o preenchimento da matriz se concentrasse totalmente na diagonal superior, o que claramente não é o caso. Logo, quais atuações as pessoas têm não parece estar relacionado à quantas atuações elas têm; 
+2. Outro ponto importante é que se este aninhamento fosse dependente do nível de senioridade das pessoas, esperaríamos ver a parte superior desta diagonal preenchida com a cor mais escura (_i.e._, representando as pessoas de nível Sênior) e a parte inferior preenchida com a mais clara (_i.e._, representando as pessoas de nível Júnior). isto sugeriria que a atuação das pessoas Júnior são um subconjunto daquele das pessoas Sênior o que, mais uma vez, parece não ser o caso; e,
+3. Esta matriz revela que existe uma grande substituição (_i.e._, _turnover_) das atuações entre as pessoas respondentes. Isto sugere que deve existir uma grande heterogeneidade na atuação entre as pessoas cientistas de dados que responderam a pesquisa _State of Data 2021_.
 
 ```{r fig_matriz_atuacao, fig.height = 6, fig.width = 7}
 # criando uma matriz para visualizar a variação na marcação
@@ -400,7 +457,7 @@ df_atuacao %>%
   scale_fill_manual(values = c(cores_data_hackers, 'white')) +
   labs(
     title    = 'De que forma a atuação variou entre os respondentes?',
-    subtitle = 'As atuações não parecem estar tão bem alinhadas à senioridade do respondente',
+    subtitle = 'Existe uma grande heterogeneidade nas atuações que cada respondente têm, que não parece estar\nassociada ao seu nível de senioridade ou à quantidade de atuações que as pessoas têm',
     caption  = 'As linhas da matriz estão ordenadas de cima para baixo, do respondente com maior número de atuações para aquele\nde menor. De forma similar, a ordenação da matriz da esquerda para a direita representa àquelas atuações que foram\nselecionadas por quase todos os respondentes para àquelas que foram pouquíssimo selecionadas. As cores representam\nos respondentes nos três níveis de atuação, seguindo a mesma paleta utilizada anteriormente.',
     x        = 'Atuação',
     y        = 'Pessoa respondente'
@@ -411,9 +468,11 @@ df_atuacao %>%
   )
 ```
 
-Parágrafo #11: Quão diferentes são os cientistas de dados?
+Uma forma mais direta de testar o quão heterogênea é a atuação dos cientistas de dados dentro e entre os níveis de senioridade é através de uma Análise de Dispersão Multivariada de Grupos (_i.e._, PERMDISP: Permutational Multivariate Analysis of Group Dispersions). Esta análise é o análogo multivariado do teste de Levene para homogeneidade de variâncias, e testa a hipótese nula de que a distância entre o centróide de cada grupo e as instâncias associadas à ele é homogênea entre os grupos. Posto de outra forma, e simplificando, esta análise determina se a diversidade de atuações dentro de cada nível de senioridade é similar entre os níveis e, caso negativo, em qual deles as atuações são mais diferentes entre as pessoas. Para essa finalidade, utilizei a distância de Jaccard para quantificar a dissimilaridade entre as pessoas cientistas de dados baseada naquelas 129 atuações, uma vez que todos estes indicadores são binários (_i.e._, presença ou ausência) e àquela métrica de distância normalmente tem um bom ajuste a este tipo de dado^[Cheguei a utilizar outras métricas de distância, mas os resultados foram praticamente os mesmos e, então, resolvi ficar com a opção mais simples mesmo]. O output da análise pode ser visualizado através do biplot de uma ACoP (_i.e._, Análise de Coordenadas Principais) onde podemos projetar cada uma das instâncias, os centróides de cada grupo (_i.e._, nível de senioridade) e o polígono convexo que contém todas as instâncias de cada um deles: se existir uma diferença entre os níveis de senioridade através, então o polígono convexo de pelo menos um deles deve ter um tamanho diferente dos demais (_i.e._, tamanho do polígono = heterogeneidade do grupo). 
 
-```{r fig_betadisper, fig.width = 7, fig.height = 7}
+Os resultados dessa análise sugerem que as pessoas de nível Júnior que responderam à pesquisa têm uma diversidade de atuações maior do que àquelas de nível Pleno e Sênior (_i.e._, baseado no p-valor da análise), mas sem diferença entre estes dois últimos^[Esse resultado pode ser encontrado dentro do objeto `permutacao`, e suprimi ele no texto somente para fins de claridade.]. Contudo, se explorarmos o tamanho do efeito (_i.e._, a distância média para o centróide de cada grupo)^[Esse resultado pode ser encontrado dentro do objeto `analise_dispersao`, e suprimi ele no texto somente para fins de claridade.] e o tamanho dos polígonos convexos de cada grupo, podemos ver que esta diferença não é tão significativa assim. Existe outro insight importante que podemos tirar através da análise do biplot em si: se existirem diferenças nas atuações entre os níveis de senioridade, então os centróides de cada grupo devem estar distantes uns dos outros. Nesse sentido, podemos observar que as atuações das pessoas de nível Júnior  parecem diferir daquelas das pessoas de nível Pleno e Sênior mas, novamente, não foi clara a diferença entre estes dois últimos. 
+
+```{r fig_betadisper, fig.width = 5, fig.height = 5, dpi = 140}
 # calculando a dissimilaridade de atuação entre todos os respondentes da pesquisa, utilizando
 # a dissimilaridade de Jaccard
 matriz_distancia <- vegdist(x = select(df_atuacao, -c(P0, P2_g)), method = 'jaccard')
@@ -422,6 +481,14 @@ matriz_distancia <- vegdist(x = select(df_atuacao, -c(P0, P2_g)), method = 'jacc
 # pessoa respondente
 set.seed(33)
 analise_dispersao <- betadisper(d = matriz_distancia, group = df_atuacao$P2_g, type = 'centroid')
+
+# pegando o resultados do teste de permutação
+set.seed(42)
+permutacao <- permutest(x = analise_dispersao, pairwise = TRUE)
+ndf <- permutacao$tab$Df[1]
+ddf <- permutacao$tab$Df[2]
+Fval <- round(x = permutacao$tab$F[1], digits = 2)
+pval <- round(x = permutacao$tab$`Pr(>F)`[1], digits = 4)
 
 # criando uma figura para visualizar a dispersão da forma de atuação dos respondentes de
 # acordo com o seu grau de senioridade
@@ -465,32 +532,48 @@ ggplot(data = escores_respondentes, mapping = aes(x = PCoA1, y = PCoA2, shape = 
   # ficará marcando com uma estrela
   geom_point(
     data = posicao_centroides,
-    mapping = aes(x = PCoA1, y = PCoA2, fill = P2_g, shape = P2_g), size = 5, color = 'black'
+    mapping = aes(x = PCoA1, y = PCoA2, fill = P2_g, shape = P2_g), size = 4, color = 'black'
   ) +
   # adicionando o texto associando o centróide de cada grupo de respondentes à sua senioridade
   geom_text(
     data = posicao_centroides,
-    mapping = aes(x = PCoA1, y = PCoA2, label = P2_g, color = P2_g), size = 4, hjust = 1.4, fontface = 'bold'
+    mapping = aes(x = PCoA1, y = PCoA2, label = P2_g, color = P2_g), size = 3, hjust = 1.4, fontface = 'bold'
   ) +
   scale_shape_manual(values = c(21, 22, 24)) +
   scale_color_manual(values = cores_data_hackers) +
   scale_fill_manual(values = cores_data_hackers) +
   labs(
     title    = 'Quão diferente é a atuação dos Cientistas de Dados?',
-    subtitle = 'A atuação dos respondentes é bastante heterogênea dentro e entre os níveis de senioridade',
-    caption  = '',
+    subtitle = 'A atuação das pessoas é heterogênea dentro e entre os níveis de senioridade',
+    caption  = glue('Análise de Dispersão Multivariada de Grupos: ndf = {ndf}; ddf = {ddf}; Pseudo-F = {Fval}; p = {pval}.'),
     x        = 'PCoA #1',
     y        = 'PCoA #2'
   ) +
   theme(
     legend.position = 'none',
-    axis.line = element_blank()
+    axis.line = element_blank(),
+    plot.title    = element_text(size = 10),
+    plot.subtitle = element_text(size = 8),
+    plot.caption  = element_text(size = 6),
+    axis.title.x  = element_text(size = 8),
+    axis.title.y  = element_text(size = 8),
+    axis.text     = element_text(size = 8)
   )
 ```
 
-# Que fatores estão associados à senioridade do Cientista de Dados?
+Esta breve análise exploratória nos traz duas mensagens principais. A primeira delas é que parece ser mais fácil diferenciar um profissional Júnior de um Sênior do que um Sênior de um Pleno. A outra mensagem é que a heterogeneidade nas atuações dentro dos níveis de senioridade é tão grande que parece ser comum que uma pessoa Júnior em um trabalho pudesse ser o Sênior em outro, e vice-versa. Acredito que nenhuma dessas mensagens seja inédita ou surpreendente para quem está atuando na área, mas é interessante ver elas representadas através dos dados. De toda forma, isto reforça a necessidade de tentarmos definir de que forma o mercado se orientando para definir o perfil de atuação das pessoas cientistas de dados entre os níveis de senioridade. 
 
-Explicar racionalização da base e feature engineering.
+# O que mais diferencia os profissionais entre os níveis de carreira no mercado de trabalho brasileiro?
+
+Vou tentar responder à essa pergunta fazendo o feijão com arroz que nós, cientistas de dados, estamos acostumados: usando um algoritmo de aprendizado de máquina para tentar prever o nível de senioridade das pessoas que responderam a pesquisa _State of Data 2021_. Mais especificamente, vamos analisar o peso que o modelo dará à cada uma das atuações gerais e específicas, bem como o contexto de trabalho no qual as pessoas estão inseridas, para predizer o senível de senioridade. No entanto, antes de seguir, acredito que seja importante ter duas considerações em mente. Uma delas é que construiremos esse modelo utilizando apenas uma amostra dos cientistas de dados que atuam no mercado brasileiro - _i.e._, aqueles que responderam a pesquisa - e, portanto, não temos como saber o quanto ele pode generalizar de fato para o mercado como um todo. A segunda é que não devemos tomar uma relação entre _e.g._ uma atuação e um nível de senioridade como boa ou ruim...na realidade, essas relações só nos dirão que dentro da amostra de pessoas que responderam a pesquisa é mais frequente vermos aquele nível de senioridade associado (ou não) àquela atuação, e é isso.
+
+Com isso em mente, vamos organizar a base que utilizaremos para o ajuste do modelo preditivo, além de derivar algumas informações à partir de outras já existentes. Note que não devemos incluir nenhuma informação que seja consequência do nível de senioridade (_e.g._, salário, tempo de atuação), além de eu ter optado por não considerar informações demográficas sobre a pessoa (_e.g._, idade, gênero, UF onde mora) pois eu realmente acredito que estas não devem e não podem ser alavancas para definir a senioridade de uma pessoa. Em suma, vamos incluir 6 informações adicionais além daquelas 129 atuações que já estamos analisando, de acordo com as seguintes hipóteses associadas:
+
++ Pode ser que as empresas tenham diferentes graus de maturidade para entender o que é um cientista de dados e/ou alinhar o cargo à sua atuação _per se_ (_e.g._, a pessoa atua com desenvolvimento de _front-end_, mas tem o cargo de cientista de dados). Assim, substituí a variável que informa o cargo da pessoa (_i.e._, pergunta `P2_f`) por uma indicador se ela tem ou não o cargo de `Cientista de Dados`. Com isso, poderemos avaliar de forma bem simples se é mais provável que pessoas que tenham esse cargo estejam mais frequentes associadas a um ou outro nível de senioridade específico;    
++ É possível que a definição do nível de senioridade varie entre os tipos de indústria, de forma que o que é Sênior em uma indústria pode ser o Júnior em outra. Assim, resolvi criar uma variável com base na pergunta `P2_b`, codificando o tipo de indústria no qual a pessoa atua: `indeterminado` se a resposta à pergunta é `NA` ou foi 'Outro', setor de `indústria` se a sua resposta foi uma entre agronegócios, construção, energia, indústria, setor alimentício ou setor automotivo ou, caso nenhuma das anteriores, setor de `serviços` (_e.g._, consultoria, entretenimento, bancos,...);  
++ Já escutei algumas discussões de que o Sênior em uma _start-up_ pode ser bem diferente daquele de uma _big tech_. Para representar essa ideia, optei por recodificar a informação da pergunta `P2_c` que fala sobre a quantidade de funcionários que a empresa da pessoa têm usando os [critérios do IBGE](https://conube.com.br/blog/como-definir-o-porte-da-empresa/#:~:text=IBGE%20%E2%80%93%20Por%20n%C3%BAmero%20de%20colaboradores&text=Micro%3A%20com%20at%C3%A9%2019%20empregados,Grande%3A%20mais%20de%20500%20empregados): `microempresa`, `pequeno porte`, `médio porte` e `grande porte` (além de `desconhecido` quando esta informação estava faltando). Existem critérios distintos para o setor da indústria e o de comércio e serviços, mas como a grande maioria das pessoas que responderam à pesquisa atua no último, resolvi utilizá-lo como base;  
++ Está bem claro à essa altura que você não precisa ter um diploma acadêmico ou um doutorado para atuar na área de ciência de dados. No entanto, também é consenso de que uma qualificação de nível superior pode ajudar bastante não só na empregabilidade como também na forma como você acaba pensando e abordando os problemas de dados. Desta forma, pode ser o caso que pessoas com um grau de qualificação maior acabem atuando de forma diferenciada e isso, por sua vez, facilite a sua escalada de carreira (_e.g._, fazendo entregas acima da média)^[Sei que esse tema pode ser controverso e, assim como academia, nem toda pessoa com um diploma de baixo do braço tem o mesmo grau de preparação e prontidão que um par seu...todavia, acho importante considerar este aspecto de alguma forma nas análises pois cada vez mais vemos pessoas saindo da academia e indo para o mercado de trabalho.]. Tendo isso em vista, aproveitei quase que totalmente as respostas à pergunta `P1_h`, só recodificando os casos em que assumi que poderia dizer que a pessoa não tem um diploma (_i.e._, estudantes de graduação, quem não tem uma graduação formal e quem optou por não responder); e,
++ Vimos que parece existir uma variação natural na quantidade de atuações que as pessoas marcaram de acordo com o seu nível de senioridade. Apesar dessa informação não ser uma alavanca muito acionável, acredito que seja importante considerar uma variável que quantifique o total de atuações gerais e outra o total de atuações específicas de cada pessoa. Eu espero que elas acabem sendo colineares mas, através delas, podemos avaliar se _e.g._ o importante para o profissional Júnior é ter muito das atuações gerais e, ao progredir para os próximos níveis, ter cada vez mais atuações específicas. Dada essa possibilidade (e curiosidade), achei melhor manter essas variáveis na análise.  
 
 ```{r feature_engineering}
 # criando a base analítica a partir da base de dados original da pesquisa, seguindo 
@@ -550,9 +633,9 @@ df_base_analitica <- df %>%
   ungroup
 ```
 
-Criando o modelo no tidymodels.
+Já temos a base de dados para ajustar o modelo pronta, então agora podemos estabelecer o nosso fluxo de modelagem. Primeiro, vou usar as mesmas instâncias da análise exploratória de dados para estabelecer a base de treino (`r length(df_atuacao$P0)` pessoas respondentes), e deixarei o restante delas na base de teste (`r sum(!df_base_analitica$P0 %in% df_atuacao$P0)`); também vou preparar um esquema de validação cruzada com 5 divisões, de forma a avaliarmos a performance média do modelo entre elas durante o seu treinamento. Na sequência, vou preparar um pipeline de pré-processamento dos dados onde vamos: (a) fazer o _one-hot-encoding_ de todas as variáveis categóricas que criamos, (b) adicionar interações entre o tamanho da empresa e o tipo de indústria^[A interação entre o tamanho da empresa e o tipo de indústria testará a possibilidade de que o nível de senioridade da pessoa difere entre os tipos de indústria para um mesmo tamanho de empresa.], e de cada uma destas com o fato da pessoa possuir ou não o cargo de cientista de dados^[A interação entre o tamanho da empresa e a existência de um cargo de cientista de dados testará a possibidade de que a importância do cargo não é a mesma entre empresas _e.g._ de pequeno e grande porte. De forma similar, a interação entre o tipo de indústria e posse do cargo de cientista de dados testará a possibilidade de que a importância do cargo para a definição do nível de senioridade da pessoa varia de um tipo de indústria para a outra.], (c) removeremos então qualquer variável preditora que tenha pelo menos 97% de seus valores iguais (_i.e._, quase tudo 0 ou 1 - efetivamente, estamos removendo àquelas atuações que menos de 12 pessoas disseram ter) e, finalmente, (d) vamos padronizar as duas variáveis quantitativas que incluímos no modelo (_i.e._, quantidade total de atuações gerais e de atuações específicas). 
 
-```{r modelo_tidymodels}
+```{r preparacao_modelo}
 # fazendo o split da base analitica usando a mesma divisão da base em treino e teste do que aquela
 # utilizada na análise exploratória de dados - para isso, usaremos o make_splits, que levará como
 # argumentos os índices das instâncias que estavam na base de treino utilizada na EDA para criar 
@@ -589,11 +672,15 @@ pre_processamento <- recipe(P2_g ~ ., data = training(split_dos_dados)) %>%
   ) %>%
   # removendo todas as variáveis preditoras que têm a variância muito baixa - i.e., são todas variáveis
   # categóricas com um viés grande demais para uma das respostas (e.g. ou quase tudo 1 ou quase tudo 0)
-  step_nzv(all_predictors(), freq_cut = 98/2) %>% 
+  step_nzv(all_predictors(), freq_cut = 97/3) %>% 
   # normalizando todas as variáveis preditoras que, embora sejam categóricas, faz com que possamos 
   # comparar o impacto de cada uma delas considerando a frequência com a qual ocorrem
   step_normalize(respostas_geral, respostas_especificas)
+```
 
+Uma vez que tenhamos feito todo o trabalho de preparação dos dados, vamos agora à etapa de seleção do algoritmo. Optei por utilizar uma regressão multinomial com regularização L1 e L2 para resolver o problema de previsão do nível de senioridade da pessoa cientista de dados, por três principais motivos: é um algoritmo bastante simples, a regularização ajudará a lidar com a grande quantidade de variáveis preditoras e, o mais importante, temos acesso à explicabilidade de suas decisões através dos `betas` da regressão - que, nesse caso, representam o logarítimo da razão de probabilidade do impacto de cada variável preditora sobre o nível predito (_i.e._, quão mais provável é que uma pessoa que tenha àquela atuação ou característica esteja associada aquele nível de senioridade do que uma outra pessoa que não os tenha). Definido o algoritmo, vou juntá-lo ao pipeline de pré-processamento de dados para que todas àquelas etapas ocorram na sequência correta dentro de cada fold da validação cruzada durante o treinamento desse algoritmo. 
+
+```{r modelo_tidymodels}
 # criando uma instância do modelo de regressão multinomial usando a engine do glmnet e deixando os dois
 # hiperparametros principais para a otimização bayesiana - equivalente ao C e ao l1_ratio do sklearn
 regressao_multinomial <- multinom_reg(penalty = tune(), mixture = tune()) %>% 
@@ -605,7 +692,11 @@ regressao_multinomial <- multinom_reg(penalty = tune(), mixture = tune()) %>%
 pipeline <- workflow() %>% 
   add_recipe(recipe = pre_processamento) %>% 
   add_model(spec = regressao_multinomial)
+```
 
+Uma vez que este pipeline esteja consolidado, realizaremos uma otimização dos hiperparâmetros da regressão multinomial - os valores que definem a intensidade da regularização L2 (`penalty`) e L1 (`mixture`) - utilizando uma busca bayesiana. Utilizaremos essa buscar para tentar encontrar a combinação daqueles dois hiperparâmetros que forneça o modelo cujas probabilidades preditas estejam o mais bem calibradas com o nível de senioridade observado (_i.e._, que a probabilidade seja 1 para o nível de senioridade que a pessoa de fato tem e 0 para aqueles que não é o dela). Para isso, vou focar em otimizar a entropia cruzada do modelo (`log loss`), de forma a obter o modelo que nos forneça o menor valor para esta métrica; além disso, vou aproveitar para monitorar os valores de AUC de cada modelo ajustado durante esse processo. Uma característica interessante da busca bayesiana é que ela busca explorar o espaço de hiperparâmetros com base na previsão da combinação deles que tem maior probabilidade de gerar um bom resultado, de acordo com a expectativa criada entre as iterações da busca. Com isso, aumentamos as chances de encontrar um bom modelo de forma mais rápida do que se explorássemos todo o espaço _e.g._ de forma aleatória. Finalmente, uma vez que tenhamos descoberto os valores daqueles hiperparâmetros usando a validação cruzada, vamos empregá-los para treinar o modelo mais uma vez usando todos os dados da base de treino e realizar a sua avaliação final na base de teste.
+
+```{r treina_modelo}
 # implementando uma otimização bayesiana de hiperparâmetros para a regressão multinomial - usando o log
 # loss como métrica principal e monitorando o AUC. Este processo será paralelizado para ganharmos um 
 # pouco mais de velocidade
@@ -624,7 +715,7 @@ melhor_estimador <- pipeline %>%
 
 # treinando o melhor estimador na base de treino e escorando ele na base de teste
 modelo_treinado <- melhor_estimador %>% 
-  last_fit(split = split_dos_dados, metrics = metric_set(mn_log_loss, roc_auc, recall, precision))
+  last_fit(split = split_dos_dados, metrics = metric_set(mn_log_loss, roc_auc))
 
 # extraindo o valor das métricas de avaliação do modelo definidas acima
 metricas_no_teste <- modelo_treinado %>% 
@@ -637,7 +728,7 @@ metricas_no_teste <- modelo_treinado %>%
 rmarkdown::paged_table(x = metricas_no_teste)
 ```
 
-Matriz de confusão.
+O valor de AUC do modelo que treinamos sugere que ele é capaz de fornecer uma probabilidade maior para o nível de senioridade correto da pessoa em `r round(x = metricas_no_teste$roc_auc * 100, digits = 2)`% dos casos, o que não parece ser nada mal. Podemos ter um pouco mais de entendimento sobre as suas predições se observarmos a matriz de confusão da classificação feita pelo modelo na base de teste, conforme apresentado abaixo. Em todos os casos, o modelo foi capaz de classificar corretamente a maior parte das pessoas associadas ao seu nível de senioridade; por outro, podemos ver também que o tipo de erro mais comum cometido pelo modelo foi associar a pessoa ao nível de senioridade imediatamente acima (_e.g._, profissional Júnior classificado como Pleno) ou abaixo (_e.g._, profissional Sênior classificado como Pleno) do dela, quase não cometendo erros mais grosseiros (_e.g._, profissional Sênior classificado como Júnior). Com isso, parece que temos um modelo que pode ser útil para traçarmos o perfil médio de uma pessoa cientista de dados que atua no mercado brasileiro (e que respondeu a pesquisa, não perca isso de vista).
 
 ```{r fig_matriz_confusao, fig.height = 4, fig.width = 7}
 # extraindo a matriz de confusão do modelo treinado e plotando a figura
@@ -682,7 +773,11 @@ modelo_treinado %>%
   )
 ```
 
-Coeficientes.
+Vamos definir o perfil médio da pessoa cientista de dados por nível de senioridade no mercado de trabalho brasileiro utilizando os betas da regressão multinomial que treinamos. Para facilitar essa análise e focar naquilo que teve maior peso para o modelo, vou focar nas 10 variáveis com maior valor absoluto para cada nível de senioridade. Esses resultados podem ser visualizados através da figura abaixo, onde podemos ver que:  
+
++ O profissional cientista de dados de nível **Júnior** muito provavelmente ainda não tem um curso de ensino superior completo, e tem como principal atividade em seu dia a dia a resolução de problemas de dados que passam pela utilização de modelos de séries temporais (que pode ser uma coisa bem difícil para quem está começando). Além disso, são pessoas que normalmente não utilizam bancos de dados relacionais e que não têm muita oportunidade de interagir com as diferentes tecnologias disponíveis na área de dados (_e.g._, bancos de dados, linguagens de programação, Cloud,...) e, tampouco, com as atuações mais relacionadas à ciência de dados em si;  
++ O profissional de nível **Pleno** está atuando frequentemente em empresas de grande porte, principalmente quando elas oferecem o cargo de cientista de dados _per se_. Estes profissionais já tendem a ter um diploma de nível de superior e, mais importante, algum curso de pós-graduação _lato sensu_^[Não sei se é claro para todos, mas acredito que você precisa ter um diploma de nível superior completo para fazer uma pós-graduação; assim, dá para deduzir uma coisa pela outra.]. Em seu dia a dia, é bem provável que eles utilizem algumas ferramentas específicas da área de dados (_e.g._, bancos de dados MySQL e ferramentas de ETL populares no mercado), e atuem em etapas específicas dos projetos de ciência de dados - especificamente na etapa do entendimento do problema, no desenvolvimento de modelos estatísticos e de aprendizado de máquina e na apresentação desses resultados. Por outro lado, é pouco provável que estes profissionais utilizem ferramentas de visualização de dados com frequência (_e.g._, Tableau) ou que utilizem modelos de séries temporais para fazer suas entregas;  
++ Por fim, é muito provável que profissionais de nível **Sênior** tenham um diploma de pós-graduação _stricto sensu_ (_i.e._, mestrado e/ou doutorado)^[Também não sei se é claro para todo mundo, mas você não precisa de um diploma de pós-graduação _lato sensu_ para fazer um _stricto sensu_ ou vice-versa, mas, mais comumente, você precisa de um diploma de mestrado para fazer o doutorado - e, em todos esses casos, você precisa ter uma graduação de ensino superior completa.]. É comum o uso de ferramentas de visualização de dados (_e.g._, Tableau, Power BI,...) e modelos de regressão entre estes profissionais, e eles parecem estar focando principalmente na resolução de problemas de dados relacionados à detecção de _churn_ (cujas particularidades podem fazer com que estes sejam problemas bem complexos de se trabalhar). Outro ponto importante é que estes profissionais conhecem e/ou usam uma ampla gama de tecnologias disponíveis na área de dados (_e.g._, diferentes tipos de linguagem de programação, utilizam difentes fontes de dados,...), mas não atuam necessariamente com uma quantidade grande de temas específicos à área de ciência de dados. É improvável que esses profissionais utilizem o serviço de Cloud da IBM, focando mais em soluções de Cloud que associadas ao processamento distribuído como o Databricks - o que também justifica o fato de eles pouco utilizarem planilhas para fazer as suas análises.      
 
 ```{r fig_coeficientes_modelo, layout = 'l-screen', preview =  TRUE, fig.width = 25, fig.height = 8}
 # criando uma figura para analisar a variação na contribuição de cada feature para a previsão
@@ -762,14 +857,26 @@ ggplot(data = df_coeficientes, mapping = aes(x = estimate, y = texto_final, fill
   scale_y_reordered() +
   scale_fill_manual(values = cores_data_hackers) +
   labs(
-    title    = 'Quais os fatores mais contribuem para a previsão do nível de senioridade?',
-    subtitle = 'Estas são os 10 fatores que têm maior impacto sobre a previsão do nível de senioridade entre os respondentes da pesquisa State of Data 2021',
+    title    = 'Que atuações e contextos têm maior impacto para a previsão do nível de senioridade?',
+    subtitle = 'Esta é a lista das 10 características associadas às pessoas que responderam a pesquisa State of Data 2021 que parecem estar mais fortemente associadas à cada um dos níveis de senioridade das pessoas cientistas de dados no mercado de trabalho brasileiro',
     x        = 'Contribuição da feature (coeficientes da regressão)'
   ) +
   theme(axis.title.y = element_blank())
 ```
 
-# O que pode estar errado para o seu nível de atuação?
+Estes perfis dos profissionais entre os níveis de senioridade conversa bastante com o senso comum dentro da área de ciência de dados. Assim, é interessante o fato de que o modelo preditivo conseguiu capturar e representar estes padrões e, mais ainda, o de podermos identificar o que exatamente é mais comumente praticado atualmente em termos de atuação para cada nível de carreira dentro do mercado de trabalho brasileiro. De toda forma, os erros de classificação cometidos pelo modelo revelam que estes perfis não são uma verdade absoluta, e que existem algumas exceções ao que podemos esperar em média. Com isso, seria importante identificar que exceções são essas e, eventualmente, de que forma as pessoas poderiam agir para corrigi-las: seja para que o profissional tenha o reconhecimento de sua atuação ser próxima daquela do nível acima, ou para aquele profissional mais experiente passe a ter uma atuação que não se confuda com àquela do nível abaixo.
+
+# Quais as exceções às previsões do modelo?
+
+O modelo que criamos cometeu dois tipos principais de erros: prever que uma pessoa está atuando no nível acima daquele no qual ela está atualmente (_i.e._, triângulo abaixo da diagonal principal na matriz de confusão: pessoa de nível Júnior que atua como se fosse de nível Pleno ou Sênior OU pessoa de nível Pleno que atua como se fosse Sênior) ou que ela está atuando no nível abaixo (_i.e._, triângulo acima da diagonal principal na matriz de confusão: pessoa de nível Sênior que atua como se fosse de nível Pleno ou Júnior OU pessoa de nível Pleno que atua como se fosse Júnior). Vou focar nestes dois grupos erros para facilitar as análises que faremos, fazendo referência a eles deste ponto em diante como 'Júnior classificado como Sênior' ou 'Sênior classificado como Júnior', respectivamente. 
+
+Podemos imaginar que aqueles dois tipos de erro ocorrem principalmente porquê a pessoa respondente teve um conjunto de atuações e contextos de trabalho que as aproximou mais do comportamento médio do outro nível de senioridade que não o seu próprio, conforme aprendido pelo modelo. Consequentemente, uma forma do modelo acertar o nível de senioridade de cada uma dessas pessoas seria se pudéssemos mudar cada uma de suas atuações e contextos de forma a aproximá-la mais de cada outra pessoa que o modelo acertou naturalmente a sua classificação. Todavia, explorar todas as combinações possíveis de mudanças para mapear quais delas levariam à classificação correta pode ser bastante ineficiente.
+
+Uma outra forma de chegarmos a um resultado parecido seria o de olharmos cada uma das pessoas classificadas incorretamente pelo modelo, e buscarmos o seu par mais similar que tenha sido classificado corretamente. A intuição geral é que as diferenças observadas entre estas duas pessoas devem estar relacionadas ao erro de classificação, de forma que se pudermos identificar cada uma destas diferenças, podemos então entender o porquê do modelo ter errado a classificação - e, também, quais são as exceções ao perfis identificados pelo modelo.
+
+Para conseguir fazer isso, vamos implementar uma análise baseada no vizinho mais próximo, onde buscaremos o par de pessoas classificadas corretamente na base de treino e incorretamente na base de teste mais similares entre si. A lógica aqui é que todas as instâncias que estão na base de treino foram vistas pelo modelo durante o seu treinamento, de forma que os limiares de decisão foram aprendidos a partir destas instâncias. Além disso, se elas foram classificadas corretamente, podemos garantir que possuem as características necessárias para a previsão daquele nível de senioridade. Por outro lado, como nosso maior interesse é entender porquê do modelo não ter generalizado tão bem, o ideal é consultar as instâncias que estão na base de teste - que ele não viu durante o seu treinamento - e que foram classificadas de forma errada.
+
+Com isso em mente, separei os dados das pessoas classificadas corretamente na base de treino e das pessoas classificadas incorretamente na base de teste. A partir daí, olhei para cada uma dessas últimas e o seu nível de senioridade observado, calculei a similaridade do coseno entre suas características e as de cada outra pessoa no mesmo nível de senioridade que ela, e identifiquei àquela cujo valor da similaridade de coseno foi o maior. Isto fez com que eu conseguisse parear as características destas duas pessoas, definindo o que elas têm de similar e o que têm de diferente. Os resultados dessa análise podem ser observados na tabela abaixo.
 
 ```{r analise_de_vizinhanca, layout = 'l-body-outset'}
 # extraindo o identificador de cada pessoa respondente na base de treino no qual o modelo
@@ -821,7 +928,6 @@ df_comparacao <- modelo_treinado %>%
   # isso facilitará a indexação na função de vizinhos mais próximos que aplicaremos
   `row.names<-`(value = .$P0)
 
-
 # criando funcao para calcular os vizinhos mais próximos de uma pessoa respondente da 
 # base de teste que tenha sido classificada de forma errada com base nas pessoas da 
 # base de treino que tenham sido classificadas corretamente
@@ -870,19 +976,6 @@ pessoa_mais_proxima <- function(pessoa) {
 # corretamente na base de treino que é mais similar àquela classificada de forma errada
 # na base de teste
 df_vizinhos <- map_dfr(.x = ids_erros_teste, .f = pessoa_mais_proxima) 
-
-# criando uma figura para analisar a similaridade entre os vizinhos mais próximos
-#ggplot(data = df_vizinhos, mapping = aes(x = similaridade)) +
-#  geom_histogram(color = 'black', fill = 'grey50', bins = 9) +
-#  scale_y_continuous(breaks = seq(from = 0, to = 15, by = 2), expand = c(0, 0),
-#                     limits = c(0, 12)) +
-#  scale_x_continuous(breaks = seq(from = 0.3, to = 0.9, by = 0.1)) +
-#  labs(
-#    title    = 'Quão diferentes são as pessoas respondentes classificadas erradas dos seus pares?',
-#    subtitle =  
-#    x        = 'Similaridade do coseno',
-#    y        = 'Observações'
-#  )
 
 # criando uma versão mais longa da base analítica onde mapearemos as respostas de cada pessoa
 # respondente às perguntas feitas linha a linha, e utilizaremos estas informações para poder
@@ -946,9 +1039,6 @@ df_contra_exemplos <- df_vizinhos %>%
   # na base de treino aos resultados da análise de vizinhança
   left_join(y = select(df_base_analitica_longa, -P2_g), 
             by = c('P0_acerto' = 'P0', 'feature'), suffix = c('_errado', '_acerto')) %>% 
-  # retendo apenas os registros de cada par de pessoas no qual existe uma diferença entre as 
-  # respostas dadas para uma mesma pergunta
-  filter(resposta_acerto != resposta_errado) %>% 
   # adicionando a informação do nível de senioridade predito pelo modelo para as pessoas às quais
   # a previsão este errada
   left_join(y = modelo_treinado %>% 
@@ -968,17 +1058,17 @@ df_contra_exemplos <- df_vizinhos %>%
     # do nível no qual ela tem (i.e., 'Júnior que atua como Sênior') ou abaixo dela (i.e., 'Sênior
     # que atua como Júnior')
     direcao_erro = case_when(
-      P2_g == 'Júnior' & .pred_class %in% c('Sênior', 'Pleno') ~ 'Para que o Júnior não fosse considerado Sênior',
-      P2_g == 'Pleno' & .pred_class == c('Sênior') ~ 'Para que o Júnior não fosse considerado Sênior',
-      P2_g == 'Sênior' & .pred_class %in% c('Júnior', 'Pleno') ~ 'Para que o Sênior não fosse considerado Júnior',
-      P2_g == 'Pleno' & .pred_class == c('Júnior') ~ 'Para que o Sênior não fosse considerado Júnior',
+      P2_g == 'Júnior' & .pred_class %in% c('Sênior', 'Pleno') ~ 'Júnior classificado como Sênior',
+      P2_g == 'Pleno' & .pred_class == c('Sênior') ~ 'Júnior classificado como Sênior',
+      P2_g == 'Sênior' & .pred_class %in% c('Júnior', 'Pleno') ~ 'Sênior classificado como Júnior',
+      P2_g == 'Pleno' & .pred_class == c('Júnior') ~ 'Sênior classificado como Júnior',
     ),
     # tratado o texto de descrição da feature - removendo whitespace do início e do fim do string,
     # adicionando o nome tratado da feature quando ele estiver ausente (i.e., para as features que
     # derivamos) e truncando o string de forma que apenas os 50 caracteres de cada um apareça
     texto = str_squish(string = texto),
     texto = ifelse(test = is.na(texto), yes = feature_tidy_acerto, no = texto),
-    resumo = str_trunc(string = texto, width = 50)
+    resumo = str_trunc(string = texto, width = 60)
   ) %>% 
   # removendo as features relacionadas à quantidade de atuações gerais e específicas, uma
   # vez que essa não é uma alavanca acionável de forma inteligente
@@ -987,6 +1077,9 @@ df_contra_exemplos <- df_vizinhos %>%
 # colocando os resultados da análise de vizinhança para cada pessoa na qual o modelo errou a
 # previsão na base de teste em uma tabela interativa para a análise
 df_contra_exemplos %>%
+  # retendo apenas os registros de cada par de pessoas no qual existe uma diferença entre as 
+  # respostas dadas para uma mesma pergunta
+  filter(resposta_acerto != resposta_errado) %>% 
   select(P0_errado, P2_g, .pred_class, resumo, valor_tidy_errado, valor_tidy_acerto, top_feature) %>%
   mutate(top_feature = ifelse(test = top_feature, yes = 'Sim', no = 'Não')) %>%
   reactable(
@@ -1006,61 +1099,201 @@ df_contra_exemplos %>%
   )
 ```
 
-Blablabla.
+A partir desses resultados, resolvi então determinar a frequência com a qual cada uma das características utilizadas pelo modelo preditivo deveria mudar de forma que àquelas pessoas fossem mapeadas corretamente ao seu nível de senioridade, de acordo com o tipo de erro cometido pelo modelo. Este exercício forneceu alguns insights importantes, apresentados na figura abaixo e que nos mostram que:
 
-```{r fig_contra_exemplos, layout = 'l-page', fig.width = 15, fig.height = 8}
-# visualizando as mudanças de resposta mais frequentes que deveriam ser feitas para que uma pessoa
-# respondente tivesse sido classificada corretamente no seu nível de senioridade
++ Diferenças no nível de instrução foram o principal motivo para a classificação errada do nível de senioridade das pessoas. Isto foi o caso independente se estamos falando de uma pessoa de nível Júnior que foi classificada como Sênior ou vice-versa;
++ Existe um número expressivo de características diferentes entre cada par de pessoas, mas a maior parte delas não teve muito peso para a previsão de sua senioridade (_i.e._, não estavam entre as variáveis mais importantes para o modelo que treinamos e/ou seus coeficientes eram zero; barras brancas abaixo). Alguns exemplos destas características são o conhecimento em Cloud na Azure ou na AWS quando o problema foi errar a senioridade de pessoas Júnior, ou utilizar o R quando o caso foi as pessoas Sênior. Isto sugere que a diversidade de atuações dentro de um mesmo nível de senioridade é relevante, e que você não precisa ser um clone exato de uma pessoa para estar no nível correto ou ir para o próximo nível - basta não perder de vista o que talvez seja o essencial; e,  
++ Existe um número maior de características que impactam mais fortemente a previsão do nível de senioridade (_i.e._, barras cinzas abaixo) quando falamos dos erros nos quais a pessoa Sênior foi classificada como Júnior do que o contrário. Isto parece sugerir que existem mais formas do modelo errar o nível de senioridade de quem é Sênior do que de quem é Júnior.
+
+```{r fig_diferencas_frequentes, layout = 'l-page', fig.width = 13, fig.height = 6}
+# criando a figura para mostrar as variáveis que apareceram com mais frequência como as mais
+# diferentes entre cada par de pessoas
 df_contra_exemplos %>% 
-  # focando apenas nas respostas que estiverem relacionadas às 10 features mais importantes para a 
-  # previsão de acordo com o elasticnet
-  filter(top_feature) %>% 
-  # contando quantas vezes cada resposta aparece associada à cada pergunta de acordo com o tipo de
-  # erro cometido pelo modelo
-  count(direcao_erro, resumo, valor_tidy_acerto, name = 'ocorrencias', sort = TRUE) %>% 
-  # juntando a quantidade total de pessoas que o modelo errou a classificação de acordo com o tipo
-  # de erro cometido, de forma à calcularmos a proporção de vezes que cada uma das mudanças de
-  # resposta às perguntas é observada entre as pessoas na base de teste
+  # retendo apenas os registros de cada par de pessoas no qual existe uma diferença entre as 
+  # respostas dadas para uma mesma pergunta
+  filter(resposta_acerto != resposta_errado) %>% 
+  # contando quantas vezes cada variável aparece associada à cada tipo de erro
+  count(direcao_erro, resumo, sort = TRUE) %>% 
+  # juntando a informação da quantidade de pessoas associadas à cada tipo geral de erro
+  # que estavam na base de teste
   left_join(
-    y = distinct(df_contra_exemplos, P0_acerto, P0_errado, direcao_erro) %>% 
-      count(direcao_erro, name = 'pessoas'), 
+    y = df_contra_exemplos %>% 
+      distinct(P0_errado, direcao_erro) %>% 
+      count(direcao_erro, name = 'n_pessoas'),
     by = 'direcao_erro'
-  ) %>%
-  mutate(
-    proporcao = ocorrencias / pessoas,
-    valor_tidy_acerto = case_when(
-      valor_tidy_acerto == 'Grande porte' ~ 'Empr. grande porte',
-      valor_tidy_acerto == 'Médio porte' ~ 'Empr. médio porte',
-      TRUE ~ valor_tidy_acerto
-    ),
-    valor_tidy_acerto = fct_relevel(.f = valor_tidy_acerto, 'Doutorado ou Phd', 'Mestrado',
-                                    'Pós-graduação', 'Graduação/Bacharelado', 'Sem diploma'),
-    resumo = str_wrap(string = resumo, width = 30)
   ) %>% 
+  # juntando a informação do tipo de variável associada à cada tipo geral de erro
+  left_join(
+    y = df_contra_exemplos %>% 
+      distinct(direcao_erro, resumo, top_feature),
+    by = c('direcao_erro', 'resumo')
+  ) %>% 
+  # transformando os dados para ajudar na plotagem
+  mutate(
+    # calculando a frequencia com a qual uma dada variável apareceu como diferente entre a pessoa
+    # na base de teste em que o modelo errou e a pessoa mais similar à ela na base de treino que 
+    # o modelo acertou - este valor representa a frequência de ocorrência de uma diferença naquela
+    # variável nos dados que estamos analisando
+    proporcao = n / n_pessoas,
+    # limitando o tamanho do texto por linha de forma a não deixas os textos em cada eixo muito longos
+    resumo = str_wrap(string = resumo, width = 30),
+    # ordenando as variáveis dentro de cada tipo de erro de acordo com a sua frequencia de ocorrencia
+    # isso nos ajudará a colocar as barras em ordem na figura abaixo
+    texto_ordenado = reorder_within(x = resumo, by = proporcao, within = direcao_erro)
+  ) %>% 
+  # agrupando pelo tipo geral de erro, de forma a aplicar o filtro seguinte dentro de cada grupo
+  group_by(direcao_erro) %>% 
+  # pegando as 10 variáveis mais frequentemente diferentes entre a pessoa na base de teste e à mais
+  # similar à ela na base de treino
+  slice_max(order_by = proporcao, n = 10, with_ties = FALSE) %>% 
   # criando a figura per se
-  ggplot(mapping = aes(x = proporcao,
-                       y = reorder_within(x = resumo, by = proporcao, within = direcao_erro, fun = sum), 
-                       fill = valor_tidy_acerto)) +
+  ggplot(mapping = aes(x = proporcao, y = texto_ordenado, fill = top_feature)) +
   facet_wrap(~ direcao_erro, scales = 'free') +
-  geom_bar(stat = 'identity', position = 'stack', color = 'black') +
+  geom_col(color = 'black', show.legend = FALSE) +
+  geom_text(mapping = aes(label = paste0(round(x = proporcao, digits = 2) * 100, '%')), nudge_x = 0.07) +
   scale_y_reordered() +
-  scale_x_continuous(breaks = seq(from = 0, to = 0.8, by = 0.2), limits = c(0, 0.8),
-                     expand = c(0, 0), labels = label_percent()) +
-  scale_fill_manual(
-    values = c('grey20', 'grey40', 'grey60', 'grey80', 'grey95',
-               'darkgoldenrod1', 'lightgoldenrod1', 'tomato2', 'dodgerblue2')
-  ) +
+  scale_x_continuous(breaks = seq(from = 0, to = 0.85, by = 0.2), limits = c(0, 0.9), 
+                     labels = label_percent(), expand = c(0, 0)) +
+  scale_fill_manual(values = c('white', 'grey50')) +
   labs(
-    title    = 'O que precisaria mudar para corrigir os erros cometidos pelo modelo?',
-    subtitle = 'O nível de instrução é o principal fator associado aos erros de classificação feitos pelo modelo - mas a falta ou a existência de alguns conhecimentos de tecnologias e problemas de\nciência de dados também podem colaborar em alguns casos',
-    fill     = 'Resposta deveria\nmudar para...',
-    x        = 'Proporção das pessoas respondentes na base de teste'
+    title    = 'Quais as 10 características mais frequentemente associadas às diferenças entre os pares de pessoas?',
+    subtitle = 'Diferenças no nível de instrução foram a principal causa do erro de classificação do nível de senioridade das pessoas por parte do modelo, independentemente do tipo de\nerro. Além disso, grande parte dos erros de classificação das pessoas de nível Sênior esteve associada à diferenças nas variáveis com maior peso sobre a classificação',
+    caption  = 'As barras na cor cinza representam as variáveis com maior peso para a classificação do nível de senioridade por parte do modelo dentro de cada tipo geral de erro.',
+    x        = 'Frequência de ocorrência'
   ) +
   theme(
-    axis.title.y = element_blank(),
-    legend.title = element_text(face = 'bold')
+    axis.title.y = element_blank()
   )
+```
+
+Resolvi ir um pouco mais no detalhe nos padrões apresentados nessa última figura, e olhar que tipo de mundaça deveria ocorrer no nível de instrução para o modelo acertar a classificação de senioridade. O resultado mais interessante é que, tanto no caso da pessoa Júnior classificada como Sênior quanto no contrário, é provável que o modelo já tivesse acertado a sua senioridade se ela tivesse o nível de instrução abaixo ou acima. Por exemplo, o fato de uma pessoa de nível Júnior ter um mestrado fez com que ela fosse classificada como Sênior, quando bastava que ela só tivesse a Graduação/Bacharelado para que ela tivesse melhor alinhada ao nível de Júnior. Outro exemplo é o de uma pessoa de nível Sênior que foi classificada como Júnior pois ela só tinha Graduação/Bacharelado - e, talvez, bastava que ela tivesse uma pós-graduação ou mestrado para que ela tivesse sido classificada corretamente. Finalmente, algo que vale a pena salientar é que muitas das pessoas de nível Júnior classificadas incorretamente pelo modelo têm já tem um mestrado atualmente, e acredito que isso conversa bastante com alguns movimentos de pessoas da academia para o mercado que temos visto.
+
+```{r fig_instrucao, layout = 'l-body-outset', fig.width = 9, fig.height = 8}
+# criando a base que usaremos para criar as figuras com as mudanças de resposta maisfrequentes que deveriam 
+# ser feitas para que uma pessoa respondente tivesse sido classificada corretamente no seu nível de senioridade
+df_fig_instrucao <- df_contra_exemplos %>% 
+  # pegando apenas os casos relacionados à diferenças no nível de instrução das pessoas
+  filter(texto == 'Nível de instrução') %>%
+  # retendo apenas os registros de cada par de pessoas no qual existe uma diferença entre as 
+  # respostas dadas para uma mesma pergunta
+  filter(resposta_acerto != resposta_errado) %>% 
+  # contando quantas vezes, dentro de cada tipo de erro, aparece cada par de mudança da resposta observada
+  # para a resposta que precisava ser dada
+  count(direcao_erro, valor_tidy_errado, valor_tidy_acerto, name = 'ocorrencias', sort = TRUE) %>%
+  # adicionando um identificador único à cada linha, que será usada para criar o alluvial plot
+  rownames_to_column(var = 'id') %>% 
+  # passando a base para o formato longo, de forma a termos o par de respostas observadas vs que precisava
+  # ser dada nas linhas ao invés de nas colunas para cada pessoa
+  pivot_longer(cols = c(valor_tidy_errado, valor_tidy_acerto), names_to = 'resposta', values_to = 'valor') %>% 
+  # reordenando o nível do tipo de resposta e da resposta que precisava ser dada para fazer com que
+  # o gradiente fique mais claro na figura que vamos criar
+  mutate(
+    resposta = fct_relevel(.f = resposta, 'valor_tidy_errado'),
+    valor = factor(x = valor, 
+                   levels = c('Sem diploma', 'Graduação/Bacharelado', 'Pós-graduação', 'Mestrado', 'Doutorado ou Phd'))
+  )
+
+# figura para o caso do junior classificado como sênior
+fig1 <- df_fig_instrucao %>% 
+  filter(direcao_erro == 'Júnior classificado como Sênior') %>%
+  ggplot(mapping = aes(x = resposta, stratum = valor, alluvium = id, y = ocorrencias, fill = valor, label = valor)) +
+  geom_flow(width = 0.2, show.legend = FALSE) +
+  geom_stratum(width = 0.2, show.legend = FALSE) +
+  geom_text_repel(
+    mapping = aes(label = ifelse(as.numeric(resposta) == 1, as.character(valor), NA)),
+    stat = 'stratum', size = 4, nudge_x = -0.5
+  ) +
+  geom_text_repel(
+    mapping = aes(label = ifelse(as.numeric(resposta) == 2, as.character(valor), NA)),
+    stat = "stratum", size = 4, direction = "y", nudge_x = 0.5
+  ) +
+  scale_fill_viridis_d() +
+  labs(
+    title    = 'O que me diferencia se sou um profissional de nível Júnior?',
+    subtitle = 'Profissionais de nível Júnior classificados como Sênior'
+  ) +
+  theme(
+    plot.title   = element_text(size = 12),
+    axis.line    = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text    = element_blank()
+  )
+
+# figura para o caso do sênior classificado como júnior
+fig2 <- df_fig_instrucao %>% 
+  filter(direcao_erro == 'Sênior classificado como Júnior') %>%
+  ggplot(mapping = aes(x = resposta, stratum = valor, alluvium = id, y = ocorrencias, fill = valor, label = valor)) +
+  geom_flow(width = 0.2, show.legend = FALSE) +
+  geom_stratum(width = 0.2, show.legend = FALSE) +
+  geom_text_repel(
+    mapping = aes(label = ifelse(as.numeric(resposta) == 1, as.character(valor), NA)),
+    stat = 'stratum', size = 4, nudge_x = -0.5
+  ) +
+  geom_text_repel(
+    mapping = aes(label = ifelse(as.numeric(resposta) == 2, as.character(valor), NA)),
+    stat = "stratum", size = 4, direction = "y", nudge_x = 0.5
+  ) +
+  scale_x_discrete(labels = c('Qual é o nível de\ninstrução da pessoa?', 'Qual deveria ter sido\npara o modelo acertar?')) +
+  scale_fill_viridis_d() +
+  labs(
+    title = 'Como eu poderia me diferenciar já sendo um profissional Sênior?',
+    subtitle = 'Profissionais de nível Sênior classificados como Júnior'
+  ) +
+  theme(
+    plot.title   = element_text(size = 12),
+    axis.line    = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.y  = element_blank(),
+    axis.text.x  = element_text(size = 12, face = 'bold')
+  )
+
+# compondo a figura
+(fig1 / fig2) +
+  plot_annotation(
+    title = 'Quais as diferenças mais comuns no nível de instrução entre os pares de pessoas?',
+    theme = theme(plot.title = element_text(size = 14))
+  )
+```
+
+Acredito que podemos encerrar por aqui as nossas análises. No entanto, se você quiser ir um pouco mais fundo e explorar outras diferenças entre os pares de pessoas ou até mesmo usar o modelo que treinamos para se auto-avaliar, vou deixar tudo isso salvo aqui.
+
+```{r salva_outputs}
+# objeto contendo o pipeline de pre-processamento dos dados e o modelo treinado
+write_rds(x = extract_workflow(x = modelo_treinado), file = 'outputs/modelo_treinado.rds')
+# base que utilizamos para treinar o modelo
+write_rds(x = training(x = split_dos_dados), file = 'outputs/base_de_treino.rds')
+# base que utilizamos para testar o modelo
+write_rds(x = testing(x = split_dos_dados), file = 'outputs/base_de_teste.rds')
+# base com os pares de pessoas e as respostas à cada uma das perguntas feitas pela pesquisa
+write_rds(x = df_contra_exemplos, file = 'outputs/pares_de_pessoas.rds')
+# dicionario para mapear o identificador das perguntas ao seu texto
+write_rds(x = dicionario, file = 'outputs/dicionario_de_perguntas.rds')
 ```
 
 # Conclusões
 
+Nesse post eu foquei em entender a diferença existente entre pessoas de nível Júnior, Pleno e Sênior na área de dados, dando uma atenção especial à ciência de dados. Ao contrário de outras discussões, minha ideia aqui foi a de tentar enxergar estas diferenças de alguma forma através dos dados, e obter algum tipo de insight que pudesse contribuir com a comunidade. Isso foi possível graças à pesquisa _State of Data 2021_, que mapeou as atuações gerais e específicas da área e da ciência de dados, além de outras informações relacionadas ao contexto de trabalho no qual cada pessoa está inserida. 
+
+Uma análise preliminar feita sobre a amostra de pessoas que atuam com ciência de dados e responderam à pesquisa revelou uma grande heterogeneidade de atuações dentro e entre aqueles três níveis de senioridade. Mais especificamente, observamos que existe um _core_ de atuações que praticamente toda pessoa cientista de dados parece ter mas, por outro lado, é maior ainda a quantidade de atuações e conhecimentos que se substituem entre as pessoas. Apesar disto retratar a diversidade de backgrounds e experiências, tais padrões também mostram a dificuldade que pode ser em determinar os critérios que o mercado de trabalho brasileiro está usando para estabelecer o perfil das pessoas por nível de senioridade.
+
+A forma como optei por abordar este problema foi utilizar uma regressão multinomial para prever o nível de senioridade de cada pessoa cientista de dados, utilizando então os betas da regressão para delinear as características mais frequentemente associadas (ou não) à cada nível de senioridade. Através desta abordagem conseguimos observar alguns padrões interessantes, muitos dos quais conversam bastante com o senso comum. O exemplo mais claro disso está na contribuição do nível de instrução para prevermos a senioridade da pessoa: a trajetória acadêmica da graduação à uma pós-graduação _lato sensu_ foi representada na transição dos níveis de Júnior ao Sênior, passando pelo nível de Pleno. Não é a minha intenção fazer uma inferência causal sobre este padrão, mas não seria estranho assumir que quanto mais estudamos e buscamos nos especializar, maiores as chances de aprendermos coisas novas, ganharmos mais experiência e conseguir trazer um maior impacto para o negócio no qual estamos inseridos. Assim, seja através da educação formal ou informal (ou até algum tipo de co-relação ou _confounding_ entre elas _e.g._ quem gosta de estudar acaba recorrendo a educação formal e informal), o fato é que buscar qualificar-se cada vez mais é uma alavanca importante para buscar níveis de atuação mais altos.
+
+Outro padrão interessante que encontramos está relacionada à evolução na bagagem que as pessoas acumulam ao longo de sua carreira. Como pudemos observar, é incomum que pessoas de nível Júnior tenham muitas atuações gerais da área de dados e específicas da área de ciência de dados. Por outro lado, pessoas de nível Pleno já tiveram maior afinidade por ter certas atuações muito relacionadas ao ciclo de vida dos projetos de ciência de dados, enquanto pessoas de nível Sênior pareceram estar mais associadas à resolução de problemas de negócio específicos (_e.g._, detecção de _churn_) e a ter uma bagagem maior de conhecimentos na área de dados em si. Acredito que estes sejam os padrões esperados quando pensamos no nosso próprio ciclo de amadurecimento e evolução de carreira, e é interessante a possibilidade de que isto possa estar representado de alguma forma nos dados.
+
+A abordagem que optei seguir capturou o perfil 'médio' de cada nível de senioridade mas, como bem sabemos, o comportamento da média pode não descrever a variação dentro da amostra. Assim, dada a heterogeneidade de atuações entre pessoas observada na análise exploratória, não foi surpreendente que o modelo tenha errado a classificação do nível de senioridade de algumas pessoas. Por conta disso, busquei entender o que estaria mais frequentemente associado a esses erros, contrastando as atuações de cada uma das pessoas dentro desta subamostra com àquelas pessoas mais similares à elas e que foram classificadas corretamente pelo modelo. Este exercício demonstrou que a principal fonte de erro do modelo parece vir do nível de instrução que cada pessoa disse ter: pessoas de nível Júnior mais qualificadas do que o esperado (_e.g._, possuem uma pós-graduação _stricto sensu_ e/ou _lato sensu_) ou pessoas de nível Sênior menos qualificadas do que o esperado (_e.g._, possuem apenas a graduação). Eu achei interessante esse resultado, e é difícil para mim não deixar de pensar se isso não retrata um padrão que tenho visto das pessoas saindo da academia e aceitando cargos de nível Júnior como uma forma de entrar no mercado de trabalho - esse foi um pouco do meu caminho, e conheço um bocado de gente que tem percorrido ele também. 
+
+Todos esses padrões que observamos aqui são baseados em uma amostra pequena de pessoas cientistas de dados que estão atuando no mercado de trabalho brasileiro, e precisamos ter em mente que não sabemos o quanto que esses resultados e padrões que vimos pode ser generalizado para a população como um todo. Além disso, é importante não perder de vista que as informações que utilizei para chegar até aqueles resultados deixam de lado aspectos importantes da atuação das pessoas que também contribuem para essa discussão, tais como o grau de impacto que a pessoa tem no negócio, a qualidade de suas entregas, o quanto que ela sabe de fato e tudo o mais. Contudo, é difícil que uma pesquisa tão grande e complexa como o _State of Data 2021_ consiga mapear todos esses aspectos de forma robusta, comparativa e justa entre as pessoas, e é certo que existem alguns pontos nos quais a pesquisa poderia melhorar (_e.g._, reduzir a redundância entre algumas opções ou perguntas e ser menos abrangente na quantidade de opções para outras - como no caso dos bancos de dados). Ainda assim, acredito que os resultados dessa pesquisa trazer um retrato da nossa área que têm já muito valor para a comunidade, e que edições futuras dela trarão um impacto muito maior e abrangente.
+
+Dúvidas, sugestões ou críticas? É só me procurar que a gente conversa!
+
+# Possíveis extensões
+
+Tive algumas idéias e testei algumas coisas enquanto olhava os dados e ia fazendo as análises exploratórias, mas não consegui priorizar essas coisas à tempo. Então fica aqui o registro para não esquecer:
+
++ Não temos como combinar todos os respondentes neste mesmo tipo de análise pois as perguntas relacionadas às atuações específicas foram apresentadas para as pessoas dependendo da atuação que elas selecionaram, de forma que _e.g._ uma pessoa cientista de dados não viu as mesmas perguntas de uma engenheira de dados. Por conta disso, eu optei aqui por focar só nas respostas das pessoas que tem a atuação de cientista de dados em seu dia a dia, mas todas as análises apresentadas podem ser replicadas às demais atuações - inclusive, eu cheguei a fazer um pouco disso na análise exploratória que fiz antes de escrever esse post, mas achei que ia ficar complexo demais escrever sobre todos;  
++ Durante a análise exploratória que fiz antes de escrever este post, reparei que não havia diferença na heterogeneidade dentro e entre os níveis de senioridade caso usássemos todas as atuações ou só as especificações. Ainda assim, resolvi por considerar tudo para ter uma visão mais completa da área de ciência de dados. De toda forma, talvez fosse interessante repetir as análises focando em um só tipo de atuação (inclusive, se focássemos só nas atuações gerais, poderíamos comparar as pessoas entre todas as atuações);  
++ Reparei que existe alguma co-dependência entre as respostas de algumas perguntas, que podem acabar gerando uma heterogeneidade onde na realidade ela não é tão grande. Por exemplo, reparei que as respostas 'Utilizo modelos de Detecção de Churn' (_i.e._, `P8_b_m`) e 'Utilizo modelos de Machine Learning para detecção de fraude' (_i.e._, `P8_b_k`) tendem a co-ocorrer com uma frequência bem alta, de forma que a natureza da atuação contida na resposta à uma pergunta já seria informativa da outra pergunta. Outro tipo de caso no qual isso deve ocorrer é quando falamos das tecnologias: uma pessoa que usa a Cloud da AWS certamente acabará marcando muitas opções de tecnologias associadas à ela (_e.g._, S3, Amazon Aurora, Amazon Redshift, Amazon Quicksight), de forma que o excesso de atuações pode não ser tão representativo assim de uma caixa de ferramentas tão diversa. Nesse sentido, acredito que uma coisa legal de se fazer seria criar algo como um _embedding_ dessas atuações e usar essa representação nas análises;
++ Ainda seguindo a linha da ideia anterior, poderíamos usar esse _embedding_ para responder à outra pergunta: quantos tipos diferentes de pessoas cientistas de dados existem? (quem sabe não foco nisso na próxima pesquisa?;  
++ Uma outra ideia que tive era tentar entender (1) que tipo de fatores estão associados à pessoa estar aberta à participar de entrevistas de emprego e (2) o que também estaria associado à ela decidir mudar ou não de emprego. Acredito que muitas das coisas que desenvolvemos aqui poderia ser reaproveitada de alguma forma para responder à essas duas perguntas, embora eu também acredite que precisaríamos racionalizar um pouco mais a preparação da base para a modelagem, a parte de criação da criação das features, as premissas e limitações da abordagem.   
