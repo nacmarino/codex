@@ -1,0 +1,127 @@
+tecnologia
+SQL
+R 
+Python
+C/C++/C#
+.NET
+Java
+Julia
+SAS/Stata
+Visual Basic/VBA
+Scala
+Matlab
+PHP
+Javascript
+Não utilizo nenhuma linguagem
+MySQL
+Oracle
+SQL SERVER
+SAP
+Amazon Aurora ou RDS
+Amazon DynamoDB
+CoachDB
+Cassandra
+MongoDB
+MariaDB
+Datomic
+S3
+PostgreSQL
+ElasticSearch
+DB2
+Microsoft Access
+SQLite
+Sybase
+Firebase
+Vertica
+Redis
+Neo4J
+Google BigQuery
+Google Firestore
+Amazon Redshift
+Amazon Athena
+Snowflake
+Databricks
+HBase
+Presto
+Splunk
+SAP HANA
+Hive
+Firebird
+Amazon Web Services AWS
+Google Cloud GCP
+Azure Microsoft
+Oracle Cloud
+IBM
+Servidores On Premise/Não utilizamos Cloud
+Cloud Própria
+Microsoft PowerBI
+Qlik View/Qlik Sense
+Tableau
+Metabase
+Superset
+Redash
+MicroStrategy
+IBM Analytics/Cognos
+SAP Business Objects
+Oracle Business Intelligence
+Amazon QuickSight
+Salesforce/Einstein Analytics
+Mode
+Alteryx
+Birst
+Looker
+Google Data Studio
+SAS Visual Analytics
+Grafana
+TIBCO Spotfire
+Pentaho
+Fazemos todas as análises utilizando apenas Excel ou planilhas do google
+Não utilizo nenhuma ferramenta de BI no trabalho
+Scripts Python
+SQL & Stored Procedures
+Apache Airflow
+Luigi
+AWS Glue
+Talend
+Stitch
+Fivetran
+Google Dataflow
+Oracle Data Integrator
+IBM DataStage
+SAP BW ETL
+SQL Server Integration Services SSIS
+SAS Data Integration
+Qlik Sense
+Knime
+Não utilizo ferramentas de ETL
+great_expectations
+dbt
+AWS Deequ
+Apache Griffin
+Datafold
+Amundsen
+Monte Carlo
+SODA
+Big Eye
+Data Band
+Anomalo
+Metaplane
+Acceldata
+"Ferramentas de AutoML como H2O.ai, Data Robot, BigML etc."
+"""""Point and Click"""" Analytics como Alteryx, Knime, Rapidminer etc."
+"Product metricts & Insights como Mixpanel, Amplitude, Adobe Analytics."
+Ferramentas de análise dentro de ferramentas de CRM como Salesforce Einstein Anaytics ou Zendesk dashboards.
+Minha empresa não utiliza essas ferramentas.
+Não sei informar.
+"Ferramentas de BI PowerBI, Looker, Tableau, Qlik etc"
+"Planilhas Excel, Google Sheets etc"
+"Ambientes de desenvolvimento local R-studio, JupyterLab, Anaconda"
+"Ambientes de desenvolvimento na nuvem Google Colab, AWS Sagemaker, Kaggle Notebooks etc"
+"Ferramentas de AutoML Datarobot, H2O, Auto-Keras etc"
+"Ferramentas de ETL Apache Airflow, NiFi, Stitch, Fivetran, Pentaho etc"
+"Plataformas de Machine Learning TensorFlow, Azure Machine Learning, Kubeflow etc"
+"Feature Store Feast, Hopsworks, AWS Feature Store, Databricks Feature Store etc"
+"Sistemas de controle de versão Github, DVC, Neptune, Gitlab etc"
+"Plataformas de Data Apps Streamlit, Shiny, Plotly Dash etc"
+"Ferramentas de estatística avançada como SPSS, SAS, etc."
+Não utilizo nenhuma dessas ferramentas no meu dia a dia.
