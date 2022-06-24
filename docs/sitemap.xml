@@ -2,23 +2,27 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" version="1.0">
   <url>
     <loc>https://nacmarino.github.io/codex/about.html</loc>
-    <lastmod>2021-12-23T23:21:08-03:00</lastmod>
+    <lastmod>2022-04-18T15:18:04-03:00</lastmod>
   </url>
   <url>
     <loc>https://nacmarino.github.io/codex/author.html</loc>
-    <lastmod>2022-02-28T17:35:37-03:00</lastmod>
+    <lastmod>2022-04-18T15:18:04-03:00</lastmod>
   </url>
   <url>
     <loc>https://nacmarino.github.io/codex/backlog.html</loc>
-    <lastmod>2022-03-25T16:53:01-03:00</lastmod>
+    <lastmod>2022-04-18T15:18:04-03:00</lastmod>
   </url>
   <url>
     <loc>https://nacmarino.github.io/codex/</loc>
-    <lastmod>2022-03-25T16:45:39-03:00</lastmod>
+    <lastmod>2022-04-18T15:18:06-03:00</lastmod>
   </url>
   <url>
     <loc>https://nacmarino.github.io/codex/livros.html</loc>
-    <lastmod>2022-03-25T16:51:53-03:00</lastmod>
+    <lastmod>2022-04-18T15:18:06-03:00</lastmod>
+  </url>
+  <url>
+    <loc>https://nacmarino.github.io/codex/posts/2022-06-24-state-of-data-2021/</loc>
+    <lastmod>2022-06-24T14:45:35-03:00</lastmod>
   </url>
   <url>
     <loc>https://nacmarino.github.io/codex/posts/2022-03-25-interagindo-com-a-api-da-ludopedia/</loc>

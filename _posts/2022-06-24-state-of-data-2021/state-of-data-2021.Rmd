@@ -29,7 +29,7 @@ text-align: justify}
 
 ```{r setup, include=FALSE}
 # setando as opções gerais dos code chunks
-knitr::opts_chunk$set(echo = FALSE, code_folding = TRUE, cache = TRUE, dpi = 200, fig.showtext = TRUE, fig.align = 'center')
+knitr::opts_chunk$set(echo = FALSE, code_folding = TRUE, cache = FALSE, dpi = 200, fig.showtext = TRUE, fig.align = 'center')
 
 # carregando o showtext para pegar novas fontes
 library(showtext)
@@ -92,7 +92,6 @@ library(ggrepel) # repelir texto dos plots
 
 # carregando os dados da pesquisa State of Data
 df <- read_csv(file = 'data/raw/State of Data 2021 - Dataset - Pgina1.csv')
-# df <- read_csv(file = '_posts/2022-12-31-state-of-data-2021/data/raw/State of Data 2021 - Dataset - Pgina1.csv')
 
 # criando um dicionário para mapear o nome das colunas no estado atual para um nome
 # mais legível, bem como para conseguirmos mapear o texto dela às figuras depois
