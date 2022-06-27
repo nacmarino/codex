@@ -56,7 +56,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 }
 code span.al { color: #ad0000; } /* Alert */
 code span.an { color: #5e5e5e; } /* Annotation */
-code span.at { color: #20794d; } /* Attribute */
+code span.at { } /* Attribute */
 code span.bn { color: #ad0000; } /* BaseN */
 code span.bu { } /* BuiltIn */
 code span.cf { color: #007ba5; } /* ControlFlow */
@@ -77,13 +77,14 @@ code span.kw { color: #007ba5; } /* Keyword */
 code span.op { color: #5e5e5e; } /* Operator */
 code span.ot { color: #007ba5; } /* Other */
 code span.pp { color: #ad0000; } /* Preprocessor */
-code span.sc { color: #20794d; } /* SpecialChar */
+code span.sc { color: #5e5e5e; } /* SpecialChar */
 code span.ss { color: #20794d; } /* SpecialString */
 code span.st { color: #20794d; } /* String */
 code span.va { color: #111111; } /* Variable */
 code span.vs { color: #20794d; } /* VerbatimString */
 code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 </style>
+
 
   <!--radix_placeholder_meta_tags-->
   <title>Codex: Backlog</title>
@@ -457,7 +458,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 
   </style>
 
-  <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+  <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
   <link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet"/>
   <link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet"/>
   <script src="site_libs/headroom-0.9.4/headroom.min.js"></script>
@@ -1864,7 +1865,10 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 
       // hoverable references
       $('span.citation[data-cites]').each(function() {
-        var refHtml = $('#ref-' + $(this).attr('data-cites')).html();
+        var refs = $(this).attr('data-cites').split(" ");
+        var refHtml = refs.map(function(ref) {
+          return "<p>" + $('#ref-' + ref).html() + "</p>";
+        }).join("\n");
         window.tippy(this, {
           allowHTML: true,
           content: refHtml,
@@ -2334,7 +2338,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
     color: var(--hover-color, white);
   }</style>
   <!--/radix_placeholder_distill-->
-  <script src="site_libs/header-attrs-2.10/header-attrs.js"></script>
+  <script src="site_libs/header-attrs-2.13/header-attrs.js"></script>
   <script src="site_libs/popper-2.6.0/popper.min.js"></script>
   <link href="site_libs/tippy-6.2.7/tippy.css" rel="stylesheet" />
   <link href="site_libs/tippy-6.2.7/tippy-light-border.css" rel="stylesheet" />
@@ -2393,7 +2397,12 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <h1>Backlog</h1>
 <!--radix_placeholder_categories-->
 <!--/radix_placeholder_categories-->
-<p><p>Ter idéia do que postar é fácil, difícil mesmo é desenvolver tudo isso na mesma velocidade! Nesta seção eu reuno tudo aquilo que eu já tive de ideia de escrever sobre, mas que faltou tempo para tornar realidade. Pretendo manter visibilidade disso aqui para me ajudar a não me esquecer e, quem sabe, receber algum feedback para priorizar um deles!</p></p>
+<p><p>Ter idéia do que postar é fácil, difícil mesmo é desenvolver tudo
+isso na mesma velocidade! Nesta seção eu reuno tudo aquilo que eu já
+tive de ideia de escrever sobre, mas que faltou tempo para tornar
+realidade. Pretendo manter visibilidade disso aqui para me ajudar a não
+me esquecer e, quem sabe, receber algum feedback para priorizar um
+deles!</p></p>
 </div>
 
 
@@ -2408,41 +2417,52 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 </ul>
 <h1 id="testando-pacotes">Testando Pacotes</h1>
 <ul>
-<li>Testando o pacote <code>modeltime</code> para modelar séries temporais;<br />
+<li>Testando o pacote <code>modeltime</code> para modelar séries
+temporais;<br />
 </li>
-<li>Testando o ecossistema do pacote <code>fpp3</code> para modelar séries temporais.</li>
+<li>Testando o ecossistema do pacote <code>fpp3</code> para modelar
+séries temporais.</li>
 </ul>
 <h1 id="shinyapps">ShinyApps</h1>
 <ul>
-<li>Aplicação para análise exploratória dos decks de Gwent, regras de associação e recomendação de cartas;<br />
+<li>Aplicação para análise exploratória dos decks de Gwent, regras de
+associação e recomendação de cartas;<br />
 </li>
-<li>Aplicação para análise exploratória dos dados dos jogos de tabuleiros vindos da API do BGG;<br />
+<li>Aplicação para análise exploratória dos dados dos jogos de
+tabuleiros vindos da API do BGG;<br />
 </li>
-<li>Aplicação para a recomendação de jogos de tabuleiro a partir de um exemplo de <em>input</em>.</li>
+<li>Aplicação para a recomendação de jogos de tabuleiro a partir de um
+exemplo de <em>input</em>.</li>
 </ul>
 <h1 id="análises">Análises</h1>
 <ul>
 <li>Quantos tipos diferentes de jogos de tabuleiro existem?<br />
 </li>
-<li>Como saber se um jogo de tabuleiro tem o potencial de ser um sucesso no Brasil?<br />
+<li>Como saber se um jogo de tabuleiro tem o potencial de ser um sucesso
+no Brasil?<br />
 </li>
-<li>Quais os jogos de tabuleiro mais parecidos com aquele que eu gosto?<br />
+<li>Quais os jogos de tabuleiro mais parecidos com aquele que eu
+gosto?<br />
 </li>
-<li>Qual a magnitude da diferença nas notas dadas aos mesmos jogos entre os portais especializados em jogos de tabuleiro?</li>
+<li>Qual a magnitude da diferença nas notas dadas aos mesmos jogos entre
+os portais especializados em jogos de tabuleiro?</li>
 <li>Quão diferentes são as cartas de Gwent de acordo com a facção?<br />
 </li>
-<li>Podemos prever a que facção uma carta pertence com base em sua imagem?<br />
+<li>Podemos prever a que facção uma carta pertence com base em sua
+imagem?<br />
 </li>
-<li>Análise dos resultados da pesquisa ‘2021 Kaggle Machine Learning &amp; Data Science Survey’;<br />
+<li>Análise dos resultados da pesquisa ‘2021 Kaggle Machine Learning
+&amp; Data Science Survey’;<br />
 </li>
-<li>Análise dos resultados da pesquisa ‘State of Data 2021’;<br />
+<li>Análise dos dados do financiamento à pesquisa em Ecologia no
+Brasil;<br />
 </li>
-<li>Análise dos dados do financiamento à pesquisa em Ecologia no Brasil;<br />
-</li>
-<li>Análise dos dados do resultado das provas do ENEM.<br />
-</li>
+<li>Análise dos dados do resultado das provas do ENEM;</li>
+<li>Quantos perfis de cientistas de dados diferentes existem?</li>
+<li>Como criar <em>embeddings</em> de skills?</li>
 </ul>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <!--radix_placeholder_article_footer-->
 <!--/radix_placeholder_article_footer-->
 </div>
@@ -2463,7 +2483,9 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <!--/radix_placeholder_appendices-->
 <!--radix_placeholder_navigation_after_body-->
 <div class="distill-site-nav distill-site-footer">
-<p>© Copyright 2021 - Nicholas Marino - O template deste website é feito com <a href="https://rstudio.github.io/distill/">Distill</a> utilizando o <a href="https://www.r-project.org/">R</a>.</p>
+<p>© Copyright 2021 - Nicholas Marino - O template deste website é feito
+com <a href="https://rstudio.github.io/distill/">Distill</a> utilizando
+o <a href="https://www.r-project.org/">R</a>.</p>
 </div>
 <!--/radix_placeholder_navigation_after_body-->
 

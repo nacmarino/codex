@@ -3,6 +3,7 @@ title: 'Postagens'
 site: distill::distill_website
 listing: 
   posts:
+    - 2022-06-24-state-of-data-2021
     - 2022-03-25-interagindo-com-a-api-da-ludopedia
     - 2022-02-28-card-embeddings-parte-1
     - 2022-01-23-interagindo-com-a-api-do-boardgamegeek

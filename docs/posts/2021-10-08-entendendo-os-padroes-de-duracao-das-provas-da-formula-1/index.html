@@ -481,7 +481,7 @@ d-title {
 
 </style>
 
-<script src="../../site_libs/jquery-1.11.3/jquery.min.js"></script>
+<script src="../../site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <link href="../../site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet"/>
 <link href="../../site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet"/>
 <script src="../../site_libs/headroom-0.9.4/headroom.min.js"></script>
@@ -1888,7 +1888,10 @@ function init_distill() {
 
     // hoverable references
     $('span.citation[data-cites]').each(function() {
-      var refHtml = $('#ref-' + $(this).attr('data-cites')).html();
+      var refs = $(this).attr('data-cites').split(" ");
+      var refHtml = refs.map(function(ref) {
+        return "<p>" + $('#ref-' + ref).html() + "</p>";
+      }).join("\n");
       window.tippy(this, {
         allowHTML: true,
         content: refHtml,
@@ -2397,7 +2400,7 @@ gtag('config', 'G-SKP9PWEBP2');
 <!--radix_placeholder_front_matter-->
 
 <script id="distill-front-matter" type="text/json">
-{"title":"Entendendo os Padrões de Duração das Provas da Fórmula 1","description":"A Fórmula 1 é um dos esportes de velocidade mais famosos do mundo, com provas ocorrendo desde o início da década de 50 até os dias de hoje. Muita coisa mudou nestes 70 anos, especialmente os carros: cada vez mais bonitos, mais seguros e mais rápidos. Mas será que isso também se traduziu em provas cada vez mais curtas também? Neste post eu examino de que forma a duração das provas da Fórmula 1 têm evoluído ao longo das temporadas.","authors":[{"author":"Nicholas Marino","authorURL":"https://github.com/nacmarino","affiliation":"&nbsp;","affiliationURL":"#","orcidID":""}],"publishedDate":"2021-10-08T00:00:00.000+00:00","citationText":"Marino, 2021"}
+{"title":"Entendendo os Padrões de Duração das Provas da Fórmula 1","description":"A Fórmula 1 é um dos esportes de velocidade mais famosos do mundo, com provas ocorrendo desde o início da década de 50 até os dias de hoje. Muita coisa mudou nestes 70 anos, especialmente os carros: cada vez mais bonitos, mais seguros e mais rápidos. Mas será que isso também se traduziu em provas cada vez mais curtas também? Neste post eu examino de que forma a duração das provas da Fórmula 1 têm evoluído ao longo das temporadas.","authors":[{"author":"Nicholas Marino","authorURL":"https://github.com/nacmarino","affiliation":"&nbsp;","affiliationURL":"#","orcidID":""}],"publishedDate":"2021-10-08T00:00:00.000-03:00","citationText":"Marino, 2021"}
 </script>
 
 <!--/radix_placeholder_front_matter-->
@@ -3348,11 +3351,15 @@ Koricheva, Julia, and Jessica Gurevitch. 2013. <em>Handbook of Meta-Analysis in 
 }</pre>
 </div>
 <!--/radix_placeholder_appendices-->
-<!--radix_placeholder_navigation_after_body-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<!--radix_placeholder_navigation_after_body--><html><body>
 <div class="distill-site-nav distill-site-footer">
-  <p>© Copyright 2021 - Nicholas Marino - O template deste website é feito com <a href="https://rstudio.github.io/distill/">Distill</a> utilizando o <a href="https://www.r-project.org/">R</a>.</p>
+<p>Â© Copyright 2021 - Nicholas Marino - O template deste website Ã© feito
+com <a href="https://rstudio.github.io/distill/">Distill</a> utilizando
+o <a href="https://www.r-project.org/">R</a>.</p>
 </div>
 <!--/radix_placeholder_navigation_after_body-->
+</body></html>
 
 
 </body>

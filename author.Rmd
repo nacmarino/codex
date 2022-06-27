@@ -84,8 +84,13 @@ Aprendi a viver e a fazer ciência ao longo da minha trajetória profissional, a
         + Getting and Cleaning Data | 2021
         + R Programming | 2021
         + The Data Scientist's Toolbox | 2021
-    + Deep Learning Specialization
-        + Convolutional Neural Networks | Em andamento
+    + NLP Specialization | Em andamento
+        + Natural Language Processing with Sequence Models | Em andamento
+        + Natural Language Processing with Probabilistic Models | 2022
+        + Natural Language Processing with Classification and Vector Spaces | 2022
+    + Deep Learning Specialization | 2022
+        + Sequence Models | 2022
+        + Convolutional Neural Networks | 2022
         + Structuring Machine Learning Projects | 2022
         + Improving Deep Neural Networks: Hyperparameter Tuning, Regularization and Optimization | 2022
         + Neural Networks and Deep Learning | 2022
@@ -95,6 +100,8 @@ Aprendi a viver e a fazer ciência ao longo da minha trajetória profissional, a
         + Principal Component Analysis | 2022
         + Multivariate Calculus | 2021
         + Linear Algebra | 2021  
+- **CLOUD**
+    + AWS Cloud Practitioner | 2022
   
 # Experiência
 

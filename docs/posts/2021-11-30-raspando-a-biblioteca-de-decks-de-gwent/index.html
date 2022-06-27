@@ -101,9 +101,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <meta property="og:type" content="article"/>
 <meta property="og:description" content="Gwent é um jogo de cartas que nasceu dentro do universo de The Witcher e, dada a popularidade da franquia, chegou aos smartphones. A comunidade de jogadores é bastante ativa, e existe uma biblioteca de decks contribuídos que está disponível dentro do site oficial do jogo. Meu objetivo neste post será obter os dados desta biblioteca e de seus decks. Isto servirá para montar uma base de dados para fazermos outras análises posteriormente."/>
 <meta property="og:url" content="https://nacmarino.github.io/codex/posts/2021-11-30-raspando-a-biblioteca-de-decks-de-gwent/"/>
-<meta property="og:image" content="https://nacmarino.github.io/codex/posts/2021-11-30-raspando-a-biblioteca-de-decks-de-gwent/gwent_files/figure-html5/fig_serie_temporal-1.png"/>
-<meta property="og:image:width" content="4000"/>
-<meta property="og:image:height" content="4000"/>
+<meta property="og:image" content="https://nacmarino.github.io/codex/posts/2021-11-30-raspando-a-biblioteca-de-decks-de-gwent/images/imagem_1.jpg"/>
 <meta property="og:locale" content="en_US"/>
 <meta property="og:site_name" content="Codex"/>
 
@@ -112,9 +110,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <meta property="twitter:title" content="Codex: Raspando a biblioteca de decks de Gwent"/>
 <meta property="twitter:description" content="Gwent é um jogo de cartas que nasceu dentro do universo de The Witcher e, dada a popularidade da franquia, chegou aos smartphones. A comunidade de jogadores é bastante ativa, e existe uma biblioteca de decks contribuídos que está disponível dentro do site oficial do jogo. Meu objetivo neste post será obter os dados desta biblioteca e de seus decks. Isto servirá para montar uma base de dados para fazermos outras análises posteriormente."/>
 <meta property="twitter:url" content="https://nacmarino.github.io/codex/posts/2021-11-30-raspando-a-biblioteca-de-decks-de-gwent/"/>
-<meta property="twitter:image" content="https://nacmarino.github.io/codex/posts/2021-11-30-raspando-a-biblioteca-de-decks-de-gwent/gwent_files/figure-html5/fig_serie_temporal-1.png"/>
-<meta property="twitter:image:width" content="4000"/>
-<meta property="twitter:image:height" content="4000"/>
+<meta property="twitter:image" content="https://nacmarino.github.io/codex/posts/2021-11-30-raspando-a-biblioteca-de-decks-de-gwent/images/imagem_1.jpg"/>
 
 <!--  https://scholar.google.com/intl/en/scholar/inclusion.html#indexing -->
 <meta name="citation_title" content="Codex: Raspando a biblioteca de decks de Gwent"/>
@@ -478,7 +474,7 @@ d-title {
 
 </style>
 
-<script src="../../site_libs/jquery-1.11.3/jquery.min.js"></script>
+<script src="../../site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <link href="../../site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet"/>
 <link href="../../site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet"/>
 <script src="../../site_libs/headroom-0.9.4/headroom.min.js"></script>
@@ -1885,7 +1881,10 @@ function init_distill() {
 
     // hoverable references
     $('span.citation[data-cites]').each(function() {
-      var refHtml = $('#ref-' + $(this).attr('data-cites')).html();
+      var refs = $(this).attr('data-cites').split(" ");
+      var refHtml = refs.map(function(ref) {
+        return "<p>" + $('#ref-' + ref).html() + "</p>";
+      }).join("\n");
       window.tippy(this, {
         allowHTML: true,
         content: refHtml,
@@ -2385,7 +2384,7 @@ gtag('config', 'G-SKP9PWEBP2');
 <!--radix_placeholder_front_matter-->
 
 <script id="distill-front-matter" type="text/json">
-{"title":"Raspando a biblioteca de decks de Gwent","description":"Gwent é um jogo de cartas que nasceu dentro do universo de The Witcher e, dada a popularidade da franquia, chegou aos smartphones. A comunidade de jogadores é bastante ativa, e existe uma biblioteca de decks contribuídos que está disponível dentro do site oficial do jogo. Meu objetivo neste post será obter os dados desta biblioteca e de seus decks. Isto servirá para montar uma base de dados para fazermos outras análises posteriormente.","authors":[{"author":"Nicholas Marino","authorURL":"https://github.com/nacmarino","affiliation":"&nbsp;","affiliationURL":"#","orcidID":""}],"publishedDate":"2021-11-30T00:00:00.000+00:00","citationText":"Marino, 2021"}
+{"title":"Raspando a biblioteca de decks de Gwent","description":"Gwent é um jogo de cartas que nasceu dentro do universo de The Witcher e, dada a popularidade da franquia, chegou aos smartphones. A comunidade de jogadores é bastante ativa, e existe uma biblioteca de decks contribuídos que está disponível dentro do site oficial do jogo. Meu objetivo neste post será obter os dados desta biblioteca e de seus decks. Isto servirá para montar uma base de dados para fazermos outras análises posteriormente.","authors":[{"author":"Nicholas Marino","authorURL":"https://github.com/nacmarino","affiliation":"&nbsp;","affiliationURL":"#","orcidID":""}],"publishedDate":"2021-11-30T00:00:00.000-03:00","citationText":"Marino, 2021"}
 </script>
 
 <!--/radix_placeholder_front_matter-->
@@ -3043,11 +3042,15 @@ Show code
 }</pre>
 </div>
 <!--/radix_placeholder_appendices-->
-<!--radix_placeholder_navigation_after_body-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<!--radix_placeholder_navigation_after_body--><html><body>
 <div class="distill-site-nav distill-site-footer">
-  <p>© Copyright 2021 - Nicholas Marino - O template deste website é feito com <a href="https://rstudio.github.io/distill/">Distill</a> utilizando o <a href="https://www.r-project.org/">R</a>.</p>
+<p>Â© Copyright 2021 - Nicholas Marino - O template deste website Ã© feito
+com <a href="https://rstudio.github.io/distill/">Distill</a> utilizando
+o <a href="https://www.r-project.org/">R</a>.</p>
 </div>
 <!--/radix_placeholder_navigation_after_body-->
+</body></html>
 
 
 </body>
